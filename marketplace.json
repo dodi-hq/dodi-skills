@@ -1,0 +1,16 @@
+{
+  "name": "dodi-skills",
+  "description": "Dodi skills plugins for Claude Code",
+  "owner": {
+    "name": "Dodi HQ",
+    "email": "may@dodihome.com"
+  },
+  "plugins": [
+    {
+      "name": "dodi-dev",
+      "description": "Dev workflow skills: brainstorm, plan, implement, review, submit",
+      "version": "0.1.0",
+      "source": "./dodi-dev"
+    }
+  ]
+}
