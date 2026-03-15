@@ -5,7 +5,7 @@ description: Use after review passes — creates PR, waits for CI, and merges on
 
 # Submit
 
-Create a PR and merge only after CI passes.
+Create a PR, wait for CI to pass, then merge.
 
 ## Process
 
@@ -31,13 +31,17 @@ Create a PR and merge only after CI passes.
    ```
 
 3. **Wait for CI:**
-   - Check CI status: `gh pr checks <pr-number> --watch`
-   - If CI fails: report the failure, do NOT merge
+   CI is triggered automatically when a PR is opened. It may take several minutes for checks to appear, and 30-45 minutes to complete.
+
+   - Poll for CI status: `gh pr checks <pr-number> --watch`
+   - If no checks appear after 30 seconds, poll with: `gh run list --branch <branch> --limit 1`
+   - If CI fails: read the failure logs (`gh run view <run-id> --log-failed`), report the failure, and do NOT merge. Offer to fix the issue.
    - If CI passes: proceed to merge
 
 4. **Merge (only after CI green):**
    - Confirm with user before merging
    - `gh pr merge <pr-number> --squash --delete-branch`
+   - If branch protection blocks the merge, CI may not have finished yet — go back to step 3
 
 5. **Cleanup:**
    - Remove worktree if applicable: `git worktree remove <path>`
@@ -46,7 +50,8 @@ Create a PR and merge only after CI passes.
 
 ## Key Rules
 
-- **Never merge with failing CI**
-- **Never force-merge without user confirmation**
+- **Never merge with failing CI** — always wait for green
+- **Never force-merge or use --admin** without explicit user approval
 - **Always squash-merge** (clean history)
 - **Delete branch after merge** (keep repo clean)
+- **CI takes time** — don't try to merge immediately after creating the PR
