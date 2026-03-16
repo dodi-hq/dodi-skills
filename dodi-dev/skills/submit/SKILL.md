@@ -30,28 +30,22 @@ Create a PR, wait for CI to pass, then merge.
    )"
    ```
 
-3. **Wait for CI:**
-   CI is triggered automatically when a PR is opened. It may take several minutes for checks to appear, and 30-45 minutes to complete.
+3. **Enable auto-merge:**
+   GitHub will automatically squash-merge once CI passes and delete the remote branch.
 
-   - Poll for CI status: `gh pr checks <pr-number> --watch`
-   - If no checks appear after 30 seconds, poll with: `gh run list --branch <branch> --limit 1`
-   - If CI fails: read the failure logs (`gh run view <run-id> --log-failed`), report the failure, and do NOT merge. Offer to fix the issue.
-   - If CI passes: proceed to merge
+   ```bash
+   gh pr merge <pr-number> --squash --delete-branch --auto
+   ```
 
-4. **Merge (only after CI green):**
-   - Confirm with user before merging
-   - `gh pr merge <pr-number> --squash --delete-branch`
-   - If branch protection blocks the merge, CI may not have finished yet — go back to step 3
-
-5. **Cleanup:**
-   - Remove worktree if applicable: `git worktree remove <path>`
-   - Delete local branch if not already deleted
+   - Report the PR URL to the user
    - Update ticket status if tracker tools available
+   - **Do NOT poll or wait** — auto-merge handles it asynchronously
+
+   Note: Local worktree and branch cleanup happens automatically at the next `pickup`.
 
 ## Key Rules
 
-- **Never merge with failing CI** — always wait for green
 - **Never force-merge or use --admin** without explicit user approval
 - **Always squash-merge** (clean history)
+- **Always use --auto** — let GitHub merge when CI passes, don't block the conversation
 - **Delete branch after merge** (keep repo clean)
-- **CI takes time** — don't try to merge immediately after creating the PR
