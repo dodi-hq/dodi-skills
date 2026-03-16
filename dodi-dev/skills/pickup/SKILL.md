@@ -13,10 +13,19 @@ Either a ticket reference (e.g., `DOD-152`) or a description to search for.
 
 ## Process
 
-1. **Look up the ticket** — use available tracker tools to read the full ticket (title, description, acceptance criteria, linked issues)
-2. **Create worktree:**
+1. **Ensure we're on the main branch and up to date:**
    ```bash
-   git fetch origin
+   # Determine the main branch (master or main)
+   git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
+   # Switch to it
+   git checkout <main-branch>
+   # Pull latest
+   git pull origin <main-branch>
+   ```
+   If there are uncommitted changes on the current branch, warn the user and stop.
+2. **Look up the ticket** — use available tracker tools to read the full ticket (title, description, acceptance criteria, linked issues)
+3. **Create worktree:**
+   ```bash
    git worktree add ../<repo-name>-<ticket-id> -b <ticket-id>
    ```
 3. **Read context** — if the ticket references a spec, read it. Check for related docs.
