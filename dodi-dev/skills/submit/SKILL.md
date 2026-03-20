@@ -13,7 +13,7 @@ Create a PR, wait for CI to pass, then merge.
    - Verify you're on a feature branch (not main/master)
    - Check for uncommitted changes — commit or warn
    - Ensure branch is pushed to remote
-   - **Run `/quality-gate`** if available in the current repo (skip silently if not)
+   - **Run `/quality-gate`** — this is mandatory. Invoke the quality-gate skill to run compliance checks, create tests, and run the test suite. Do NOT skip this step.
 
 2. **Create PR:**
    ```bash
