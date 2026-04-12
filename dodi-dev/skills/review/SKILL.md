@@ -25,8 +25,8 @@ Comprehensive agent-driven code review. Run after implementation, before PR.
    - The spec/plan path
    - The diff or list of changed files
    - Project conventions (CLAUDE.md path)
-3. If issues found: fix them, re-run review
-4. When approved: proceed to `dodi-dev:submit`
+3. **Review loop** — if the subagent reports any issues, fix them and dispatch a fresh review subagent again. Repeat until a review round comes back clean with zero issues. Do not exit the loop on a round that still has findings — the final round must be clean.
+4. When the final round is clean: proceed to `dodi-dev:submit`
 
 ## Don't Skip This
 
