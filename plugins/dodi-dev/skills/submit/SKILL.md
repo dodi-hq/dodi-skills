@@ -29,3 +29,12 @@ Compatibility submit entry point. Epic orchestration does not use this as the Ph
 
 Auto-merge is not the default documented behavior.
 Do not create PRs or merge branches from this compatibility skill in Phase 2.
+
+## Epic Workflow Submit Policy
+
+`submit` is a compatibility entry point. Epic workflows must use:
+
+- `submit-ticket-pr` for child ticket branches targeting the epic branch.
+- `submit-epic-pr` for the epic branch targeting main/master.
+
+Auto-merge is disabled by default. Do not run `gh pr merge --auto` from this skill. Child PRs may still be squash-merged into the epic branch by `submit-ticket-pr` after clean fresh-context review and local CI-equivalent checks. Epic PRs are opened by `submit-epic-pr` and left open for existing GitHub Actions and review.

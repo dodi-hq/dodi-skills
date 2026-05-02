@@ -60,3 +60,20 @@ Run before submitting or releasing skill changes. Validate plugin metadata, veri
 - Require verification command evidence before passing.
 - Check implementation compliance, security concerns, code hygiene, regression risk, documentation, and operational concerns.
 - Do not create PRs or merge branches in Phase 2.
+
+## PR Lifecycle Contexts
+
+Child PR gate:
+
+- Require clean `review-child-pr` evidence.
+- Require local CI-equivalent command evidence.
+- Require proof that the child branch is current with the epic branch.
+- Do not pass if merge conflicts require product, architecture, scope, or spec/plan judgment.
+
+Epic PR gate:
+
+- Require all child tickets to be done.
+- Require child PR links.
+- Require latest main/master sync evidence.
+- Require an epic readiness summary.
+- Do not merge or auto-merge the epic PR.

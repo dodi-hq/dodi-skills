@@ -28,7 +28,7 @@ Orchestrate one feature epic from intake through local readiness for child PR cr
 - No ticket enters planning without human spec signoff or explicit delegation.
 - No ticket enters implementation without `spec-ready` and `ready-to-implement`.
 - Any implementation surprise requiring product, architecture, scope, or plan judgment returns the ticket to the spec lane.
-- Phase 2 stops before PR creation. If a ticket reaches local PR readiness, report `ready-for-child-pr` and stop.
+- In Phase 3, a ticket that reaches local PR readiness moves through `submit-ticket-pr` instead of stopping at `ready-for-child-pr`.
 
 ## State Reconstruction
 
@@ -44,7 +44,7 @@ Orchestrate one feature epic from intake through local readiness for child PR cr
 2. Pick exactly one allowed next action.
 3. Dispatch the owning phase skill or worker.
 4. Verify evidence before advancing state.
-5. Stop at `ready-for-child-pr` in Phase 2.
+5. In Phase 3, invoke `submit-ticket-pr` when a child reaches `ready-for-child-pr`.
 
 ## Allowed Next Actions
 
@@ -59,11 +59,43 @@ Orchestrate one feature epic from intake through local readiness for child PR cr
 - Run `quality-gate`.
 - Stop for human spec input.
 - Stop for a concrete blocker.
-- Stop with `ready-for-child-pr`.
+- Run `submit-ticket-pr` for a child at `ready-for-child-pr`.
+- Run `review-child-pr`.
+- Run `submit-epic-pr`.
 
 ## State Transitions
 
-Use only the Phase 2 subset of the child-ticket and epic-level transition tables in `docs/specs/2026-05-02-epic-orchestration-design.md`. Phase 2 ends at `ready-for-child-pr`. Do not execute or encode `child-pr-reviewing`, `ready-to-merge-child`, `done`, `epic-ready-for-pr`, or `epic-pr-open` as active transitions in this release.
+Use the child-ticket and epic-level transition tables in `docs/specs/2026-05-02-epic-orchestration-design.md`. Child ticket branches move from `ready-for-child-pr` into child PR review and merge against the epic branch. Epic branches move to `epic-ready-for-pr` only after every child ticket is done.
+
+## Phase 3 PR Lifecycle
+
+When a child ticket reaches `ready-for-child-pr`, invoke `submit-ticket-pr` instead of stopping.
+
+Allowed Phase 3 next actions:
+
+- Run `submit-ticket-pr`.
+- Run `review-child-pr`.
+- Run `submit-epic-pr`.
+
+When every child ticket is `done`, transition the epic to `epic-ready-for-pr` and invoke `submit-epic-pr` after the epic readiness evidence is present.
+
+Child PR transitions:
+
+| Source state | Trigger | Required evidence | Durable writes | Next state | Fallback or error transition |
+| --- | --- | --- | --- | --- | --- |
+| ready-for-child-pr | local checks pass | branch, commits, review, verification, quality-gate evidence | child PR link and PR body | child-pr-reviewing | blocked if PR cannot be created |
+| child-pr-reviewing | child PR is open | clean PR review and local CI-equivalent evidence | PR comments and ticket evidence | ready-to-merge-child | returns to implementation-reviewing or verifying based on finding type |
+| ready-to-merge-child | child branch is current with epic | clean review/test evidence after latest epic sync | merge commit or squash merge link; child ticket done comment | done | blocked if merge conflict requires spec or plan judgment |
+| done | child PR merged into epic | merged PR state | child ticket final status | done | no transition unless ticket is reopened |
+
+Epic PR transitions:
+
+| Source state | Trigger | Required evidence | Durable writes | Next state | Fallback or error transition |
+| --- | --- | --- | --- | --- | --- |
+| epic-ready-for-pr | all children are done | child PR links, latest main/master sync, epic quality gate evidence | epic readiness summary | epic-pr-open | returns to epic-active if a child reopens or sync introduces required fixes |
+| epic-pr-open | epic PR created | PR link targeting main or master | epic ticket PR comment | epic-pr-open | existing GitHub Actions and review workflows take over |
+
+Do not auto-merge epic PRs. Existing GitHub Actions and review workflows take over after `epic-pr-open`.
 
 ## Evidence Rule
 
