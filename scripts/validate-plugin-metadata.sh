@@ -17,7 +17,7 @@ codex = json.loads(Path('plugins/dodi-dev/.codex-plugin/plugin.json').read_text(
 market_version = market['plugins'][0]['version']
 assert market_version == claude['version'], (market_version, claude['version'])
 assert claude['version'] == codex['version'], (claude['version'], codex['version'])
-assert claude['version'] == '0.8.1', claude['version']
+assert claude['version'] == '0.8.2', claude['version']
 
 print(f"plugin metadata ok: {claude['version']}")
 PY
