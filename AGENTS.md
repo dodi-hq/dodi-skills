@@ -20,17 +20,22 @@
 
 ## Verification
 
-- Validate JSON metadata after edits:
+- Run repository validation scripts:
 
   ```bash
-  python -m json.tool .claude-plugin/marketplace.json
-  python -m json.tool dodi-dev/.claude-plugin/plugin.json
-  python -m json.tool .agents/plugins/marketplace.json
-  python -m json.tool plugins/dodi-dev/.codex-plugin/plugin.json
+  scripts/validate-plugin-metadata.sh
+  scripts/validate-phase-skills.sh
+  scripts/validate-ticket-comment-templates.sh
   ```
 
-- Check the published file set before release:
+- Validate runtime templates when they change:
 
   ```bash
-  find dodi-dev/skills plugins/dodi-dev/skills -maxdepth 2 -type f | sort
+  python3 - <<'PY'
+  import json
+  from pathlib import Path
+  for line in Path('templates/run-ledger/record.jsonl').read_text().splitlines():
+      json.loads(line)
+  print('jsonl ok')
+  PY
   ```
