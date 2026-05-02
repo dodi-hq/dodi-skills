@@ -8,8 +8,8 @@
   "plugins": [
     {
       "name": "dodi-dev",
-      "description": "Dev workflow and local epic orchestration skills",
-      "version": "0.7.0",
+      "description": "Dev workflow, local epic orchestration, and PR lifecycle skills",
+      "version": "0.8.0",
       "source": "./dodi-dev"
     }
   ]

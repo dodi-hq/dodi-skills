@@ -1,7 +1,7 @@
 {
   "name": "dodi-dev",
-  "version": "0.7.0",
-  "description": "Dodi developer workflow and local epic orchestration skills",
+  "version": "0.8.0",
+  "description": "Dodi developer workflow, local epic orchestration, and PR lifecycle skills",
   "author": {
     "name": "Dodi HQ",
     "email": "may@dodihome.com"
@@ -10,7 +10,7 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Dodi Dev",
-    "shortDescription": "Developer workflow and local epic orchestration skills",
+    "shortDescription": "Developer workflow, epic orchestration, and PR lifecycle skills",
     "developerName": "Dodi HQ",
     "category": "Productivity",
     "capabilities": ["Write", "Review"]
