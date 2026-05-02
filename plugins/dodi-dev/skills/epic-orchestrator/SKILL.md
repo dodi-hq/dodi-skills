@@ -120,7 +120,7 @@ Durable PM state is the source of truth.
 - tool or auth failure
 - blocked dependency
 - implementation surprise requiring spec or plan revision
-- `ready-for-child-pr`
+- child PR or epic PR lifecycle blocker
 
 ## Progress Record
 

@@ -1,11 +1,11 @@
 ---
 name: submit
-description: Use after review passes when legacy submit behavior is needed; epic workflows stop locally until PR lifecycle skills are available
+description: Use after review passes when a compatibility entry point is needed; epic workflows route to dedicated PR lifecycle skills
 ---
 
 # Submit
 
-Compatibility submit entry point. Epic orchestration does not use this as the Phase 2 PR path.
+Compatibility submit entry point. Epic orchestration uses dedicated PR lifecycle skills.
 
 ## Process
 
@@ -14,21 +14,14 @@ Compatibility submit entry point. Epic orchestration does not use this as the Ph
    - Check for uncommitted changes — commit or warn
    - Ensure branch is pushed to remote
    - **Run `/quality-gate`** — this is mandatory. Invoke the quality-gate skill to run compliance checks, create tests, and run the test suite. Do NOT skip this step.
-2. For local epic orchestration, stop at `ready-for-child-pr`.
+2. For epic workflows, route child ticket branches to `submit-ticket-pr` and epic branches to `submit-epic-pr`.
 3. Report the branch, commit range, review evidence, verification evidence, and quality-gate evidence.
 
 ## Key Rules
 
 - **Never force-merge or use --admin** without explicit user approval
-- Do not create PRs or merge branches from this compatibility skill in Phase 2.
-- Leave PR lifecycle work to Phase 3 skills after they exist.
-
-## Epic Workflow Compatibility
-
-`submit` is a compatibility wrapper. Phase 2 local epic orchestration stops at `ready-for-child-pr` and does not create PRs or merge branches. Phase 3 introduces `submit-ticket-pr` and `submit-epic-pr` for epic workflows.
-
-Auto-merge is not the default documented behavior.
-Do not create PRs or merge branches from this compatibility skill in Phase 2.
+- Do not create PRs or merge branches from this compatibility skill.
+- Leave PR lifecycle work to dedicated epic workflow skills.
 
 ## Epic Workflow Submit Policy
 
