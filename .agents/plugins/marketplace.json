@@ -1,0 +1,20 @@
+{
+  "name": "dodi-skills",
+  "interface": {
+    "displayName": "Dodi Skills"
+  },
+  "plugins": [
+    {
+      "name": "dodi-dev",
+      "source": {
+        "source": "local",
+        "path": "./plugins/dodi-dev"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
