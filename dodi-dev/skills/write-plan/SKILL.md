@@ -75,6 +75,13 @@ git commit -m "feat: specific change"
 - Write tests where they add value — skip tests for trivial getters/setters/CRUD
 - DRY, YAGNI, frequent commits
 
+## Epic Orchestration Planning Gates
+
+- A ticket may enter planning only after human spec signoff or explicit delegation.
+- Every implementation plan must include a Testing Contract with unit, integration, e2e, harness/setup, and critical-flow fields.
+- Apply `ready-to-implement` only after clean plan review and dependency check.
+- Product or architecture ambiguity returns the ticket to the spec lane.
+
 ## Plan Review Loop
 
 After completing each chunk (≤1000 lines):

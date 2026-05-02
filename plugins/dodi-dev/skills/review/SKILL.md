@@ -28,6 +28,13 @@ Comprehensive agent-driven code review. Run after implementation, before PR.
 3. **Review loop** — if the subagent reports any issues, fix them and dispatch a fresh review subagent again. Repeat until a review round comes back clean with zero issues. Do not exit the loop on a round that still has findings — the final round must be clean.
 4. When the final round is clean: proceed to `dodi-dev:submit`
 
+## Epic Orchestration Review Rules
+
+- Read the spec, plan, and diff directly.
+- Treat this as fresh-context review.
+- Focused re-review is required when production code changes during verification.
+- Classify findings as spec mismatch, implementation issue, test issue, security issue, hygiene issue, or regression risk.
+
 ## Don't Skip This
 
 "Tests pass" is not a review. Tests verify behavior; review verifies intent, quality, and risk.

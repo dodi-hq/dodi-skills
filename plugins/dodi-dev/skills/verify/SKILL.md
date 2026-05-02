@@ -40,3 +40,12 @@ If you catch yourself thinking any of these, run the verification:
 - "Just this once"
 
 Run the command. Read the output. THEN claim the result.
+
+## Epic Orchestration Verification Rules
+
+- Read the Testing Contract before choosing commands.
+- Do not skip required unit, integration, or e2e groups because a harness is absent.
+- Set up missing required harnesses when feasible.
+- Classify failures as test bug, implementation bug, environment/harness issue, or spec/plan mismatch.
+- Fix the right thing; do not default to editing tests.
+- Return to the spec lane when verification exposes a spec/plan mismatch.

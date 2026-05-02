@@ -1,27 +1,27 @@
 ---
 name: quality-gate
-description: Baseline release gate for dodi-skills plugin metadata and published skill files
+description: Local release gate for dodi-skills metadata, skill files, verification evidence, and workflow risk checks
 ---
 
 # Quality Gate
 
-Run before submitting or releasing skill changes. Phase 1 is a compatibility gate: validate plugin metadata, verify the expected published skill files exist, and report gaps. Later phases will expand this into a broader horizontal gate for implementation compliance, security, hygiene, and regression risk.
+Run before submitting or releasing skill changes. Validate plugin metadata, verify the expected published skill files exist, check implementation compliance and risk, and report gaps.
 
 ## Process
 
 1. Validate all plugin metadata JSON:
 
    ```bash
-   python -m json.tool .claude-plugin/marketplace.json
-   python -m json.tool dodi-dev/.claude-plugin/plugin.json
-   python -m json.tool .agents/plugins/marketplace.json
-   python -m json.tool plugins/dodi-dev/.codex-plugin/plugin.json
+   python3 -m json.tool .claude-plugin/marketplace.json
+   python3 -m json.tool dodi-dev/.claude-plugin/plugin.json
+   python3 -m json.tool .agents/plugins/marketplace.json
+   python3 -m json.tool plugins/dodi-dev/.codex-plugin/plugin.json
    ```
 
-2. Verify both skill trees contain the expected Phase 1 skills:
+2. Verify both skill trees contain the expected Phase 2 skills:
 
    ```bash
-   for skill in brainstorm file-ticket implement pickup quality-gate review submit verify write-plan; do
+   for skill in brainstorm file-ticket implement pickup quality-gate review submit verify write-plan epic-orchestrator pickup-epic assess-epic mature-ticket pickup-ticket implement-ticket review-implementation create-tests; do
      test -f "dodi-dev/skills/$skill/SKILL.md" || exit 1
      test -f "plugins/dodi-dev/skills/$skill/SKILL.md" || exit 1
    done
@@ -48,4 +48,15 @@ Run before submitting or releasing skill changes. Phase 1 is a compatibility gat
 
    Expected: no output.
 
-5. Report the commands run and their exit codes. If any command fails, stop and report the missing file or invalid JSON path.
+5. Check implementation compliance, security concerns, code hygiene, regression risk, documentation, and operational concerns.
+
+6. Require verification command evidence before passing.
+
+7. Report the commands run and their exit codes. If any command fails, stop and report the missing file or invalid JSON path.
+
+## Local Epic Quality Gate
+
+- Preserve plugin metadata and skill-tree checks.
+- Require verification command evidence before passing.
+- Check implementation compliance, security concerns, code hygiene, regression risk, documentation, and operational concerns.
+- Do not create PRs or merge branches in Phase 2.

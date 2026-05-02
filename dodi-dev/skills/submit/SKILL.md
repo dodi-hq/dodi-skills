@@ -1,11 +1,11 @@
 ---
 name: submit
-description: Use after review passes — creates PR, waits for CI, and merges only after CI is green
+description: Use after review passes when legacy submit behavior is needed; epic workflows stop locally until PR lifecycle skills are available
 ---
 
 # Submit
 
-Create a PR, wait for CI to pass, then merge.
+Compatibility submit entry point. Epic orchestration does not use this as the Phase 2 PR path.
 
 ## Process
 
@@ -14,38 +14,18 @@ Create a PR, wait for CI to pass, then merge.
    - Check for uncommitted changes — commit or warn
    - Ensure branch is pushed to remote
    - **Run `/quality-gate`** — this is mandatory. Invoke the quality-gate skill to run compliance checks, create tests, and run the test suite. Do NOT skip this step.
-
-2. **Create PR:**
-   ```bash
-   git push -u origin <branch>
-   gh pr create --title "<title>" --body "$(cat <<'EOF'
-   ## Summary
-   <2-3 bullets>
-
-   ## Test Plan
-   - [ ] <verification steps>
-
-   🤖 Generated with [Claude Code](https://claude.com/claude-code)
-   EOF
-   )"
-   ```
-
-3. **Enable auto-merge:**
-   GitHub will automatically squash-merge once CI passes and delete the remote branch.
-
-   ```bash
-   gh pr merge <pr-number> --squash --delete-branch --auto
-   ```
-
-   - Report the PR URL to the user
-   - Update ticket status if tracker tools available
-   - **Do NOT poll or wait** — auto-merge handles it asynchronously
-
-   Note: Local worktree and branch cleanup happens automatically at the next `pickup`.
+2. For local epic orchestration, stop at `ready-for-child-pr`.
+3. Report the branch, commit range, review evidence, verification evidence, and quality-gate evidence.
 
 ## Key Rules
 
 - **Never force-merge or use --admin** without explicit user approval
-- **Always squash-merge** (clean history)
-- **Always use --auto** — let GitHub merge when CI passes, don't block the conversation
-- **Delete branch after merge** (keep repo clean)
+- Do not create PRs or merge branches from this compatibility skill in Phase 2.
+- Leave PR lifecycle work to Phase 3 skills after they exist.
+
+## Epic Workflow Compatibility
+
+`submit` is a compatibility wrapper. Phase 2 local epic orchestration stops at `ready-for-child-pr` and does not create PRs or merge branches. Phase 3 introduces `submit-ticket-pr` and `submit-epic-pr` for epic workflows.
+
+Auto-merge is not the default documented behavior.
+Do not create PRs or merge branches from this compatibility skill in Phase 2.
