@@ -35,6 +35,14 @@ Before defining tasks, map out which files will be created or modified and what 
 
 **Tech Stack:** [Key technologies]
 
+## Testing Contract
+
+- Unit: `<required|not-required> - <reason>`
+- Integration: `<required|not-required> - <reason>`
+- E2E: `<required|not-required> - <reason>`
+- Harness/setup: `<requirements>`
+- Critical flows: `<flows>`
+
 ---
 ```
 
@@ -79,6 +87,7 @@ git commit -m "feat: specific change"
 
 - A ticket may enter planning only after human spec signoff or explicit delegation.
 - Every implementation plan must include a Testing Contract with unit, integration, e2e, harness/setup, and critical-flow fields.
+- The Testing Contract must state whether unit, integration, and e2e tests are required, plus harness/setup requirements and critical flows.
 - Apply `ready-to-implement` only after clean plan review and dependency check.
 - Product or architecture ambiguity returns the ticket to the spec lane.
 
