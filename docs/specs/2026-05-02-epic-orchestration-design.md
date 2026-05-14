@@ -44,7 +44,7 @@ Hive should invoke `epic-orchestrator` with a compact, explicit context object:
 
 ```json
 {
-  "epicId": "PM-123",
+  "epicRef": { "kind": "ticket", "id": "PM-123" },
   "repoPath": "/absolute/path/to/repo",
   "pmSystem": "linear",
   "baseBranch": "main",
@@ -54,7 +54,11 @@ Hive should invoke `epic-orchestrator` with a compact, explicit context object:
 }
 ```
 
-Required fields are `epicId`, `repoPath`, `pmSystem`, and `mode`. `baseBranch` may be omitted only when the orchestrator can discover the repository default branch. `humanContact` may be omitted for manual sessions. `runLedgerPath` may be omitted when the ticketing system is the only state store.
+`epicRef` identifies the epic and its shape in the PM system. `kind` is `ticket` (a parent issue with sub-issues) or `project` (a PM project or initiative container holding issues). `id` is the ticket identifier for `ticket` epics and the project's stable slug for `project` epics. See "Epic Shapes" for how each kind is read and enumerated.
+
+The **epic slug** is `epicRef.id` — the ticket identifier or project slug. It is the single token used for the epic branch name, the run ledger path, and the `epicId` field of progress records, so all three stay stable and resume-correlatable regardless of epic shape. The epic slug equals `epicRef.id` for both kinds; branch-safe formatting is a presentation step, not a re-derivation.
+
+Required fields are `epicRef`, `repoPath`, `pmSystem`, and `mode`. `baseBranch` may be omitted only when the orchestrator can discover the repository default branch. `humanContact` may be omitted for manual sessions. `runLedgerPath` may be omitted when the ticketing system is the only state store; when present it should incorporate the epic slug.
 
 `epic-orchestrator` should emit structured progress records that Hive can persist or forward:
 
@@ -116,9 +120,9 @@ Phase skill contracts:
 
 | Skill | Trigger | Inputs | Outputs | Durable writes | Allowed delegation | Failure states |
 | --- | --- | --- | --- | --- | --- | --- |
-| `epic-orchestrator` | Hive starts or resumes work on an epic | epic id, repo path, PM system context | next state decision, dispatched phase work, epic progress summary | epic comments, child ticket comments, labels, PR links | phase skills, workers, reviewers, test runners | needs human spec input, blocked dependency, tool/auth failure |
-| `pickup-epic` | epic accepted for orchestration | epic id, repo path, base branch | epic branch and worktree | epic comment with branch/worktree | none by default | dirty worktree, missing base branch, branch conflict |
-| `assess-epic` | epic worktree exists or orchestration resumes | epic id, child tickets, artifact links, repo state | ticket maturity map, dependency map, ready work queue | epic summary comment or run ledger entry | reviewer/explorer workers for codebase dependency checks | missing ticket access, inconsistent ticket hierarchy |
+| `epic-orchestrator` | Hive starts or resumes work on an epic | epic reference, repo path, PM system context | next state decision, dispatched phase work, epic progress summary | epic comments, child ticket comments, labels, PR links | phase skills, workers, reviewers, test runners | needs human spec input, blocked dependency, tool/auth failure |
+| `pickup-epic` | epic accepted for orchestration | epic reference, repo path, base branch | epic branch and worktree named from the epic slug | epic comment with branch/worktree | none by default | dirty worktree, missing base branch, branch conflict, unresolvable epic slug |
+| `assess-epic` | epic worktree exists or orchestration resumes | epic reference, child tickets enumerated per epic shape, artifact links, repo state | ticket maturity map, dependency map, ready work queue | epic summary comment or run ledger entry | reviewer/explorer workers for codebase dependency checks | missing ticket access, child enumeration fails for the epic shape |
 | `mature-ticket` | child ticket lacks `spec-ready` or `ready-to-implement` | ticket id, current artifacts, dependency context | clean spec, clean plan when allowed, readiness labels | artifact links, reviewer evidence, labels, assumptions | spec drafter, spec reviewer, plan writer, plan reviewer | needs human spec input, unresolved dependency, reviewer findings not yet fixed |
 | `write-plan` | a ticket has `spec-ready` but no clean plan | clean spec, ticket id, dependency context, repo context | implementation plan with Testing Contract | plan artifact link, plan review evidence | plan writer and implementation-plan reviewer | product ambiguity, architecture ambiguity, dependency unavailable |
 | `pickup-ticket` | child ticket has `ready-to-implement` | ticket id, epic branch/worktree, repo path | child branch and worktree based on epic branch | ticket comment with branch/worktree | none by default | stale epic branch, branch conflict, dirty worktree |
@@ -128,7 +132,7 @@ Phase skill contracts:
 | `verify` | tests exist or completion/PR claims are about to be made | Testing Contract, repo command set, child worktree, changed files | fresh verification evidence for required test groups and broader checks | ticket comment with commands, outputs, failure classification | verifier/test runner, harness setup worker, fix worker when classification warrants | missing harness, test bug, implementation bug, environment issue, spec/plan mismatch |
 | `review-child-pr` | child PR is opened against epic branch | PR id, ticket id, spec, plan, diff | clean fresh-context review and local CI-equivalent evidence | PR comments, ticket comment, review/test evidence | code reviewers, fix workers, test runners | review findings, test failure, stale epic branch |
 | `submit-ticket-pr` | local implementation checks pass | child branch, epic branch, ticket id, evidence summary | child PR targeting epic branch; later merge when clean | PR body, ticket comment, final child status | PR reviewer, test runner, merge worker | PR creation failure, review/test failure, merge conflict |
-| `submit-epic-pr` | all child tickets are merged into epic branch | epic branch, base branch, child PR list, epic evidence | epic PR targeting main or master, left open | epic PR body, epic ticket summary | none after PR creation by default | incomplete child ticket, local quality gate failure, PR creation failure |
+| `submit-epic-pr` | all child tickets are merged into epic branch | epic branch, base branch, child PR list, epic evidence | epic PR targeting main or master, left open | epic PR body, epic summary | none after PR creation by default | incomplete child ticket, local quality gate failure, PR creation failure |
 | `quality-gate` | before child PR, before child merge when needed, before epic PR | repo instructions, changed files, test evidence, risk context | horizontal pass/fail evidence | ticket or PR comment with command evidence | security/review/test specialists | compliance issue, security concern, hygiene issue, missing verification |
 
 `quality-gate` should be a standalone skill. It may invoke or require evidence from `verify`, review, and test-related skills, but it owns the horizontal compliance/security/hygiene/regression checklist and produces its own pass/fail evidence.
@@ -213,6 +217,14 @@ Phase 4 acceptance criteria:
 - Add validation commands or scripts that check both skill trees contain the required skill names.
 - Bump plugin versions only if Phase 4 changes released workflow behavior; otherwise keep existing versions and update docs or scripts only.
 
+Phase 5 acceptance criteria:
+
+- Treat Phase 5 as the epic-reference contract release. It adds explicit support for `project`-shaped epics alongside `ticket`-shaped epics.
+- Replace the opaque `epicId` input with `epicRef` (`{ kind, id }`) in the Hive invocation contract, and thread the derived epic slug through branch naming, the run ledger path, and progress records.
+- Add the "Epic Shapes" contract and update `epic-orchestrator`, `pickup-epic`, and `assess-epic` in both the Claude and Codex skill trees to read and enumerate both epic shapes.
+- Narrow the epic-shaping Non-Goal so it no longer covers the consumption contract.
+- Bump both Claude and Codex `dodi-dev` plugin metadata to `0.9.0`. Patch releases (`0.8.1`, `0.8.2`) shipped between Phase 3 and Phase 5; the phase-plan numbers are minor-version milestones, and Phase 5 lands on `0.9.0` regardless of intervening patch releases.
+
 Each phase should have its own implementation plan, should be independently reviewable, and should leave the repo in a usable state.
 
 ## Ticket Readiness Labels
@@ -250,14 +262,26 @@ The orchestrator should reconstruct each child ticket's state from durable PM la
 | ready-to-merge-child | child branch is current with epic | clean review/test evidence after latest epic sync | merge commit or squash merge link; child ticket done comment | done | blocked if merge conflict requires spec or plan judgment |
 | done | child PR merged into epic | merged PR state | child ticket final status | done | no transition unless ticket is reopened |
 
+On a cold resume the `unassessed` row classifies each child ticket from durable evidence alone, in this precedence order:
+
+- `done` — child PR merged into the epic branch.
+- `in-pr` — an open child PR exists for the ticket branch.
+- `implementing` — a child branch or worktree exists with commits but no open PR.
+- `ready-to-implement` — the `ready-to-implement` label is present and no child branch exists yet.
+- `needs-plan` — `spec-ready` is present, `ready-to-implement` is absent, and no clean plan artifact is linked, or a plan artifact exists but `ready-to-implement` was withheld pending the dependency check.
+- `spec-ready` — `spec-ready` is present with a clean spec artifact linked.
+- `needs-spec` — no `spec-ready` label.
+
+Labels and artifact links are the primary signal; branch, worktree, and PR state disambiguate the implementation lane. The classification comment the orchestrator writes is the output of this step, not its input.
+
 Epic-level transitions:
 
 | Source state | Trigger | Required evidence | Durable writes | Next state | Fallback or error transition |
 | --- | --- | --- | --- | --- | --- |
-| epic-unassessed | orchestration starts | epic ticket and child tickets readable | epic assessment summary | epic-active | blocked if PM access fails |
+| epic-unassessed | orchestration starts | epic (ticket or project, per `epicRef`) and its child tickets readable | epic assessment summary | epic-active | blocked if PM access fails |
 | epic-active | at least one child is not done | current child state map | next-action summary | epic-active | blocked only if all next actions require human/tool intervention |
 | epic-ready-for-pr | all children are done | child PR links, latest main/master sync, epic quality gate evidence | epic readiness summary | epic-pr-open | returns to epic-active if a child reopens or sync introduces required fixes |
-| epic-pr-open | epic PR created | PR link targeting main or master | epic ticket PR comment | epic-pr-open | existing GitHub Actions and review workflows take over |
+| epic-pr-open | epic PR created | PR link targeting main or master | epic PR comment | epic-pr-open | existing GitHub Actions and review workflows take over |
 
 ## Demotion Rules
 
@@ -276,18 +300,30 @@ When a ticket must return to an earlier lane, the orchestrator must mutate durab
 - Preserve existing artifact links for audit history. Supersede them with new artifact links after revision rather than deleting old references.
 - Close or mark stale any open child PR only when continuing it would be misleading. Otherwise leave it open with a blocking comment until the revised spec or plan determines the next action.
 
+## Epic Shapes
+
+`epicRef.kind` determines how the orchestrator reads the epic and enumerates its children. Both shapes are first-class; the orchestrator must support both.
+
+| `kind` | Epic body | Child enumeration | Epic slug (branch id) |
+| --- | --- | --- | --- |
+| `ticket` | The epic ticket's description and comments | Sub-issues of the epic ticket | `epicRef.id` — the epic ticket identifier, e.g. `PM-123` |
+| `project` | The PM project's description and overview content | Issues belonging to the project | `epicRef.id` — the project's stable slug |
+
+For a `project` epic there is no parent ticket to "read" — the project description is the epic body, and the project's issue list is the child set. A `project` epic has no `PM-###` ticket id; its epic slug is the project slug, and that slug produces the deterministic, resume-stable `epic/<slug>` branch name.
+
+The orchestrator does not require a single canonical epic-authoring convention. It only requires that `epicRef.kind` correctly classifies the supplied epic so the right read and enumeration paths are used.
+
 ## Epic Intake
 
 The orchestrator starts by picking up an epic.
 
 Process:
 
-1. Identify the repository main branch, usually `main` or `master`.
-2. Create or switch to an epic branch from main.
-3. Create or switch to an epic worktree.
-4. Treat the epic worktree as the homebase for this orchestration run.
-5. Read the epic and all child tickets.
-6. Classify each child ticket by maturity:
+1. Resolve `epicRef` and derive the epic slug (see Epic Shapes).
+2. Run `pickup-epic` to create or switch to the epic branch and worktree from the base branch. Epic Intake does not re-implement branch or worktree creation; `pickup-epic` owns it.
+3. Treat the epic worktree as the homebase for this orchestration run.
+4. Read the epic body and enumerate child tickets per the epic's shape (see Epic Shapes).
+5. Classify each child ticket by maturity:
    - one-line concept or weak description
    - needs spec
    - spec-ready
@@ -296,8 +332,8 @@ Process:
    - already implementing
    - in PR
    - done
-7. Decide which ready tickets can be implemented now.
-8. Decide which unready tickets can be matured now.
+6. Decide which ready tickets can be implemented now.
+7. Decide which unready tickets can be matured now.
 
 The orchestrator may decide whether ready implementation work should be sequential or parallel. This decision should be based on the plans, dependency graph, expected file overlap, and codebase knowledge.
 
@@ -310,7 +346,7 @@ Process:
 1. Inspect the ticket and any existing artifacts.
 2. Draft a proposed spec, decision options, or focused questions.
 3. Require human signoff before entering the plan phase.
-4. Acceptable human responses include explicit approval or explicit delegation such as "good" or "don't care".
+4. Acceptable human responses include explicit approval or explicit delegation such as "good" or "don't care". A response is ambiguous when it neither approves a direction nor delegates the open choices; on an ambiguous response, re-ask with the specific decision needed rather than guessing.
 5. If the human delegates a choice, record the resulting assumption in the spec or ticket.
 6. Finalize the spec.
 7. Run a fresh-context spec review loop until the final round is clean.
@@ -365,7 +401,7 @@ epic branch -> main/master
 
 The default invariant is one child branch per child ticket. A human may explicitly override this for rare cases, such as bundling tickets or merging directly into the epic branch.
 
-`pickup-epic` should branch from main or master. `pickup-ticket` should branch from the epic branch. Before `pickup-ticket`, the epic branch should be current with already-merged child PRs.
+`pickup-epic` should branch from main or master, naming the epic branch `epic/<epic-slug>` where the epic slug is derived from `epicRef` — the ticket identifier for `ticket` epics, the project slug for `project` epics (see Epic Shapes). `pickup-ticket` should branch from the epic branch. Before `pickup-ticket`, the epic branch should be current with already-merged child PRs.
 
 ## Implementation Lane
 
@@ -545,12 +581,12 @@ Codex plugin metadata should include:
 }
 ```
 
-Versioning rule: Phase 1 creates the Codex plugin at `0.6.0` and bumps the Claude `dodi-dev` plugin metadata from `0.5.0` to `0.6.0`. Phase 2 bumps both runtimes to `0.7.0`. Phase 3 bumps both runtimes to `0.8.0`. Later workflow behavior changes should bump both Claude and Codex `dodi-dev` plugin versions in the same change unless the change is explicitly runtime-specific and does not affect shared workflow policy.
+Versioning rule: Phase 1 creates the Codex plugin at `0.6.0` and bumps the Claude `dodi-dev` plugin metadata from `0.5.0` to `0.6.0`. Phase 2 bumps both runtimes to `0.7.0`. Phase 3 bumps both runtimes to `0.8.0`. Phase 5 bumps both runtimes to `0.9.0`. Later workflow behavior changes should bump both Claude and Codex `dodi-dev` plugin versions in the same change unless the change is explicitly runtime-specific and does not affect shared workflow policy.
 
 ## Non-Goals
 
 - Define bugfix or hot patch workflows.
-- Redesign how epics and child tickets are originally shaped.
+- Define or enforce a single canonical epic-authoring convention in the PM tool. The orchestrator's *consumption* contract for each supported epic shape — `ticket` and `project` — is defined; see Epic Shapes.
 - Implement the Hive runtime state machine.
 - Configure GitHub Actions for every epic branch.
 - Auto-merge epic PRs into main or master.
@@ -560,6 +596,7 @@ Versioning rule: Phase 1 creates the Codex plugin at `0.6.0` and bumps the Claud
 Use these defaults unless a repository-specific instruction overrides them:
 
 - Linear labels: `spec-ready` and `ready-to-implement`.
+- Epic slug: the ticket identifier for `ticket` epics, the project slug for `project` epics. Used for the epic branch name, run ledger path, and progress record `epicId`.
 - Spec artifacts: `docs/specs/YYYY-MM-DD-<ticket-or-epic-slug>-design.md`.
 - Plan artifacts: `docs/plans/YYYY-MM-DD-<ticket-or-epic-slug>-implementation.md`.
 - Ticket comments: include artifact links, reviewer type and result, verification evidence, dependency state, PR links, and current next action.

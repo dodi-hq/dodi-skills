@@ -11,12 +11,12 @@ Classify the epic and child tickets from durable PM and repository state. This s
 
 | Trigger | Inputs | Outputs | Durable writes | Allowed delegation | Failure states |
 | --- | --- | --- | --- | --- | --- |
-| epic worktree exists or orchestration resumes | epic id, child ticket list, repo state, artifact links | ticket maturity map, dependency map, ready work queue, maturity work queue | epic assessment comment or run ledger entry | explorer/reviewer workers for dependency checks only | ticket access failure, inconsistent child hierarchy, missing repo |
+| epic worktree exists or orchestration resumes | epic reference, child ticket list enumerated per epic shape, repo state, artifact links | ticket maturity map, dependency map, ready work queue, maturity work queue | epic assessment comment or run ledger entry | explorer/reviewer workers for dependency checks only | ticket access failure, child enumeration fails for the epic shape, missing repo |
 
 ## Inputs
 
-- epic id
-- child ticket list
+- epic reference (`epicRef`: `{ kind, id }`)
+- child ticket list — enumerated per epic shape: sub-issues of a `ticket` epic, or issues belonging to a `project` epic
 - repo state
 - artifact links
 - existing labels and comments
@@ -24,7 +24,7 @@ Classify the epic and child tickets from durable PM and repository state. This s
 
 ## Process
 
-- Read the epic and child tickets from the PM system.
+- Read the epic body and enumerate child tickets per the epic shape (`epicRef.kind`): sub-issues of a `ticket` epic, or issues belonging to a `project` epic.
 - Inspect labels, comments, artifact links, branches, and worktrees.
 - Classify each child using the state transition table through ready-for-child-pr only.
 - Build ready work and maturity work queues.
@@ -40,7 +40,7 @@ Classify the epic and child tickets from durable PM and repository state. This s
 
 ## Stop Conditions
 
-- Stop on ticket access failure, inconsistent child hierarchy, or missing repository context.
+- Stop on ticket access failure, child enumeration failure for the epic shape, or missing repository context.
 - Stop when a child ticket needs human spec input.
 - Stop when dependencies are unclear enough to affect sequencing.
 - Stop at `ready-for-child-pr` for locally completed tickets.

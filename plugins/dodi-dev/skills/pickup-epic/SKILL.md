@@ -11,11 +11,11 @@ Prepare the epic branch and epic worktree. This skill performs branch setup only
 
 | Trigger | Inputs | Outputs | Durable writes | Allowed delegation | Failure states |
 | --- | --- | --- | --- | --- | --- |
-| epic accepted for orchestration | epic id, repo path, optional base branch | epic branch and epic worktree | epic comment with branch/worktree paths and base branch | none by default | dirty worktree, missing base branch, branch conflict, pull failure |
+| epic accepted for orchestration | epic reference, repo path, optional base branch | epic branch and epic worktree named from the epic slug | epic comment with branch/worktree paths and base branch | none by default | dirty worktree, missing base branch, branch conflict, pull failure, unresolvable epic slug |
 
 ## Inputs
 
-- epic id
+- epic reference (`epicRef`: `{ kind, id }`) — the epic slug is `epicRef.id` (the ticket identifier for `ticket` epics, the project slug for `project` epics)
 - repo path
 - optional base branch
 - optional epic branch name
@@ -26,13 +26,13 @@ Prepare the epic branch and epic worktree. This skill performs branch setup only
 - Verify the current repository worktree is clean before changing branches.
 - Discover the base branch from input or origin default branch.
 - Pull the latest base branch before creating or refreshing the epic branch.
-- Create or switch to the epic branch and epic worktree.
+- Create or switch to the epic branch `epic/<epic-slug>` (epic slug = `epicRef.id`) and its epic worktree.
 - Do not create PRs or merge branches.
 - Report `ready-for-child-pr` only as a Phase 2 boundary state when downstream local checks eventually reach that state.
 
 ## Evidence
 
-- Record epic id, repo path, base branch, epic branch, and epic worktree.
+- Record the epic reference, epic slug, repo path, base branch, epic branch, and epic worktree.
 - Record branch creation or switch output.
 - Record the pull result from the base branch.
 - The orchestrator may not advance state from a worker success claim alone. Verify durable PM labels, PM comments, artifact links, branch/worktree state, commits, or command output before advancing.

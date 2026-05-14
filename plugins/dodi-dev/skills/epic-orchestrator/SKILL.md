@@ -11,11 +11,11 @@ Orchestrate one feature epic from intake through local readiness for child PR cr
 
 | Trigger | Inputs | Outputs | Durable writes | Allowed delegation | Failure states |
 | --- | --- | --- | --- | --- | --- |
-| Hive starts or resumes work on an epic | epic id, repo path, PM system context | next state decision, dispatched phase work, epic progress summary | epic comments, child ticket comments, labels, artifact links | phase skills, workers, reviewers, test runners | needs human spec input, blocked dependency, tool/auth failure |
+| Hive starts or resumes work on an epic | epic reference, repo path, PM system context | next state decision, dispatched phase work, epic progress summary | epic comments, child ticket comments, labels, artifact links | phase skills, workers, reviewers, test runners | needs human spec input, blocked dependency, tool/auth failure |
 
 ## Inputs
 
-- `epicId`
+- `epicRef`: `{ kind, id }` — identifies the epic and its shape. `kind` is `ticket` or `project`; `id` is the ticket identifier or project slug. The **epic slug** equals `epicRef.id` and names the epic branch, run ledger path, and progress-record `epicId`. See "Epic Shapes" in the design doc.
 - `repoPath`
 - `pmSystem`
 - `mode`: `start` or `start-or-resume`
@@ -32,7 +32,7 @@ Orchestrate one feature epic from intake through local readiness for child PR cr
 
 ## State Reconstruction
 
-1. Read the epic and child tickets from the PM system.
+1. Read the epic body and enumerate child tickets per the epic shape (`epicRef.kind` — see Epic Shapes in the design doc).
 2. Read branch and worktree state.
 3. Read the local ledger if present.
 4. Prefer PM labels, PM comments, artifact links, and Git state over local ledger entries when they disagree.
@@ -93,7 +93,7 @@ Epic PR transitions:
 | Source state | Trigger | Required evidence | Durable writes | Next state | Fallback or error transition |
 | --- | --- | --- | --- | --- | --- |
 | epic-ready-for-pr | all children are done | child PR links, latest main/master sync, epic quality gate evidence | epic readiness summary | epic-pr-open | returns to epic-active if a child reopens or sync introduces required fixes |
-| epic-pr-open | epic PR created | PR link targeting main or master | epic ticket PR comment | epic-pr-open | existing GitHub Actions and review workflows take over |
+| epic-pr-open | epic PR created | PR link targeting main or master | epic PR comment | epic-pr-open | existing GitHub Actions and review workflows take over |
 
 Do not auto-merge epic PRs. Existing GitHub Actions and review workflows take over after `epic-pr-open`.
 
@@ -124,4 +124,4 @@ Durable PM state is the source of truth.
 
 ## Progress Record
 
-Emit progress records with `epicId`, optional `ticketId`, `state`, `action`, `evidence`, `nextAction`, and `needsHuman`.
+Emit progress records with `epicId` (the epic slug, `epicRef.id`), optional `ticketId`, `state`, `action`, `evidence`, `nextAction`, and `needsHuman`.
