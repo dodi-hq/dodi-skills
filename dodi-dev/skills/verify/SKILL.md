@@ -49,3 +49,4 @@ Run the command. Read the output. THEN claim the result.
 - Classify failures as test bug, implementation bug, environment/harness issue, or spec/plan mismatch.
 - Fix the right thing; do not default to editing tests.
 - Return to the spec lane when verification exposes a spec/plan mismatch.
+- For an epic full regression run before the epic PR, cover the union of all merged children's required test groups on the integrated epic head (after the latest main/master sync), not just one ticket's contract. Record the commands, exit codes, and the head SHA the suite ran against.

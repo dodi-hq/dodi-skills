@@ -256,7 +256,7 @@ Epic-level transitions:
 | --- | --- | --- | --- | --- | --- |
 | epic-unassessed | orchestration starts | epic ticket and child tickets readable | epic assessment summary | epic-active | blocked if PM access fails |
 | epic-active | at least one child is not done | current child state map | next-action summary | epic-active | blocked only if all next actions require human/tool intervention |
-| epic-ready-for-pr | all children are done | child PR links, latest main/master sync, epic quality gate evidence | epic readiness summary | epic-pr-open | returns to epic-active if a child reopens or sync introduces required fixes |
+| epic-ready-for-pr | all children are done | child PR links, latest main/master sync, full regression suite green on integrated epic head, epic quality gate evidence | epic readiness summary | epic-pr-open | returns to epic-active if a child reopens, sync introduces required fixes, or the full regression suite fails |
 | epic-pr-open | epic PR created | PR link targeting main or master | epic ticket PR comment | epic-pr-open | existing GitHub Actions and review workflows take over |
 
 ## Demotion Rules
@@ -434,18 +434,20 @@ When all child tickets under the epic are complete and merged into the epic bran
 
 1. Confirm all required child ticket statuses are done.
 2. Update the epic branch with the latest main or master.
-3. Run an epic-level local quality gate.
-4. Prepare an epic readiness summary:
+3. Run the full regression suite on the integrated epic head with `verify`: all required unit, integration, and e2e groups across the merged children must pass. This is a hard gate. Child PRs prove each ticket against the epic branch at its own merge time, but only this run proves the final integrated head — including the latest sync — is green.
+4. Run an epic-level local quality gate.
+5. Prepare an epic readiness summary:
    - child tickets completed
    - child PR links
+   - full regression evidence (commands, exit codes, head SHA, run post-sync)
    - local quality gate evidence
    - known risks
    - migrations or release notes
    - test coverage summary
-5. Run `submit-epic-pr` from the epic branch to main or master.
-6. Leave the epic PR open.
+6. Run `submit-epic-pr` from the epic branch to main or master.
+7. Leave the epic PR open.
 
-For epic PRs targeting main or master, the existing GitHub Actions flow should run fresh-context code review and CI. The skills should not auto-merge epic PRs.
+Treat GitHub Actions CI as the final safety gate before production, not the first line of defense. A full regression run can exceed an hour; it exists to catch true exceptions, not first-order breakage that a local run would surface. Do not open an epic PR on a red or untested integrated branch and leave downstream CI to discover it. For epic PRs targeting main or master, the existing GitHub Actions flow should run fresh-context code review and CI. The skills should not auto-merge epic PRs.
 
 ## Submit Policy
 

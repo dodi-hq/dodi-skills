@@ -77,7 +77,7 @@ Allowed Phase 3 next actions:
 - Run `review-child-pr`.
 - Run `submit-epic-pr`.
 
-When every child ticket is `done`, transition the epic to `epic-ready-for-pr` and invoke `submit-epic-pr` after the epic readiness evidence is present.
+When every child ticket is `done`, transition the epic to `epic-ready-for-pr` and invoke `submit-epic-pr` after the epic readiness evidence is present. Epic readiness evidence must include a green full regression run on the integrated epic head, after the latest main/master sync; `submit-epic-pr` performs this run as a hard gate. Child PRs prove each ticket individually — only this run proves the merged children work together. Treat downstream GitHub Actions CI as the final safety gate before production, not the first line of defense; do not open the epic PR on a red or untested integrated branch.
 
 Child PR transitions:
 
@@ -92,7 +92,7 @@ Epic PR transitions:
 
 | Source state | Trigger | Required evidence | Durable writes | Next state | Fallback or error transition |
 | --- | --- | --- | --- | --- | --- |
-| epic-ready-for-pr | all children are done | child PR links, latest main/master sync, epic quality gate evidence | epic readiness summary | epic-pr-open | returns to epic-active if a child reopens or sync introduces required fixes |
+| epic-ready-for-pr | all children are done | child PR links, latest main/master sync, full regression suite green on integrated epic head, epic quality gate evidence | epic readiness summary | epic-pr-open | returns to epic-active if a child reopens, sync introduces required fixes, or the full regression suite fails |
 | epic-pr-open | epic PR created | PR link targeting main or master | epic ticket PR comment | epic-pr-open | existing GitHub Actions and review workflows take over |
 
 Do not auto-merge epic PRs. Existing GitHub Actions and review workflows take over after `epic-pr-open`.

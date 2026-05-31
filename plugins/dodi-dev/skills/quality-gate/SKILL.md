@@ -75,5 +75,6 @@ Epic PR gate:
 - Require all child tickets to be done.
 - Require child PR links.
 - Require latest main/master sync evidence.
+- Require full regression evidence from `verify` run on the current epic head after the latest sync: all required unit, integration, and e2e groups green. Aggregated per-child evidence does not satisfy this gate.
 - Require an epic readiness summary.
 - Do not merge or auto-merge the epic PR.
