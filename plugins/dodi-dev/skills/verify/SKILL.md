@@ -1,6 +1,7 @@
 ---
 name: verify
 description: Use before any completion claim, commit, or PR — requires running verification commands and confirming output before making success claims
+model: sonnet
 ---
 
 # Verify
@@ -40,6 +41,10 @@ If you catch yourself thinking any of these, run the verification:
 - "Just this once"
 
 Run the command. Read the output. THEN claim the result.
+
+## Runner Delegation
+
+Dispatch test execution to test-runner workers (see test-runner-prompt.md), one per test group, instead of running suites in the main loop — suite output floods context and blocks everything else. The gate is preserved: each runner returns a digest with commands, exit codes, failing test names, and a log path, and you claim results only from that evidence. A runner's "passed" without commands + exit codes is a worker success claim — reject it. Quick read-only checks (`git diff`, single-file inspection) stay in the main loop.
 
 ## Epic Orchestration Verification Rules
 

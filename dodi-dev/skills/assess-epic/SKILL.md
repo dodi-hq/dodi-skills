@@ -1,6 +1,7 @@
 ---
 name: assess-epic
 description: Use when an epic worktree exists and orchestration needs to classify child tickets, dependencies, readiness, and blockers
+model: haiku
 ---
 
 # Assess Epic

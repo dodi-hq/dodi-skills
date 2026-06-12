@@ -1,6 +1,7 @@
 ---
 name: pickup-epic
 description: Use when epic orchestration needs to create or resume the epic branch and worktree from the repository base branch
+model: haiku
 ---
 
 # Pickup Epic

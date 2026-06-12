@@ -1,6 +1,7 @@
 ---
 name: review
 description: Use after implementation is complete and before creating a PR — agent-driven code review checking spec compliance, code quality, security, and regression risk
+model: sonnet
 ---
 
 # Review

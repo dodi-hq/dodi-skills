@@ -1,6 +1,7 @@
 ---
 name: implement
 description: Use when executing an implementation plan — dispatches subagent per task with self-review, verification along the way, and commits
+model: sonnet
 ---
 
 # Implement
@@ -20,9 +21,11 @@ Execute a plan by dispatching a fresh subagent per task. Each subagent implement
 
 ## Model Selection
 
-- **Mechanical tasks** (1-2 files, clear spec): use a fast model
-- **Integration tasks** (multi-file, pattern matching): use standard model
-- **Architecture/judgment tasks**: use most capable model
+Default is `model: sonnet` (pinned in implementer-prompt.md). Adjust per task:
+
+- **Mechanical tasks** (1-2 files, clear spec): `model: haiku`
+- **Integration tasks** (multi-file, pattern matching): `model: sonnet`
+- **Architecture/judgment tasks**: `model: opus` — but in the epic lane, judgment surprises demote to the spec lane instead of escalating the model
 
 ## Handling Implementer Status
 

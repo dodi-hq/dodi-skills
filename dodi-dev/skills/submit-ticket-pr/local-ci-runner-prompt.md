@@ -1,5 +1,7 @@
 # Local CI Runner Prompt
 
+Dispatch with the Agent tool, `model: haiku`.
+
 Run the repo's CI-equivalent checks for a child PR targeting an epic branch.
 
 Inputs:
@@ -19,3 +21,5 @@ Responsibilities:
 - report commands, exit codes, and failure classification
 
 Do not skip required checks because a harness is absent. Set up the harness or report a concrete blocker.
+
+Return a digest only: commands, exit codes, failing test names, and log file paths. Never paste raw logs or full test output into your report.

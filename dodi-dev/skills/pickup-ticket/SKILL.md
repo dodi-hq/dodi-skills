@@ -1,6 +1,7 @@
 ---
 name: pickup-ticket
 description: Use when a child ticket is ready to implement and needs a child branch and worktree created from the epic branch
+model: haiku
 ---
 
 # Pickup Ticket

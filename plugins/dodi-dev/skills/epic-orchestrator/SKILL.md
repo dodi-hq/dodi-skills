@@ -1,6 +1,7 @@
 ---
 name: epic-orchestrator
 description: Top-level local epic workflow orchestrator; dispatches phase skills and workers without implementing, reviewing, or testing directly
+model: haiku
 ---
 
 # Epic Orchestrator
@@ -45,6 +46,14 @@ Orchestrate one feature epic from intake through local readiness for child PR cr
 3. Dispatch the owning phase skill or worker.
 4. Verify evidence before advancing state.
 5. In Phase 3, invoke `submit-ticket-pr` when a child reaches `ready-for-child-pr`.
+
+## Delegation
+
+The main loop routes, dispatches, and advances state — nothing else. Bulk reads go to read-only workers so the orchestrator's context holds state maps and digests, never raw tickets, diffs, or logs:
+
+- **State reconstruction**: dispatch a state-reader worker (`state-reader-prompt.md`) and consume its state map instead of reading the epic, child tickets, and worktrees directly.
+- **Evidence verification**: dispatch an evidence-checker worker (`evidence-checker-prompt.md`) and advance only on its citations. Fresh-context verification is independent of the worker that claimed success.
+- Read-only workers may run in parallel. State-advancing actions stay one at a time.
 
 ## Allowed Next Actions
 

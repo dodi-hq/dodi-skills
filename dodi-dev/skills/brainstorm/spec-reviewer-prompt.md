@@ -3,7 +3,7 @@
 Dispatch as a subagent after writing the spec document.
 
 ```
-Agent tool (general-purpose):
+Agent tool (general-purpose, model: opus):
   description: "Review spec document"
   prompt: |
     You are a spec document reviewer. Verify this spec is complete and ready for planning.

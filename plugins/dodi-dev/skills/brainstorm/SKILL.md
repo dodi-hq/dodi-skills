@@ -11,7 +11,7 @@ Do NOT write code, scaffold, or invoke implementation skills until the user appr
 
 ## Process
 
-1. **Explore context** — check files, docs, recent commits
+1. **Explore context** — dispatch parallel background Explore subagents for files, docs, and recent commits; ask the first clarifying question while they run. Keep the main loop in dialogue — don't read 40 files between user messages.
 2. **Ask clarifying questions** — one at a time, prefer multiple choice
 3. **Propose 2-3 approaches** — with trade-offs and your recommendation
 4. **Present design** — section by section, get approval incrementally

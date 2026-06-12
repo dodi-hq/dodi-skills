@@ -137,6 +137,11 @@ git commit -m "feat: specific change"
 - Apply `ready-to-implement` only after clean plan review and dependency check.
 - Product or architecture ambiguity returns the ticket to the spec lane.
 
+## Drafting Delegation
+
+- **Interactive sessions:** draft the plan in the main loop — the dialogue context is the input.
+- **Autonomous epic lane** (entered via `mature-ticket`): delegate drafting to a plan-writer subagent (see plan-writer-prompt.md); the main loop only runs the review loop on the returned draft.
+
 ## Plan Review Loop
 
 After completing each chunk (≤1000 lines):

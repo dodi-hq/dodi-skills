@@ -1,6 +1,7 @@
 ---
 name: quality-gate
 description: Local release gate for dodi-skills metadata, skill files, verification evidence, and workflow risk checks
+model: haiku
 ---
 
 # Quality Gate
@@ -30,14 +31,19 @@ Run before submitting or releasing skill changes. Validate plugin metadata, veri
 3. Verify supporting prompt files exist in both trees:
 
    ```bash
-   test -f dodi-dev/skills/brainstorm/spec-reviewer-prompt.md
-   test -f dodi-dev/skills/implement/implementer-prompt.md
-   test -f dodi-dev/skills/review/review-prompt.md
-   test -f dodi-dev/skills/write-plan/plan-reviewer-prompt.md
-   test -f plugins/dodi-dev/skills/brainstorm/spec-reviewer-prompt.md
-   test -f plugins/dodi-dev/skills/implement/implementer-prompt.md
-   test -f plugins/dodi-dev/skills/review/review-prompt.md
-   test -f plugins/dodi-dev/skills/write-plan/plan-reviewer-prompt.md
+   for tree in dodi-dev plugins/dodi-dev; do
+     test -f "$tree/skills/brainstorm/spec-reviewer-prompt.md"
+     test -f "$tree/skills/implement/implementer-prompt.md"
+     test -f "$tree/skills/review/review-prompt.md"
+     test -f "$tree/skills/write-plan/plan-reviewer-prompt.md"
+     test -f "$tree/skills/write-plan/plan-writer-prompt.md"
+     test -f "$tree/skills/epic-orchestrator/state-reader-prompt.md"
+     test -f "$tree/skills/epic-orchestrator/evidence-checker-prompt.md"
+     test -f "$tree/skills/mature-ticket/spec-drafter-prompt.md"
+     test -f "$tree/skills/verify/test-runner-prompt.md"
+     test -f "$tree/skills/review-child-pr/pr-reviewer-prompt.md"
+     test -f "$tree/skills/submit-ticket-pr/local-ci-runner-prompt.md"
+   done
    ```
 
 4. Verify the Codex skill tree does not use symlinks:

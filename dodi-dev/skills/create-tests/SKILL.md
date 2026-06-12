@@ -1,6 +1,7 @@
 ---
 name: create-tests
 description: Use when implementation review is clean and tests must be created or completed according to the ticket Testing Contract
+model: sonnet
 ---
 
 # Create Tests

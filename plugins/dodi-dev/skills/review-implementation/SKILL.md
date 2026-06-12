@@ -1,6 +1,7 @@
 ---
 name: review-implementation
 description: Use when child ticket implementation is complete and needs fresh-context pre-PR review before tests and local readiness
+model: sonnet
 ---
 
 # Review Implementation

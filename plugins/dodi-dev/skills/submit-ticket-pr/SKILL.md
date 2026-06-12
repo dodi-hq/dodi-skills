@@ -1,6 +1,7 @@
 ---
 name: submit-ticket-pr
 description: Open a child ticket PR against the epic branch and coordinate local review, CI-equivalent checks, and merge into the epic branch
+model: sonnet
 ---
 
 # Submit Ticket PR

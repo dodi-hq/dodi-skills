@@ -3,7 +3,7 @@
 Dispatch as a subagent after implementation is complete.
 
 ```
-Agent tool (general-purpose):
+Agent tool (general-purpose, model: opus):
   description: "Code review for [feature/ticket]"
   prompt: |
     You are reviewing a completed implementation before PR creation.

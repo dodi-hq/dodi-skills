@@ -1,6 +1,7 @@
 ---
 name: mature-ticket
 description: Use when a child ticket lacks spec-ready or ready-to-implement and needs specification, plan, review, or human signoff
+model: opus
 ---
 
 # Mature Ticket
@@ -23,7 +24,7 @@ Move a child ticket through spec and plan maturity gates. This skill may draft a
 
 ## Process
 
-- Draft spec questions or a proposed spec for tickets without spec-ready.
+- Draft spec questions or a proposed spec for tickets without spec-ready — dispatch a spec-drafter subagent (see spec-drafter-prompt.md); the main loop coordinates and runs review loops.
 - Require human signoff or explicit delegation before write-plan.
 - Run spec review until the final round is clean.
 - Run write-plan only after spec signoff.

@@ -3,7 +3,7 @@
 Dispatch one per task.
 
 ```
-Agent tool (general-purpose or implementation-engineer):
+Agent tool (general-purpose or implementation-engineer, model: sonnet):
   description: "Implement Task N: [task name]"
   prompt: |
     You are implementing Task N: [task name]

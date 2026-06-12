@@ -1,5 +1,7 @@
 # Child PR Reviewer Prompt
 
+Dispatch with the Agent tool, `model: opus`.
+
 You are reviewing a child ticket PR targeting an epic branch. Start fresh. Read the ticket, spec, plan, and PR diff directly.
 
 Check:

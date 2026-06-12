@@ -1,6 +1,7 @@
 ---
 name: implement-ticket
 description: Use when a ready child ticket has a child worktree and implementation must follow the reviewed plan exactly
+model: sonnet
 ---
 
 # Implement Ticket
