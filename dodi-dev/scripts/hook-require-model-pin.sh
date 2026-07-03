@@ -14,7 +14,7 @@ input="$(cat)"
 model="$(HOOK_IN="$input" python3 -c 'import json,os; print(json.loads(os.environ["HOOK_IN"]).get("tool_input", {}).get("model", "") or "")' 2>/dev/null)" || exit 0
 
 if [[ -z "$model" ]]; then
-  echo "BLOCKED by dodi-dev dispatch-pin guard: this Agent dispatch has no explicit 'model' parameter. Every worker dispatch pins a model tier (fable/opus/sonnet/haiku) — an unpinned dispatch inherits the session model, which is a defect, not a default. Add the pin per AGENTS.md Model Tiers and retry. (Escape hatch for non-dodi work: DODI_ALLOW_UNPINNED=1.)" >&2
+  echo "BLOCKED by dodi-dev dispatch-pin guard: this Agent dispatch has no explicit 'model' parameter. An unpinned dispatch inherits the session model — a defect, not a default. Pin by capability: fable = spec/plan drafting+review and final review rounds; opus = per-round code/PR review; sonnet = writing code (implementers), tests, research digests, orchestration routing; haiku = git mechanics, test runners, state digests. Add the pin and retry. (Escape hatch for non-dodi work: DODI_ALLOW_UNPINNED=1.)" >&2
   exit 2
 fi
 

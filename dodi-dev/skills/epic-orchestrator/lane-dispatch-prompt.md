@@ -8,7 +8,7 @@ Inputs:
 
 - child ticket id
 - clean spec path and clean plan path (with Testing Contract)
-- the epic's decision register canon summary (context only — you follow your reviewed plan exactly; a perceived conflict between plan and canon is a demote-to-spec surprise, never a mid-lane redesign)
+- the epic's decision register canon summary (context only — you follow your reviewed plan exactly; a perceived conflict between plan and canon is a demote-to-spec surprise, never a mid-lane redesign). Pre-register epics have no canon summary: proceed and note its absence in your first checkpoint; absence is not a blocker
 - epic branch and repo path
 - last checkpoint comment link, if resuming
 - repo conventions (CLAUDE.md / AGENTS.md)
@@ -27,8 +27,8 @@ Checkpoint mechanics:
 Awaiting your own workers:
 
 - You are a subagent; completion notifications from your workers (implementers, reviewers, test runners) do not reliably reach you. Never yield the turn to "wait."
-- On Claude Code: poll the worker's `output_file` inside a single long-timeout Bash call until its mtime has been stable for more than 60 seconds, then read only the final JSONL entries for the result. Never read the whole transcript.
-- Every worker dispatch pins its model tier explicitly per the skill's step definitions.
+- On Claude Code, run the script — do not re-derive the mechanism: `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` (polls until mtime is stable >60s, prints only the final JSONL entries). Never read the whole transcript.
+- Every worker dispatch pins its model tier explicitly per the skill's step definitions (implementers default `sonnet` per implement/implementer-prompt.md).
 
 Output (final message):
 

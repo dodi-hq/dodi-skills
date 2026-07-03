@@ -18,7 +18,7 @@ Dispatched by `epic-orchestrator` as a worker (Agent tool, `model: sonnet`), one
 
 ## Internal Sequence
 
-Each step is the named phase skill's process, executed inside this lane with the same worker dispatch discipline (implementers per task, fresh-context reviewers with `opus` rounds and a `fable` final round, `haiku` test runners):
+Each step is the named phase skill's process, executed inside this lane with the same worker dispatch discipline (implementers `model: sonnet` per task — the default pinned in `implement/implementer-prompt.md`, with per-task adjustments per `implement/SKILL.md`; fresh-context reviewers with `opus` rounds and a `fable` final round; `haiku` test runners):
 
 1. `pickup-ticket` — create the child branch and worktree from the current epic branch.
 2. `implement-ticket` — implementation workers, exact plan adherence.
@@ -55,7 +55,7 @@ A re-dispatched lane reconstructs its position from durable state before doing a
 
 ## Awaiting Workers
 
-The lane is itself a subagent, so completion notifications from its own workers (implementers, reviewers, test runners) do not reliably arrive — never yield the turn to "wait" for one; that is a stall, not a wait. On Claude Code: after dispatching, poll the worker's `output_file` from inside a single long-timeout Bash call until the file's mtime has been stable for more than 60 seconds, then read only the final JSONL entries for the worker's result. Never read the whole transcript file — it overflows the lane's context.
+The lane is itself a subagent, so completion notifications from its own workers (implementers, reviewers, test runners) do not reliably arrive — never yield the turn to "wait" for one; that is a stall, not a wait. On Claude Code, await each worker via `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` — the script owns the polling mechanics and prints only the final JSONL entries. Never read the whole transcript file — it overflows the lane's context.
 
 ## Rules
 

@@ -25,12 +25,13 @@ Move a child ticket through spec and plan maturity gates under the two-gate mode
 
 The `model: fable` frontmatter pin covers this skill's main loop only — it never flows into worker dispatches. Every dispatch carries its own explicit pin: spec drafter, spec/plan reviewers, and plan writer carry Frontier pins in their prompt templates; research and read-and-digest workers (external/integration API docs, test-harness orientation, codebase exploration) pin Standard tier (`model: sonnet` on Claude Code). A dispatch without a pin inherits `fable` — that is a defect, not a default.
 
-When this skill runs as a worker itself (dispatched by the tick or an orchestrator session), completion notifications from its own dispatches (drafter, reviewers, research workers) do not reliably arrive. Never yield to "wait": on Claude Code, poll the dispatched worker's `output_file` in a single long-timeout Bash call until its mtime is stable for more than 60 seconds, then read only the final JSONL entries — never the whole transcript.
+When this skill runs as a worker itself (dispatched by the tick or an orchestrator session), completion notifications from its own dispatches (drafter, reviewers, research workers) do not reliably arrive. Never yield to "wait": on Claude Code, await each dispatch via `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` — the script owns the polling mechanics; never read the whole transcript.
 
 ## Process
 
 - Draft the spec — dispatch a spec-drafter subagent (see spec-drafter-prompt.md); the main loop coordinates and runs review loops. Specs lead with the scannable header (`## TL;DR` + `## Key Points`).
 - The epic's **decision register canon summary** (pinned comment on the epic ticket) is required drafter and reviewer input: canonical decisions from already-merged siblings bind this spec. A spec that contradicts a canon decision is a review finding.
+- **Pre-register epics** (no canon summary exists — the epic predates the register): proceed and note its absence in the artifact; absence is not a blocker and does not trigger a retroactive review. The epic's first coherence review seeds the register.
 - Run spec review until the final round is clean; a missing or stale scannable header is a review finding.
 - Run write-plan after the spec is clean (and signed off, where the Signoff Model requires it).
 - Run plan review until the final round is clean.
