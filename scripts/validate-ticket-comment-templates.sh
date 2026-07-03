@@ -25,7 +25,7 @@ check_count_at_least() {
   fi
 }
 
-for file in epic-assessment spec-ready ready-to-implement demotion child-pr-ready epic-pr-ready; do
+for file in epic-assessment spec-ready ready-to-implement demotion child-pr-ready epic-pr-ready epic-signoff-request; do
   test -f "templates/ticket-comments/${file}.md"
 done
 
@@ -93,11 +93,19 @@ check_heading templates/ticket-comments/child-pr-ready.md "Evidence"
 check_heading templates/ticket-comments/child-pr-ready.md "Local Checks"
 check_heading templates/ticket-comments/child-pr-ready.md "Next Action"
 
+check_heading templates/ticket-comments/epic-pr-ready.md "TL;DR"
+check_heading templates/ticket-comments/epic-pr-ready.md "Key Points"
 check_heading templates/ticket-comments/epic-pr-ready.md "Completed Children"
 check_heading templates/ticket-comments/epic-pr-ready.md "Child PR Links"
 check_heading templates/ticket-comments/epic-pr-ready.md "Quality Gate Evidence"
 check_heading templates/ticket-comments/epic-pr-ready.md "Known Risks"
 check_heading templates/ticket-comments/epic-pr-ready.md "Migrations Or Release Notes"
 check_heading templates/ticket-comments/epic-pr-ready.md "Test Coverage Summary"
+
+check_heading templates/ticket-comments/epic-signoff-request.md "TL;DR"
+check_heading templates/ticket-comments/epic-signoff-request.md "Key Points"
+check_heading templates/ticket-comments/epic-signoff-request.md "Children"
+check_heading templates/ticket-comments/epic-signoff-request.md "Needs Human Input"
+check_heading templates/ticket-comments/epic-signoff-request.md "On Approval"
 
 echo "ticket comment templates ok"

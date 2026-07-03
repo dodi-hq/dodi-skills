@@ -1,47 +1,43 @@
 ---
 name: mature-ticket
-description: Use when a child ticket lacks spec-ready or ready-to-implement and needs specification, plan, review, or human signoff
+description: Use when a child ticket lacks spec-ready or ready-to-implement and needs specification, plan, review, or human input
 model: fable
 ---
 
 # Mature Ticket
 
-Move a child ticket through spec and plan maturity gates. This skill may draft and review artifacts, but it must preserve human signoff before planning unless explicit delegation is recorded.
+Move a child ticket through spec and plan maturity gates under the two-gate model: Gate 1 epic signoff (`epic-signed-off` + delegation comment on the epic) is the recorded delegation for every child, so routine per-child signoff is not required. The escape hatches below preserve human input where it genuinely matters.
 
 ## Contract
 
 | Trigger | Inputs | Outputs | Durable writes | Allowed delegation | Failure states |
 | --- | --- | --- | --- | --- | --- |
-| child lacks `spec-ready` or `ready-to-implement` | ticket id, current artifacts, dependency context, human contact | clean spec, clean plan when allowed, readiness label decision | artifact links, reviewer evidence, assumptions, labels | spec drafter, spec reviewer, plan writer, plan reviewer | needs human spec input, unresolved dependency, review findings, spec/plan mismatch |
+| child lacks `spec-ready` or `ready-to-implement` | ticket id, current artifacts, dependency context, Gate 1 delegation record | clean spec, clean plan, readiness label decision | artifact links, reviewer evidence, assumptions, labels | spec drafter, spec reviewer, plan writer, plan reviewer | needs human spec input, unresolved dependency, review findings, spec/plan mismatch |
 
-## Inputs
+## Signoff Model
 
-- ticket id
-- current ticket description and comments
-- existing spec or plan artifacts
-- dependency context
-- human contact or delegation record
+- **Default (Gate 1 delegated):** if the epic carries `epic-signed-off`, proceed spec → plan → readiness labels without waiting on a human. Record delegated assumptions (⚠-flagged) in the spec and ticket comment.
+- **Per-child gate:** if the child carries `needs-human-spec`, require explicit human signoff on the spec before write-plan — the pre-Gate-1 behavior.
+- **Genuine ambiguity:** if the spec drafter returns `QUESTIONS_FOR_HUMAN`, stop and ask regardless of delegation. Delegation covers routine choices, not open product questions.
+- If the epic carries neither `epic-signed-off` nor a per-child signoff, do not enter planning — report `awaiting-epic-signoff` to the orchestrator.
 
 ## Process
 
-- Draft spec questions or a proposed spec for tickets without spec-ready — dispatch a spec-drafter subagent (see spec-drafter-prompt.md); the main loop coordinates and runs review loops.
-- Require human signoff or explicit delegation before write-plan.
-- Run spec review until the final round is clean.
-- Run write-plan only after spec signoff.
+- Draft the spec — dispatch a spec-drafter subagent (see spec-drafter-prompt.md); the main loop coordinates and runs review loops. Specs lead with the scannable header (`## TL;DR` + `## Key Points`).
+- Run spec review until the final round is clean; a missing or stale scannable header is a review finding.
+- Run write-plan after the spec is clean (and signed off, where the Signoff Model requires it).
 - Run plan review until the final round is clean.
-- Apply `spec-ready` only after clean spec review and required human signoff or delegation.
-- Apply `ready-to-implement` only after clean plan review and dependency check.
+- Apply `spec-ready` after clean spec review; apply `ready-to-implement` only after clean plan review and dependency check.
 - Do not move to implementation without both labels.
 
 ## Evidence
 
 - Record spec artifact, plan artifact, reviewer type, review status, assumptions, dependency state, and labels applied or withheld.
-- Record human signoff or explicit delegation before planning.
+- Record which signoff path applied: Gate 1 delegation (link the epic delegation comment), per-child signoff, or human answers to drafter questions.
 - Record why any ticket remains in maturity work.
 
 ## Stop Conditions
 
-- Stop for human spec input, unresolved dependency, review findings, or spec/plan mismatch.
+- Stop for `awaiting-epic-signoff`, `QUESTIONS_FOR_HUMAN`, unresolved dependency, review findings, or spec/plan mismatch.
 - Stop if the plan cannot define required unit, integration, and e2e test groups.
 - Stop before implementation unless `spec-ready` and `ready-to-implement` are present.
-- Stop at `ready-for-child-pr` only after downstream local development phases have completed.

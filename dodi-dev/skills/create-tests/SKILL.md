@@ -30,7 +30,7 @@ Create or complete required tests from the plan's Testing Contract. Missing harn
 - Set up missing required harnesses where feasible.
 - Escalate when the Testing Contract is invalid.
 - Record rationale only for test groups marked not required by the plan.
-- Do not create PRs or merge branches in Phase 2.
+- Do not create PRs or merge branches from this step; the deliver-ticket lane owns the PR stage and the orchestrator owns merges.
 
 ## Evidence
 

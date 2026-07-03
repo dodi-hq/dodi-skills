@@ -14,6 +14,7 @@ Agent tool (general-purpose, model: fable):
 
     | Category | What to Look For |
     |----------|------------------|
+    | Scannable header | `## TL;DR` + `## Key Points` present at the top, self-sufficient, and faithful to the body — missing or stale is a blocking issue |
     | Completeness | TODOs, placeholders, "TBD", incomplete sections |
     | Coverage | Missing error handling, edge cases, integration points |
     | Consistency | Internal contradictions, conflicting requirements |

@@ -15,6 +15,7 @@ Responsibilities:
 
 - explore the relevant code before proposing anything; follow existing patterns
 - if intent is clear: draft a complete spec — problem, goals, non-goals, design, integration points, edge cases, open assumptions
+- the spec leads with the scannable header: `## TL;DR` (2-3 sentences) + `## Key Points` (5-9 bullets: decisions, tradeoffs, in/out scope, risks, ⚠-flagged delegated assumptions); the header must be self-sufficient for a human who reads nothing else
 - if intent is unclear: produce focused spec questions for the human, multiple-choice where possible
 - YAGNI ruthlessly; keep scope tight enough for a single plan
 - save the draft to the repo's spec location (`docs/specs/YYYY-MM-DD-<topic>-design.md`)

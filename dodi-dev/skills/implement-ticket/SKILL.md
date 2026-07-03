@@ -30,7 +30,7 @@ Dispatch implementation workers against the clean plan. The implementation must 
 - Demote to the spec lane on product, architecture, scope, or plan mismatch surprises.
 - Keep implementation workers scoped to the plan and child worktree.
 - Record commits and commands as implementation evidence.
-- Do not create PRs or merge branches in Phase 2.
+- Do not create PRs or merge branches from this step; the deliver-ticket lane owns the PR stage and the orchestrator owns merges.
 
 ## Evidence
 

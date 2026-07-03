@@ -8,6 +8,8 @@ model: sonnet
 
 Use when all child tickets under an epic are done and merged into the epic branch.
 
+This skill ends at **Gate 2 — production entry**: merged epic PRs are picked up by automation and deployed to production, so the epic PR is opened by this skill and merged only by a human. Never merge, auto-merge, or enable auto-merge.
+
 ## Why a Full Regression Gate Before the PR
 
 The epic PR must prove that all child commits work together, not just individually. Child PRs verify each ticket against the epic branch at its own merge time; they do not prove the final integrated head — including the latest main/master sync — is green. Only a full regression run on the integrated epic head proves that.
@@ -29,11 +31,11 @@ Treat GitHub Actions CI as the final safety gate before production, not the firs
 2. Update the epic branch with the latest main/master.
 3. Run `verify` as a full regression suite on the integrated epic head: all required unit, integration, and e2e groups across the merged children — the union of child Testing Contracts — must pass. Dispatch one test-runner worker per group (see `verify/test-runner-prompt.md`) and claim results only from the returned digests (commands + exit codes). This is a hard gate. Do not proceed if any required group fails or a required harness cannot be set up.
 4. Run epic-level `quality-gate`.
-5. Prepare an epic readiness summary with child tickets, child PRs, full-regression evidence (commands, exit codes, run on the post-sync epic head), known risks, migrations, release notes, and coverage summary.
+5. Prepare the epic readiness summary. It leads with the scannable header — `## TL;DR` (what this epic ships, 2-3 sentences) and `## Key Points` (5-9 bullets: what changed, risks, migrations, coverage, known gaps) — self-sufficient for the human who merges. Below the header: child tickets, child PRs, full-regression evidence (commands, exit codes, run on the post-sync epic head), release notes, and coverage detail.
 6. Push the epic branch.
 7. Open a PR from epic branch to main/master.
 8. Leave the PR open.
-9. Update the epic ticket with the PR link and readiness summary.
+9. Update the epic ticket with the PR link and readiness summary, and notify `humanContact` that Gate 2 is ready — the notification carries the TL;DR + Key Points and the PR link, nothing more.
 
 ## Commands
 
@@ -61,7 +63,7 @@ Expected evidence:
 
 ## Rules
 
-- Never auto-merge epic PRs by default.
+- Never merge or auto-merge epic PRs — Gate 2 is human-owned, always.
 - Existing GitHub Actions and main-target review automation take over after PR creation.
 - Stop if any child ticket is incomplete or reopened.
 - Stop if the full regression suite has any failing required group. Classify the failure (test bug, integration bug, environment/harness, spec/plan mismatch), route the fix, and rerun. Do not open the epic PR on a red suite.

@@ -30,7 +30,7 @@ Create the child ticket branch and worktree from the epic branch. This skill is 
 - Create the child branch and child worktree from the epic branch.
 - Record the created branch and worktree before implementation starts.
 - Do not branch from main or master for child ticket work.
-- Do not create PRs or merge branches in Phase 2.
+- Do not create PRs or merge branches from this step; the deliver-ticket lane owns the PR stage and the orchestrator owns merges.
 
 ## Evidence
 

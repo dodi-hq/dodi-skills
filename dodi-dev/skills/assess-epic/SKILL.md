@@ -27,10 +27,12 @@ Classify the epic and child tickets from durable PM and repository state. This s
 
 - Read the epic and child tickets from the PM system.
 - Inspect labels, comments, artifact links, branches, and worktrees.
-- Classify each child using the state transition table through ready-for-child-pr only.
+- Classify each child using the orchestrator-tracked table in `epic-orchestrator/state-transitions.md`.
 - Build ready work and maturity work queues.
+- Build the dependency map with parallelism in mind: it is what the orchestrator uses to decide which children may run in concurrent delivery lanes, so record file-surface overlap signals (shared modules, config, schema) alongside ticket dependencies.
 - Treat `spec-ready` and `ready-to-implement` as hard gates.
-- Do not activate Phase 3 states or create PRs.
+- The outputs feed the Gate 1 signoff package: state map, dependency map, and any child that should carry `needs-human-spec`.
+- Do not create PRs or dispatch lanes from this skill.
 
 ## Evidence
 
@@ -41,5 +43,4 @@ Classify the epic and child tickets from durable PM and repository state. This s
 
 - Stop on ticket access failure, inconsistent child hierarchy, or missing repository context.
 - Stop when a child ticket needs human spec input.
-- Stop when dependencies are unclear enough to affect sequencing.
-- Stop at `ready-for-child-pr` for locally completed tickets.
+- Stop when dependencies are unclear enough to affect sequencing — an unclear dependency also disqualifies the pair from parallel lanes.

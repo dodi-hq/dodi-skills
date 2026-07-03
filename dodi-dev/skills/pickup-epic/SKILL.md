@@ -29,7 +29,6 @@ Prepare the epic branch and epic worktree. This skill performs branch setup only
 - Pull the latest base branch before creating or refreshing the epic branch.
 - Create or switch to the epic branch and epic worktree.
 - Do not create PRs or merge branches.
-- Report `ready-for-child-pr` only as a Phase 2 boundary state when downstream local checks eventually reach that state.
 
 ## Evidence
 

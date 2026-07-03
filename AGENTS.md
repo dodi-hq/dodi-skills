@@ -42,7 +42,25 @@ The main loop is a router and conversation surface. Bulk reads, test runs, and e
 
 - Delegate any step that pulls more than ~200 lines of file/log/PM content into the main loop, or runs longer than ~1 minute.
 - Worker return contract: `STATUS` (DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED, or Approved / Issues Found for reviewers) + `EVIDENCE` (commit ids, file paths, command + exit code, log path) + details capped at ~20 lines. No transcripts, no pasted logs.
-- Parallel dispatch for read-only workers only (explorers, reviewers, evidence checkers). Implementers never run in parallel. State-advancing orchestration actions stay one at a time.
+- Parallel dispatch for read-only workers (explorers, reviewers, evidence checkers) is always allowed. `deliver-ticket` lanes may run in parallel across independent children (no dependency edge, disjoint predicted file surfaces; when in doubt, serialize). Within a lane, implementers never run in parallel. Merges into the epic branch and PM state advances stay one at a time.
+
+## Scannable Artifacts
+
+Every human-facing artifact — specs, the Gate 1 signoff package, the epic readiness summary, notifications — leads with:
+
+- `## TL;DR` — 2-3 sentences.
+- `## Key Points` — 5-9 bullets: decisions, tradeoffs, in/out scope, risks; prefix delegated assumptions with ⚠.
+
+The header must be self-sufficient: a human who reads nothing else can approve or redirect. Everything below is written for agents. Notifications carry only the header plus links. Spec reviewers treat a missing or stale header as a blocking finding.
+
+## Context Hygiene
+
+Long-running sessions compact deliberately — a deliberate compaction is a voluntary crash + resume against durable state, never a harness-forced mid-thought summary.
+
+- A legal reset point passes the Resumability Test: a fresh session, given only durable state, would choose the same next action.
+- Mandatory anchors: orchestrator after Gate 1 approval and after every child merge; lanes at the quality-gate→PR seam.
+- Never reset mid-step; finish the step, write the continuation brief (state + evidence links, next action + why, live concerns, in-flight work that must not be redone), then reset.
+- Soft observations (flaky tests, retried workers, fragile modules) are appended to notes as they occur — when unsure, write it down.
 
 ## Verification
 

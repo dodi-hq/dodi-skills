@@ -1,43 +1,57 @@
 # Epic Orchestration State Transitions
 
-Authoritative transition tables for `epic-orchestrator` and its phase skills. Reconstruct state from durable evidence, then choose exactly one allowed transition.
+Authoritative transition tables for `epic-orchestrator`, `deliver-ticket` lanes, and the phase skills. Reconstruct state from durable evidence, then act.
 
-## Child-Ticket Transitions
+## Child-Ticket Transitions (orchestrator-tracked)
+
+These are the states the orchestrator routes on. The delivery pipeline between `delivering` and `ready-to-merge-child` runs inside one `deliver-ticket` lane; its internal states are checkpoints (next table), not orchestrator transitions.
 
 | Source state | Trigger | Required evidence | Durable writes | Next state | Fallback or error transition |
 | --- | --- | --- | --- | --- | --- |
-| unassessed | epic intake or resume | child ticket exists under epic | ticket classification comment or epic assessment summary | needs-spec, spec-ready, needs-plan, ready-to-implement, implementing, in-pr, or done | blocked if ticket hierarchy cannot be read |
-| needs-spec | ticket lacks `spec-ready` | ticket description and any prior artifacts | draft spec/questions comment; `needs-human-spec` status if human input is required | awaiting-human-spec | blocked if product context is missing and no human contact exists |
+| unassessed | epic intake or resume | child ticket exists under epic | ticket classification comment or epic assessment summary | needs-spec, spec-ready, needs-plan, ready-to-implement, delivering, ready-to-merge-child, or done | blocked if ticket hierarchy cannot be read |
+| needs-spec | epic has `epic-signed-off`, or child has explicit signoff | Gate 1 delegation record (or per-child signoff for `needs-human-spec` children) | draft spec artifact and assumptions comment | spec-reviewing | awaiting-human-spec if the child carries `needs-human-spec` or the drafter returns QUESTIONS_FOR_HUMAN |
 | awaiting-human-spec | human responds with approval, edits, or delegation | explicit human signoff or delegated assumptions | finalized spec artifact link and assumptions comment | spec-reviewing | stays awaiting-human-spec if response is ambiguous |
-| spec-reviewing | spec is finalized | clean final spec review evidence | apply `spec-ready`; comment reviewer type and result | needs-plan | remains spec-reviewing if reviewer finds issues |
+| spec-reviewing | spec is finalized | clean final spec review evidence (incl. scannable header check) | apply `spec-ready`; comment reviewer type and result | needs-plan | remains spec-reviewing if reviewer finds issues |
 | needs-plan | ticket has `spec-ready` and no clean plan | clean spec, dependency context, repo context | plan artifact link and Testing Contract | plan-reviewing | returns to awaiting-human-spec if planning exposes product ambiguity |
 | plan-reviewing | plan exists | clean final plan review evidence and dependency check | apply or withhold `ready-to-implement`; comment dependency status | ready-to-implement or blocked-dependency | returns to needs-plan if reviewer finds implementation-plan issues |
 | blocked-dependency | dependency ticket or branch state changes | dependency implemented or explicitly accounted for | dependency status comment | ready-to-implement | remains blocked-dependency if dependency is unresolved |
-| ready-to-implement | orchestrator selects ticket for execution | `spec-ready`, `ready-to-implement`, clean spec, clean plan, epic branch current | child branch/worktree comment | implementing | blocked if branch/worktree cannot be created cleanly |
-| implementing | worker completes plan | implementation commits and worker evidence | implementation status comment with commit ids | implementation-reviewing | demote-to-spec if worker reports product, architecture, scope, or plan mismatch surprise |
-| implementation-reviewing | implementation diff is ready | clean pre-PR review evidence | pre-PR review evidence comment | testing | remains implementation-reviewing while review findings are being fixed |
-| testing | implementation review is clean | Testing Contract and test creation evidence | test files/rationale comment | verifying | demote-to-spec if Testing Contract is invalid or exposes spec/plan mismatch |
-| verifying | tests exist and commands are known | verification command output and failure classification if any | verification evidence comment | quality-gating | demote-to-spec for spec/plan mismatch; returns to implementing for implementation bug; returns to testing for test bug or harness work |
-| quality-gating | verification is clean | quality-gate pass evidence | quality-gate evidence comment | ready-for-child-pr | returns to implementation-reviewing or verifying based on finding type |
-| ready-for-child-pr | local checks pass | branch, commits, review, verification, quality-gate evidence | child PR link and PR body | child-pr-reviewing | blocked if PR cannot be created |
-| child-pr-reviewing | child PR is open | clean PR review and local CI-equivalent evidence | PR comments and ticket evidence | ready-to-merge-child | returns to implementation-reviewing or verifying based on finding type |
-| ready-to-merge-child | child branch is current with epic | clean review/test evidence after latest epic sync | merge commit or squash merge link; child ticket done comment | done | blocked if merge conflict requires spec or plan judgment |
+| ready-to-implement | orchestrator dispatches a deliver-ticket lane | `spec-ready`, `ready-to-implement`, clean spec, clean plan, lane slot free per parallelism policy | lane dispatch comment | delivering | blocked if branch/worktree cannot be created cleanly |
+| delivering | lane exits | lane exit state with checkpoint trail | lane checkpoint comments (see next table) | ready-to-merge-child | demote-to-spec on judgment surprise; blocked on concrete blocker; re-dispatch on RESUMABLE |
+| ready-to-merge-child | orchestrator takes the serial merge slot | evidence-checker citations; child branch current with epic head | squash merge, branch deletion, child done comment | done | blocked if merge conflict requires spec or plan judgment; back to lane for sync + rerun if epic moved |
 | done | child PR merged into epic | merged PR state | child ticket final status | done | no transition unless ticket is reopened |
+
+## Lane Checkpoint Contract (inside deliver-ticket)
+
+The lane posts these as PM comments at each boundary. They are the audit trail and the resume contract — a re-dispatched lane continues from the last completed checkpoint.
+
+| Checkpoint | Reached when | Evidence in the comment |
+| --- | --- | --- |
+| implementing | child branch/worktree created, workers dispatched | branch, worktree, plan link |
+| implementation-reviewing | implementation commits complete | commit ids, worker evidence |
+| testing | pre-PR review clean (incl. fable final round) | review evidence, reviewed diff range |
+| verifying | Testing Contract tests exist | test files, harness evidence |
+| quality-gating | verification green | commands, exit codes, per-group digests |
+| ready-for-child-pr | quality gate passed — mandatory lane context reset here | gate evidence; continuation brief |
+| child-pr-reviewing | child PR open against epic branch | PR link, PR body |
+| (exit) ready-to-merge-child | child-PR review + local CI clean | reviewer status, CI digests |
+
+Failure routing inside the lane mirrors the previous per-skill rules: implementation bug → back to implementing; test bug or harness work → back to testing; judgment surprise at any checkpoint → demote-to-spec and exit.
 
 ## Epic-Level Transitions
 
 | Source state | Trigger | Required evidence | Durable writes | Next state | Fallback or error transition |
 | --- | --- | --- | --- | --- | --- |
-| epic-unassessed | orchestration starts | epic ticket and child tickets readable | epic assessment summary | epic-active | blocked if PM access fails |
+| epic-unassessed | orchestration starts | epic ticket and child tickets readable | epic assessment summary | awaiting-epic-signoff | blocked if PM access fails |
+| awaiting-epic-signoff | Gate 1 package posted and human notified | human approval of the package | `epic-signed-off` label; delegation comment quoting what was approved | epic-active | stays awaiting-epic-signoff on ambiguous or partial response |
 | epic-active | at least one child is not done | current child state map | next-action summary | epic-active | blocked only if all next actions require human/tool intervention |
-| epic-ready-for-pr | all children are done | child PR links, latest main/master sync, full regression suite green on integrated epic head, epic quality gate evidence | epic readiness summary | epic-pr-open | returns to epic-active if a child reopens, sync introduces required fixes, or the full regression suite fails |
-| epic-pr-open | epic PR created | PR link targeting main or master | epic ticket PR comment | epic-pr-open | existing GitHub Actions and review workflows take over |
+| epic-ready-for-pr | all children are done | child PR links, latest main/master sync, full regression suite green on integrated epic head, epic quality gate evidence | scannable epic readiness summary | epic-pr-open | returns to epic-active if a child reopens, sync introduces required fixes, or the full regression suite fails |
+| epic-pr-open | epic PR created — Gate 2 | PR link targeting main or master | epic ticket PR comment; human notified | epic-pr-open | human merges (production entry); automation never does |
 
 ## Demotion Rules
 
 When a ticket must return to an earlier lane:
 
-- Demote from any state between `ready-to-implement` and `child-pr-reviewing` to the spec lane when a product, architecture, scope, or spec/plan mismatch is discovered.
+- Demote from any state between `ready-to-implement` and `ready-to-merge-child` (including any lane checkpoint) to the spec lane when a product, architecture, scope, or spec/plan mismatch is discovered.
 - Remove or withhold `ready-to-implement`. Keep `spec-ready` only if the spec itself remains valid and the issue is limited to the plan.
 - Add a ticket comment with: current state, demotion target, triggering evidence, why automation cannot continue safely, the concrete question or decision needed from the human, and the artifacts that must be revised.
 - Preserve existing artifact links for audit history; supersede them with new links after revision rather than deleting old references.

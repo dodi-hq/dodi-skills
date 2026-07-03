@@ -19,6 +19,7 @@ skills=(
   implement-ticket
   create-tests
   submit-ticket-pr
+  deliver-ticket
   submit-epic-pr
 )
 
@@ -35,6 +36,7 @@ prompt_files=(
   epic-orchestrator/state-reader-prompt.md
   epic-orchestrator/evidence-checker-prompt.md
   epic-orchestrator/state-transitions.md
+  epic-orchestrator/gate1-package-prompt.md
   mature-ticket/spec-drafter-prompt.md
   verify/test-runner-prompt.md
   submit-ticket-pr/local-ci-runner-prompt.md

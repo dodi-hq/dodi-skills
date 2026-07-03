@@ -1,18 +1,20 @@
 ---
 name: epic-orchestrator
-description: Top-level local epic workflow orchestrator; dispatches phase skills and workers without implementing, reviewing, or testing directly
+description: Top-level local epic workflow orchestrator; dispatches delivery lanes and phase skills without implementing, reviewing, or testing directly
 model: sonnet
 ---
 
 # Epic Orchestrator
 
-Orchestrate one feature epic from intake through local readiness for child PR creation. Do not implement product code, review code directly, or run tests as the primary actor. Dispatch bounded workers and advance state only from durable evidence.
+Orchestrate one feature epic from intake through the epic PR. Do not implement product code, review code directly, or run tests as the primary actor. Dispatch bounded lanes and workers and advance state only from durable evidence.
+
+Routine human involvement is exactly two gates: **Gate 1** (epic intent approval, up front) and **Gate 2** (manual merge of the epic PR into main/master — the production entry point). Everything between is autonomous, with event-driven exceptions.
 
 ## Contract
 
 | Trigger | Inputs | Outputs | Durable writes | Allowed delegation | Failure states |
 | --- | --- | --- | --- | --- | --- |
-| Hive starts or resumes work on an epic | epic id, repo path, PM system context | next state decision, dispatched phase work, epic progress summary | epic comments, child ticket comments, labels, artifact links | phase skills, workers, reviewers, test runners | needs human spec input, blocked dependency, tool/auth failure |
+| Hive starts or resumes work on an epic | epic id, repo path, PM system context | next state decision, dispatched lanes and phase work, epic progress summary | epic comments, child ticket comments, labels, artifact links | deliver-ticket lanes, phase skills, workers, reviewers, test runners | awaiting epic signoff, human question, blocked dependency, tool/auth failure |
 
 ## Inputs
 
@@ -23,95 +25,87 @@ Orchestrate one feature epic from intake through local readiness for child PR cr
 - optional `baseBranch`
 - optional `humanContact`
 - optional `runLedgerPath`
+- optional `maxParallelLanes` (default `2`)
 
 ## Hard Gates
 
-- No ticket enters planning without human spec signoff or explicit delegation.
+- **Gate 1 — epic intent:** no child enters the spec/plan pipeline before the epic carries `epic-signed-off` (or the child carries an explicit prior human signoff). Gate 1 approval is the recorded delegation for every child; a child labeled `needs-human-spec` still requires its own per-child spec signoff.
+- **Gate 2 — production entry:** the epic PR into main/master is opened by `submit-epic-pr` and merged only by a human. Never merge, auto-merge, or enable auto-merge on an epic PR.
 - No ticket enters implementation without `spec-ready` and `ready-to-implement`.
 - Any implementation surprise requiring product, architecture, scope, or plan judgment returns the ticket to the spec lane.
-- In Phase 3, a ticket that reaches local PR readiness moves through `submit-ticket-pr` instead of stopping at `ready-for-child-pr`.
+
+## Gate 1 — Epic Intent Signoff
+
+After `pickup-epic` and `assess-epic`, dispatch the Gate 1 package worker (`gate1-package-prompt.md`, `model: fable`) to draft the signoff package: epic TL;DR + key points, child list with one-line intents, the dependency map, and the ⚠-flagged assumptions approval will delegate. Post it to the epic and notify `humanContact`. Hold in `awaiting-epic-signoff`.
+
+On approval: apply `epic-signed-off` to the epic and post a comment quoting what was approved — that comment is the delegation record `mature-ticket` relies on. An ambiguous or partial response stays in `awaiting-epic-signoff`; genuine product questions from any worker still stop and ask regardless of delegation.
 
 ## State Reconstruction
 
-1. Read the epic and child tickets from the PM system.
-2. Read branch and worktree state.
-3. Read the local ledger if present.
-4. Prefer PM labels, PM comments, artifact links, and Git state over local ledger entries when they disagree.
-5. Choose exactly one allowed next action.
-
-## Process
-
-1. Reconstruct epic and child ticket state from durable evidence.
-2. Pick exactly one allowed next action.
-3. Dispatch the owning phase skill or worker.
-4. Verify evidence before advancing state.
-5. In Phase 3, invoke `submit-ticket-pr` when a child reaches `ready-for-child-pr`.
-
-## Delegation
-
-The main loop routes, dispatches, and advances state — nothing else. Bulk reads go to read-only workers so the orchestrator's context holds state maps and digests, never raw tickets, diffs, or logs:
-
-- **State reconstruction**: dispatch a state-reader worker (`state-reader-prompt.md`) and consume its state map instead of reading the epic, child tickets, and worktrees directly.
-- **Evidence verification**: dispatch an evidence-checker worker (`evidence-checker-prompt.md`) and advance only on its citations. Fresh-context verification is independent of the worker that claimed success.
-- Read-only workers may run in parallel. State-advancing actions stay one at a time.
+1. Dispatch a state-reader worker (`state-reader-prompt.md`) and consume its state map.
+2. Read the continuation brief and notes from the epic if this is a resumed session.
+3. Prefer PM labels, PM comments, artifact links, and Git state over local ledger entries when they disagree.
+4. Choose the next allowed actions.
 
 ## Allowed Next Actions
 
 - Run `pickup-epic`.
 - Run `assess-epic`.
-- Run `mature-ticket`.
-- Run `pickup-ticket`.
-- Run `implement-ticket`.
-- Run `review` (pre-PR context).
-- Run `create-tests`.
-- Run `verify`.
-- Run `quality-gate`.
-- Stop for human spec input.
-- Stop for a concrete blocker.
-- Run `submit-ticket-pr` for a child at `ready-for-child-pr`.
-- Run `review` (child-PR context).
-- Run `submit-epic-pr`.
+- Request Gate 1 signoff (package → notify → hold).
+- Run `mature-ticket` for a child lacking readiness (auto-delegated under Gate 1).
+- Dispatch a `deliver-ticket` lane for a ready child (up to `maxParallelLanes`; see Parallel Lanes).
+- Merge a `ready-to-merge-child` lane result (strictly serial; see Merging).
+- Run `submit-epic-pr` when all children are done.
+- Stop: awaiting Gate 1, human question, concrete blocker, or `epic-pr-open` (Gate 2 is human-owned).
+
+## Parallel Lanes
+
+- Dispatch up to `maxParallelLanes` (default 2) `deliver-ticket` lanes concurrently, each in its own child worktree.
+- Two children may run concurrently only if the assess-epic dependency map shows no edge between them **and** their plans' File Structure sections predict disjoint file surfaces — shared config, schema, or generated files count as overlap. When in doubt, serialize.
+- The spec lane (`mature-ticket`) may run concurrently with delivery lanes.
+- Lanes never touch the epic branch. Read-only workers fan out freely; PM state advances stay one at a time per ticket.
+
+## Merging
+
+Merges into the epic branch are orchestrator-owned and strictly serial:
+
+1. Take one `ready-to-merge-child` lane result.
+2. Verify its evidence via an evidence-checker worker (`evidence-checker-prompt.md`).
+3. Check the child branch is current with the epic head; if the epic moved, have the lane (re-dispatched if needed) sync and rerun relevant checks per `submit-ticket-pr` merge rules.
+4. Squash merge via `submit-ticket-pr` (Merge), delete the child branch, post the done comment.
+5. Only then take the next merge.
 
 ## State Transitions
 
-Use the child-ticket and epic-level transition tables and demotion rules in `state-transitions.md`, which ships in this skill's directory. Child ticket branches move from `ready-for-child-pr` into child PR review and merge against the epic branch. Epic branches move to `epic-ready-for-pr` only after every child ticket is done.
+Use the lane-boundary and epic-level tables and the demotion rules in `state-transitions.md` (in this skill's directory). Externally tracked child states: spec lane → `ready-to-implement` → `delivering` → `ready-to-merge-child` → `done`. The intermediate delivery states remain visible as lane checkpoint comments but are not orchestrator transitions.
 
-## Phase 3 PR Lifecycle
+## Context Hygiene
 
-When a child ticket reaches `ready-for-child-pr`, invoke `submit-ticket-pr` instead of stopping.
+Compact deliberately — a deliberate compaction is a voluntary crash + resume; never drift into harness-forced compaction mid-thought.
 
-Allowed Phase 3 next actions:
-
-- Run `submit-ticket-pr`.
-- Run `review` (child-PR context).
-- Run `submit-epic-pr`.
-
-When every child ticket is `done`, transition the epic to `epic-ready-for-pr` and invoke `submit-epic-pr` after the epic readiness evidence is present. Epic readiness evidence must include a green full regression run on the integrated epic head, after the latest main/master sync; `submit-epic-pr` performs this run as a hard gate. Child PRs prove each ticket individually — only this run proves the merged children work together. Treat downstream GitHub Actions CI as the final safety gate before production, not the first line of defense; do not open the epic PR on a red or untested integrated branch.
-
-Child PR and epic PR transitions are in `state-transitions.md`. Do not auto-merge epic PRs. Existing GitHub Actions and review workflows take over after `epic-pr-open`.
+- **Mandatory reset anchors:** after Gate 1 approval is recorded, and after every child merge. At an anchor: write the continuation brief (epic comment and ledger), end the session, resume fresh from durable state.
+- **Emergency valve:** if the harness warns context is low between anchors, finish the current step — never abandon a dispatch or merge mid-flight — write the brief, and reset. If a step cannot complete, post an explicit "interrupted at" comment so the resume does not double-execute.
+- **Continuation brief:** current state map reference with evidence links, chosen next action and one line of why, live concerns from notes, and anything in flight that must not be redone (open PRs, running lanes).
+- **Notes discipline:** append soft observations (flaky tests, retried workers, fragile modules) to the epic notes as they occur. When unsure whether to persist an observation: write it.
 
 ## Evidence Rule
 
-The orchestrator may not advance state from a worker success claim alone. Verify durable PM labels, PM comments, artifact links, branch/worktree state, commits, or command output before advancing.
+The orchestrator may not advance state from a lane or worker success claim alone. Verify durable PM labels, PM comments, artifact links, branch/worktree state, commits, or command output before advancing — via the evidence-checker worker.
 
 Durable PM state is the source of truth.
 
-## Evidence
+## Notifications
 
-- PM labels and comments
-- artifact links
-- branch and worktree state
-- commit ids
-- command output
-- optional run ledger records
+Interrupt the human only for: Gate 1 request, Gate 2 ready (epic PR open, awaiting manual merge), demotions, `QUESTIONS_FOR_HUMAN`, and blockers automation cannot resolve. Every notification leads with the artifact's TL;DR + key points and links; routine progress goes to PM comments only.
 
 ## Stop Conditions
 
-- human spec input required
+- `awaiting-epic-signoff` (Gate 1)
+- `epic-pr-open` (Gate 2 — human merges)
+- human question or spec input required
 - tool or auth failure
 - blocked dependency
 - implementation surprise requiring spec or plan revision
-- child PR or epic PR lifecycle blocker
 
 ## Progress Record
 

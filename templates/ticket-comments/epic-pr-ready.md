@@ -2,6 +2,18 @@
 
 Epic: `<epic-id>`
 
+## TL;DR
+
+`<what this epic ships, 2-3 sentences>`
+
+## Key Points
+
+- `<what changed>`
+- `<risk>`
+- `<migration or none>`
+- `<coverage summary>`
+- `<known gap or none>`
+
 ## Completed Children
 
 - `<ticket-id>`: `<summary>`
