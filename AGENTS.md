@@ -68,7 +68,7 @@ The header must be self-sufficient: a human who reads nothing else can approve o
 
 ## Decision Register
 
-Each epic ticket is the master decision register for its epic. Coherence reviews append entry comments (verdict, decisions, affected children, keyed to the merge SHA) and maintain one pinned **canon summary** (current canonical decisions, supersede chains collapsed). Spec drafters, plan writers, and lanes consume the canon summary as required input; contradicting a canon decision is a review finding. Entries are append-only — supersede by reference, never edit history.
+Each epic ticket is the master decision register for its epic. Coherence reviews append entry comments (verdict, decisions, affected children, keyed to the merge SHA) and maintain the **canon summary** (current canonical decisions, supersede chains collapsed) as a `## Decision Register — Canon` section of the **epic description** — PM systems like Linear have no comment pinning, and the description is always rendered at the top and API-writable. Spec drafters, plan writers, and lanes consume the canon section as required input; contradicting a canon decision is a review finding. Entry comments are append-only — supersede by reference, never edit history; only the canon section is maintained in place.
 
 ## Lights-Out Invariants
 

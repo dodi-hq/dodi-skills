@@ -8,7 +8,7 @@ Inputs:
 
 - ticket id, description, and comments
 - dependency context
-- the epic's decision register canon summary (pinned comment on the epic ticket) — canonical decisions from merged siblings bind this spec; contradicting one is a review finding, following one needs no re-justification. Pre-register epics have none: proceed and note its absence; not a blocker
+- the epic's decision register canon summary (the `## Decision Register — Canon` section of the epic description) — canonical decisions from merged siblings bind this spec; contradicting one is a review finding, following one needs no re-justification. Pre-register epics have none: proceed and note its absence; not a blocker
 - existing partial artifacts, if any
 - repo path and conventions (CLAUDE.md / AGENTS.md)
 

@@ -87,7 +87,7 @@ The epic ticket is the master register. Mechanics:
 - Entries are append-only; a later entry may supersede an earlier one by reference, never by editing history.
 - The epic description gains a one-line pointer to the register convention so humans and agents know where to look.
 
-**Curation — the canon summary.** Registers grow with every merge, and an uncurated register recreates the context-bloat problem for every consumer. The coherence reviewer maintains one pinned **canon summary** comment: current canonical decisions only, supersede chains collapsed, one line each. Consumers read the canon summary; the full entry history remains for audit. The reviewer updates the summary as part of every verdict close-out (idempotent, keyed like all verdict writes).
+**Curation — the canon summary.** Registers grow with every merge, and an uncurated register recreates the context-bloat problem for every consumer. The coherence reviewer maintains the **canon summary** as a `## Decision Register — Canon` section of the **epic description**: current canonical decisions only, supersede chains collapsed, one line each. (Amended post-ship: originally spec'd as a "pinned comment" — Linear has no comment pinning, GUI or API; the description is always rendered at the top and API-writable.) Consumers read the canon section; the full entry-comment history remains for audit. The reviewer updates the section as part of every verdict close-out (idempotent, keyed like all verdict writes).
 
 Consumers (all gain the register as required input — the canon summary, not the raw history):
 

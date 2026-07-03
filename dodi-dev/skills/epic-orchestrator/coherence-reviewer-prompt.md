@@ -10,7 +10,7 @@ Inputs:
 
 - the merged child's diff (merge commit against the pre-merge epic head), spec, and plan
 - the epic design artifact and the Gate 1 signoff package (what the human actually approved)
-- the decision register canon summary and prior entries (epic ticket comments)
+- the decision register: the canon summary (the `## Decision Register — Canon` section of the epic description) and prior entry comments on the epic ticket
 - sibling child specs (pending and delivered)
 
 Responsibilities:
@@ -30,6 +30,6 @@ Output:
 - **Register entries:** each a one-paragraph decision statement with evidence links
 - **Affected children:** ticket id + label(s) to strip + one line why, per child (empty if none)
 - **Corrective ticket draft** (MATERIAL_DRIFT only): scope, why it must precede dependents
-- **Canon summary update:** the revised current-canon text (supersede chains collapsed, one line per decision)
+- **Canon summary update:** the revised current-canon text (supersede chains collapsed, one line per decision), destined for the `## Decision Register — Canon` section of the epic description — the one register surface maintained in place (PM comments cannot be pinned; the description always renders at the top)
 
 You review and recommend; the dispatching loop performs the durable writes (register comment, label changes, corrective ticket, clearing `coherence-pending`) per the verdict-routing table. Do not write PM state yourself.

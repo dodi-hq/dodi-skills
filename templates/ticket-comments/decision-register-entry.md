@@ -20,4 +20,4 @@ Child: `<child-ticket-id>` · Merge SHA: `<merge-sha>`
 
 ## Canon Summary
 
-Updated: `<link to the pinned canon summary comment>`
+Updated: `<yes/no — the "Decision Register — Canon" section of the epic description>`
