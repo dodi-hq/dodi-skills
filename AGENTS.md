@@ -55,6 +55,24 @@ Every human-facing artifact — specs, the Gate 1 signoff package, the epic read
 
 The header must be self-sufficient: a human who reads nothing else can approve or redirect. Everything below is written for agents. Notifications carry only the header plus links. Spec reviewers treat a missing or stale header as a blocking finding.
 
+## Deterministic Skeleton
+
+**Anything with an invariant becomes code; anything with a judgment stays prose.** Mechanical operations ship as scripts in `dodi-dev/scripts/` (worker await, claims, dispatch eligibility, merge verification, branch cleanup, deploy checks, watchdog data, heartbeat) and as plugin hooks (Gate 2 merge guard, dispatch-pin enforcement).
+
+- Skills **reference scripts, never restate their mechanics** — a skill re-describing a script's logic in prose is a review finding; that is how the layers diverge.
+- A script outranks a Fast-tier worker for pure mechanics: zero-variance beats low-latency. Fast-tier workers remain for read-and-classify work that needs a model.
+- A script failure with a clear cause is a result to act on; a script that cannot run (missing env, missing binary) is a concrete blocker — never improvise the mechanism inline.
+- Hooks are Claude-Code-specific defense-in-depth; on Codex the prose rules plus server-side branch protection carry the same invariants.
+
+## Decision Register
+
+Each epic ticket is the master decision register for its epic. Coherence reviews append entry comments (verdict, decisions, affected children, keyed to the merge SHA) and maintain one pinned **canon summary** (current canonical decisions, supersede chains collapsed). Spec drafters, plan writers, and lanes consume the canon summary as required input; contradicting a canon decision is a review finding. Entries are append-only — supersede by reference, never edit history.
+
+## Lights-Out Invariants
+
+- **Healthy-quiet and stalled must never look the same.** Every guard label, claim, and relation is a new way to sit still silently; the janitor's watchdog, digest, and the tick's heartbeat exist to break that symmetry.
+- **Failure-to-self-correct must always become a human ping.** Needs-human events go to the dedicated escalation channel with re-escalation on staleness — never only to routine run notifications.
+
 ## Scheduled Operation
 
 Post-Gate-1 delivery runs as **scheduled ticks**, not resident sessions. `pickup-next` (the heartbeat) and `reconcile-tickets` (the janitor) each run as a harness-native scheduled task — never a hand-rolled cron/daemon wrapper around a headless CLI.

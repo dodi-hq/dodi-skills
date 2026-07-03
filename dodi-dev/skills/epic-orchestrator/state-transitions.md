@@ -44,8 +44,18 @@ Failure routing inside the lane mirrors the previous per-skill rules: implementa
 | epic-unassessed | orchestration starts | epic ticket and child tickets readable | epic assessment summary | awaiting-epic-signoff | blocked if PM access fails |
 | awaiting-epic-signoff | Gate 1 package posted and human notified | human approval of the package | `epic-signed-off` label; delegation comment quoting what was approved | epic-active | stays awaiting-epic-signoff on ambiguous or partial response |
 | epic-active | at least one child is not done | current child state map | next-action summary | epic-active | blocked only if all next actions require human/tool intervention |
+| coherence-pending | a child merge completed (label applied at merge close-out) | merged child diff + spec, epic design artifact, Gate 1 package, decision register | register entry + canon summary, label changes on affected children per verdict, corrective ticket on MATERIAL_DRIFT — all keyed to the merge SHA | epic-active (verdict routed clean; label cleared) | remains coherence-pending + escalation on GATE1_AMENDMENT or GATE1_REFRESH; new lane dispatches and maturation blocked throughout |
 | epic-ready-for-pr | all children are done | child PR links, latest main/master sync, full regression suite green on integrated epic head, epic quality gate evidence | scannable epic readiness summary | epic-pr-open | returns to epic-active if a child reopens, sync introduces required fixes, or the full regression suite fails |
 | epic-pr-open | epic PR created — Gate 2 | PR link targeting main or master | epic ticket PR comment; human notified | epic-pr-open | human merges (production entry); automation never does |
+
+## Realignment (LEGITIMATE_DIVERGENCE)
+
+When the coherence review rules that a merged child was right and the epic design was stale:
+
+- The new decision becomes canonical in the register; the superseded design point gets a superseded-by note (never a silent edit).
+- Each affected child named by the reviewer: strip `ready-to-implement`; strip `spec-ready` only when the spec itself is invalidated. The tick then re-routes the child through `mature-ticket`, whose drafter consumes the updated canon summary.
+- Dependency relations are untouched unless the reviewer explicitly re-sequences.
+- Realignment is judged once, at the merge seam — lanes never check-and-repair their own instructions; a perceived register conflict mid-lane remains a demote-to-spec surprise.
 
 ## Demotion Rules
 

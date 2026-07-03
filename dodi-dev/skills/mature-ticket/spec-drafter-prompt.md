@@ -8,6 +8,7 @@ Inputs:
 
 - ticket id, description, and comments
 - dependency context
+- the epic's decision register canon summary (pinned comment on the epic ticket) — canonical decisions from merged siblings bind this spec; contradicting one is a review finding, following one needs no re-justification
 - existing partial artifacts, if any
 - repo path and conventions (CLAUDE.md / AGENTS.md)
 

@@ -30,6 +30,7 @@ When this skill runs as a worker itself (dispatched by the tick or an orchestrat
 ## Process
 
 - Draft the spec — dispatch a spec-drafter subagent (see spec-drafter-prompt.md); the main loop coordinates and runs review loops. Specs lead with the scannable header (`## TL;DR` + `## Key Points`).
+- The epic's **decision register canon summary** (pinned comment on the epic ticket) is required drafter and reviewer input: canonical decisions from already-merged siblings bind this spec. A spec that contradicts a canon decision is a review finding.
 - Run spec review until the final round is clean; a missing or stale scannable header is a review finding.
 - Run write-plan after the spec is clean (and signed off, where the Signoff Model requires it).
 - Run plan review until the final round is clean.

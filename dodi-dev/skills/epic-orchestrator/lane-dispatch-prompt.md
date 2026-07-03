@@ -8,6 +8,7 @@ Inputs:
 
 - child ticket id
 - clean spec path and clean plan path (with Testing Contract)
+- the epic's decision register canon summary (context only — you follow your reviewed plan exactly; a perceived conflict between plan and canon is a demote-to-spec surprise, never a mid-lane redesign)
 - epic branch and repo path
 - last checkpoint comment link, if resuming
 - repo conventions (CLAUDE.md / AGENTS.md)

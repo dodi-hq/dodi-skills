@@ -40,6 +40,7 @@ prompt_files=(
   epic-orchestrator/state-transitions.md
   epic-orchestrator/gate1-package-prompt.md
   epic-orchestrator/lane-dispatch-prompt.md
+  epic-orchestrator/coherence-reviewer-prompt.md
   mature-ticket/spec-drafter-prompt.md
   verify/test-runner-prompt.md
   submit-ticket-pr/local-ci-runner-prompt.md
@@ -47,6 +48,37 @@ prompt_files=(
 
 for prompt in "${prompt_files[@]}"; do
   test -f "dodi-dev/skills/${prompt}"
+done
+
+# Deterministic skeleton: plugin scripts exist, are executable, and parse.
+plugin_scripts=(
+  linear-api.sh
+  await-worker.sh
+  claim.sh
+  release-claim.sh
+  dispatch-eligible.sh
+  verify-merge.sh
+  cleanup-branch.sh
+  check-deploy.sh
+  watchdog-scan.sh
+  heartbeat.sh
+  hook-gate2-guard.sh
+  hook-require-model-pin.sh
+)
+
+for script in "${plugin_scripts[@]}"; do
+  path="dodi-dev/scripts/${script}"
+  test -f "$path"
+  test -x "$path"
+  bash -n "$path"
+done
+
+# Hooks configuration parses.
+python3 -c 'import json; json.load(open("dodi-dev/hooks/hooks.json"))'
+
+# Every plugin script referenced by a skill must exist.
+grep -rhoE 'scripts/[a-z-]+\.sh' dodi-dev/skills | sort -u | while read -r ref; do
+  test -f "dodi-dev/${ref}" || { echo "skill references missing script: ${ref}" >&2; exit 1; }
 done
 
 # Skills must not reference documents that only exist in this repository.

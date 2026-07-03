@@ -14,7 +14,7 @@ Dispatched by `epic-orchestrator` as a worker (Agent tool, `model: sonnet`), one
 
 | Trigger | Inputs | Outputs | Durable writes | Allowed delegation | Failure states |
 | --- | --- | --- | --- | --- | --- |
-| child has `spec-ready` and `ready-to-implement` | ticket id, clean spec, clean plan (with Testing Contract), epic branch, repo path | `ready-to-merge-child` with full evidence trail, or an exit state | checkpoint comments per state boundary, child PR, notes entries | implementer workers, reviewers, test runners, fix workers | demotion surprise, concrete blocker, resumable context exit |
+| child has `spec-ready` and `ready-to-implement` | ticket id, clean spec, clean plan (with Testing Contract), register canon summary, epic branch, repo path | `ready-to-merge-child` with full evidence trail, or an exit state | checkpoint comments per state boundary, child PR, notes entries | implementer workers, reviewers, test runners, fix workers | demotion surprise, concrete blocker, resumable context exit |
 
 ## Internal Sequence
 

@@ -14,6 +14,10 @@ Epic: `<epic-id>`
 - `<coverage summary>`
 - `<known gap or none>`
 
+## What Changed Since Signoff
+
+- `<canonized divergence from the Gate 1 package, one line, register entry link>` (or "none")
+
 ## Completed Children
 
 - `<ticket-id>`: `<summary>`

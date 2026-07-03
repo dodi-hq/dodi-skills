@@ -25,23 +25,24 @@ The janitor **repairs state; it never advances work**. It does not dispatch lane
 | Epic in Merged state | production deploy confirmed for a SHA reaching the epic merge commit | move epic and children to Deployed/Released (or apply a `deployed` label if the workflow has no such state); post the deploy-confirmation comment; run cleanup |
 | Claim comment on any ticket | older than the lease window with no checkpoint progress since | clear the claim, restore the ticket to its pre-claim state, note the expiry on the ticket |
 | Ticket `blocked` from the retry ceiling | the referenced blocker demonstrably resolved (e.g. the blocking dependency merged) | clear `blocked`, reset the attempt counter, comment the evidence |
+| Child parked as dependency-blocked | all its blocking relations are terminal (per the relation graph) | advance per the transition tables, citing the relation state |
+| Open epic PR | conflicted against its base, or failing required checks | escalate — Gate 2 notifications fire at PR-open; a later red X has no other watcher |
+| Production deployment | latest deployment reports failure/error (`scripts/check-deploy.sh` exit 4) | escalate immediately; affected epics stay Merged with a deploy-failed note. Detection only — triage is the future devops leg |
+| Any active epic | no durable progress (checkpoint, merge, label transition, register entry) within the watchdog window (default 3 days) and not parked on an explicit human-wait state | escalate with a diagnosis from `scripts/watchdog-scan.sh`: dispatchable children or why none (including relation cycles), live claims, `coherence-pending` age, open PR state |
 | Anything ambiguous | evidence conflicts or is missing | post an escalation comment describing the conflict — never write a guessed state |
+
+## Waiting-On-You Digest
+
+Every run produces the daily digest of human-parked items across all epics: each Gate 1 request, `QUESTIONS_FOR_HUMAN`, `needs-human-spec` wait, demotion awaiting a ruling, `blocked` ticket, and open Gate 2 PR — with age, the one-line ask, and the link. Deliver it to the escalation channel. **Re-escalation:** any item older than the staleness window (default 3 days) is flagged with its age — escalations are not fire-and-forget. An empty digest is one line: "nothing waiting on you."
 
 ## Deploy Signal
 
-Production deploys are recorded as GitHub deployments; the nightly deploy (one per night, when anything is pending) is the only path to production. A merged epic commit counts as deployed when a production deployment whose SHA reaches it reports `success`:
-
-```bash
-gh api "repos/<owner>/<repo>/deployments?environment=<production-env>&per_page=10" \
-  --jq '.[] | {id, sha, created_at}'
-gh api "repos/<owner>/<repo>/deployments/<deployment-id>/statuses" --jq '.[0].state'
-git merge-base --is-ancestor <epic-merge-sha> <deployment-sha>   # exit 0 = deployed
-```
+Production deploys are recorded as GitHub deployments; the nightly deploy (one per night, when anything is pending) is the only path to production. A merged epic commit counts as deployed when a production deployment whose SHA reaches it reports `success`. Run `scripts/check-deploy.sh <epic-merge-sha> <environment>`: exit 0 = deployed (proceed to cleanup), exit 1 = not yet, exit 4 = latest deployment failed (escalate). Do not restate or improvise the deployment-API mechanics — the script owns them.
 
 ## Cleanup (deploy-confirmed only)
 
-- Delete the epic branch and any surviving child branches — only after verifying each is merged by SHA reachability from main/master (`git merge-base --is-ancestor`), never by branch name.
-- Prune local worktrees for deleted branches on the machine this run executes on (`git worktree prune` after removing worktree directories).
+- Delete the epic branch and any surviving child branches via `scripts/cleanup-branch.sh <branch> <base> [worktree]` — the script verifies merged-by-SHA-reachability and refuses otherwise; never delete by name or bypass it.
+- Expire dead claims via `scripts/release-claim.sh` after the progress test (fresh checkpoints since the claim's last update = alive, regardless of age).
 - Post the deploy-confirmation comment on the epic: deployment id, SHA, environment, tickets transitioned, branches and worktrees cleaned.
 
 ## Rules

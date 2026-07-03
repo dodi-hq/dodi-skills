@@ -25,7 +25,7 @@ check_count_at_least() {
   fi
 }
 
-for file in epic-assessment spec-ready ready-to-implement demotion child-pr-ready epic-pr-ready epic-signoff-request claim deploy-confirmation; do
+for file in epic-assessment spec-ready ready-to-implement demotion child-pr-ready epic-pr-ready epic-signoff-request claim deploy-confirmation decision-register-entry; do
   test -f "templates/ticket-comments/${file}.md"
 done
 
@@ -118,5 +118,14 @@ check_heading templates/ticket-comments/deploy-confirmation.md "Deployment"
 check_heading templates/ticket-comments/deploy-confirmation.md "Tickets Updated"
 check_heading templates/ticket-comments/deploy-confirmation.md "Cleanup"
 check_contains templates/ticket-comments/deploy-confirmation.md "verified merged by SHA reachability"
+
+check_heading templates/ticket-comments/epic-pr-ready.md "What Changed Since Signoff"
+
+check_heading templates/ticket-comments/decision-register-entry.md "Verdict"
+check_heading templates/ticket-comments/decision-register-entry.md "Decisions Recorded"
+check_heading templates/ticket-comments/decision-register-entry.md "Affected Children"
+check_heading templates/ticket-comments/decision-register-entry.md "Supersedes"
+check_heading templates/ticket-comments/decision-register-entry.md "Canon Summary"
+check_contains templates/ticket-comments/decision-register-entry.md "Merge SHA:"
 
 echo "ticket comment templates ok"

@@ -19,7 +19,9 @@ Create a ticket in the project tracker with context from the brainstorm/design s
 
 2. Create the ticket using available tools (Linear MCP, GitHub Issues, etc.)
 
-3. Confirm with the user — show ticket ID and title
+3. **Epic decomposition:** when filing an epic's children, register the hard sequencing edges implied by the decomposition as native blocked-by relations at creation time (Linear issue relations, or the tracker's equivalent). The relation graph — not comment prose — is what dispatch eligibility queries; Gate 1 approval canonizes it. Relations carry hard sequencing only; soft parallelism signals (predicted file overlap) belong in the assessment, not the graph.
+
+4. Confirm with the user — show ticket ID and title
 
 ## Ticket Content
 

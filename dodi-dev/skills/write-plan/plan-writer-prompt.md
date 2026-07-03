@@ -7,6 +7,7 @@ You are drafting an implementation plan from an approved spec.
 Inputs:
 
 - spec path (clean, signed off)
+- the epic's decision register canon summary (pinned comment on the epic ticket) — merged siblings' canonical decisions bind the plan's structure and conventions
 - exploration digest or pointers to the relevant code areas
 - repo path and conventions (CLAUDE.md / AGENTS.md)
 - the write-plan skill's plan template, including the full Testing Contract
