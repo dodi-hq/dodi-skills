@@ -1,7 +1,7 @@
 ---
 name: epic-orchestrator
 description: Top-level local epic workflow orchestrator; dispatches phase skills and workers without implementing, reviewing, or testing directly
-model: haiku
+model: sonnet
 ---
 
 # Epic Orchestrator

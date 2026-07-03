@@ -1,6 +1,7 @@
 ---
 name: submit
 description: Use after review passes when a compatibility entry point is needed; epic workflows route to dedicated PR lifecycle skills
+model: sonnet
 ---
 
 # Submit

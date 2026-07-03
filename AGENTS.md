@@ -22,14 +22,17 @@
 
 Every skill and worker dispatch declares a model tier. Two levers: `model:` in SKILL.md frontmatter (switches the main-loop model for the rest of the turn when the skill is invoked) and the Agent tool's `model` parameter (pinned directly in worker prompt templates so it is mechanical, not advisory).
 
-| Tier | Alias | Used for |
-|------|-------|----------|
-| Capable | `opus` | Spec drafting/review, plan writing/review, code review, PR review |
-| Standard | `sonnet` | Writing code, writing tests, fixing findings, PR bodies, failure triage |
-| Fast | `haiku` | Orchestration next-step decisions, git mechanics, state classification, command runners |
+| Tier | Claude alias | Used for |
+|------|--------------|----------|
+| Frontier | `fable` | Spec drafting/review, plan writing/review, the final pre-PR review round |
+| Capable | `opus` | Per-round code review, PR review |
+| Standard | `sonnet` | Orchestration routing, writing code, writing tests, fixing findings, PR bodies, failure triage, quality gate |
+| Fast | `haiku` | Git mechanics, state classification, command/test runners, read-only state digests |
 
 - Aliases only — never full model IDs; aliases track model upgrades.
-- Interactive-facing skills (brainstorm, write-plan, pickup, submit, file-ticket) omit `model:` and inherit the session model. In the autonomous epic lane, `mature-ticket`'s `opus` pin persists for the rest of the turn into the spec/plan work it chains into.
+- Aliases are Claude Code vocabulary. On Codex, map tiers to the closest local equivalents (Frontier/Capable → highest-reasoning configuration, Standard → default coding model, Fast → small fast model); a skill that names a Claude alias means that tier.
+- Frontier is expensive: confine it to the spec/plan lane and one final review gate, never per-round loops.
+- Judgment-heavy interactive skills (brainstorm, write-plan) omit `model:` and inherit the session model — run those sessions on the Frontier model. Mechanical interactive skills (pickup, file-ticket, submit) pin `sonnet`. In the autonomous epic lane, `mature-ticket`'s `fable` pin persists for the rest of the turn into the spec/plan work it chains into.
 - Never set `CLAUDE_CODE_SUBAGENT_MODEL` on hive machines — it outranks every per-dispatch pin.
 
 ## Dispatch Discipline

@@ -1,7 +1,7 @@
 ---
 name: mature-ticket
 description: Use when a child ticket lacks spec-ready or ready-to-implement and needs specification, plan, review, or human signoff
-model: opus
+model: fable
 ---
 
 # Mature Ticket

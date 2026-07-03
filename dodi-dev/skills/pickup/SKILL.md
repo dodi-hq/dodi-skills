@@ -1,6 +1,7 @@
 ---
 name: pickup
 description: Use when starting work on a ticket — creates a worktree, reads ticket context, and gets you ready to implement
+model: sonnet
 ---
 
 # Pickup

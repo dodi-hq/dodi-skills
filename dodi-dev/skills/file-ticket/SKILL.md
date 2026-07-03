@@ -1,6 +1,7 @@
 ---
 name: file-ticket
 description: Use after brainstorming to create a ticket in the project tracker with full context from the design session
+model: sonnet
 ---
 
 # File Ticket

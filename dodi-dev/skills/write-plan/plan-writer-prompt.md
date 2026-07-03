@@ -1,6 +1,6 @@
 # Plan Writer Prompt
 
-Dispatch with the Agent tool, `model: opus`. Autonomous epic lane only — interactive sessions draft plans in the main loop where the dialogue context lives.
+Dispatch with the Agent tool, `model: fable` (Frontier tier). Autonomous epic lane only — interactive sessions draft plans in the main loop where the dialogue context lives.
 
 You are drafting an implementation plan from an approved spec.
 

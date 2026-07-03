@@ -3,7 +3,7 @@
 Dispatch as a subagent after writing each plan chunk.
 
 ```
-Agent tool (general-purpose, model: opus):
+Agent tool (general-purpose, model: fable):
   description: "Review plan chunk N"
   prompt: |
     You are a plan document reviewer. Verify this plan chunk is complete and ready for implementation.
