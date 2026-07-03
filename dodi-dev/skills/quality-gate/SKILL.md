@@ -1,71 +1,27 @@
 ---
 name: quality-gate
-description: Local release gate for dodi-skills metadata, skill files, verification evidence, and workflow risk checks
-model: haiku
+description: Horizontal quality gate before PR or release — implementation compliance, security, hygiene, regression risk, docs, and operational checks backed by command evidence
+model: sonnet
 ---
 
 # Quality Gate
 
-Run before submitting or releasing skill changes. Validate plugin metadata, verify the expected published skill files exist, check implementation compliance and risk, and report gaps.
+Run after the vertical work (implementation, review, tests, verify) is believed clean. This is a horizontal gate: it checks concerns that span the whole change, and it passes only on command evidence. It is repo-agnostic — it gates whatever repository the workflow is operating in.
 
-## Process
+## Checks
 
-1. Validate all plugin metadata JSON:
+1. **Implementation compliance** — the change matches the spec/plan; nothing missing, no unrequested scope.
+2. **Security** — input validation at boundaries, auth checks where needed, no injection vectors, no secrets in code or logs.
+3. **Code hygiene** — dead code, debug output, leftover TODOs, convention violations against the repo's CLAUDE.md / AGENTS.md.
+4. **Regression risk** — callers and consumers of changed code, contract compatibility, migration safety.
+5. **Documentation** — README, docs, and config samples updated when behavior changes.
+6. **Operational concerns** — logging, error surfacing, feature flags, rollout and rollback implications.
+7. **Repo-local gates** — if the repository defines its own release checks (lint, typecheck, validation scripts named in its repo instructions), run them and require exit 0.
 
-   ```bash
-   python3 -m json.tool .claude-plugin/marketplace.json
-   python3 -m json.tool dodi-dev/.claude-plugin/plugin.json
-   python3 -m json.tool .agents/plugins/marketplace.json
-   python3 -m json.tool plugins/dodi-dev/.codex-plugin/plugin.json
-   ```
+## Evidence
 
-2. Verify both skill trees contain the expected Phase 2 skills:
-
-   ```bash
-   for skill in brainstorm file-ticket implement pickup quality-gate review submit verify write-plan epic-orchestrator pickup-epic assess-epic mature-ticket pickup-ticket implement-ticket review-implementation create-tests; do
-     test -f "dodi-dev/skills/$skill/SKILL.md" || exit 1
-     test -f "plugins/dodi-dev/skills/$skill/SKILL.md" || exit 1
-   done
-   ```
-
-3. Verify supporting prompt files exist in both trees:
-
-   ```bash
-   for tree in dodi-dev plugins/dodi-dev; do
-     test -f "$tree/skills/brainstorm/spec-reviewer-prompt.md"
-     test -f "$tree/skills/implement/implementer-prompt.md"
-     test -f "$tree/skills/review/review-prompt.md"
-     test -f "$tree/skills/write-plan/plan-reviewer-prompt.md"
-     test -f "$tree/skills/write-plan/plan-writer-prompt.md"
-     test -f "$tree/skills/epic-orchestrator/state-reader-prompt.md"
-     test -f "$tree/skills/epic-orchestrator/evidence-checker-prompt.md"
-     test -f "$tree/skills/mature-ticket/spec-drafter-prompt.md"
-     test -f "$tree/skills/verify/test-runner-prompt.md"
-     test -f "$tree/skills/review-child-pr/pr-reviewer-prompt.md"
-     test -f "$tree/skills/submit-ticket-pr/local-ci-runner-prompt.md"
-   done
-   ```
-
-4. Verify the Codex skill tree does not use symlinks:
-
-   ```bash
-   find plugins/dodi-dev/skills -type l -print
-   ```
-
-   Expected: no output.
-
-5. Check implementation compliance, security concerns, code hygiene, regression risk, documentation, and operational concerns.
-
-6. Require verification command evidence before passing.
-
-7. Report the commands run and their exit codes. If any command fails, stop and report the missing file or invalid JSON path.
-
-## Local Epic Quality Gate
-
-- Preserve plugin metadata and skill-tree checks.
-- Require verification command evidence before passing.
-- Check implementation compliance, security concerns, code hygiene, regression risk, documentation, and operational concerns.
-- Do not create PRs or merge branches in Phase 2.
+- Require verification command evidence before passing: commands and exit codes from `verify` digests or fresh runs. A pass without command evidence is not a pass.
+- Report the checks run, commands, exit codes, and findings. Fail closed: unresolved findings block the gate.
 
 ## PR Lifecycle Contexts
 

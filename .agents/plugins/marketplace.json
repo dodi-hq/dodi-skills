@@ -8,7 +8,7 @@
       "name": "dodi-dev",
       "source": {
         "source": "local",
-        "path": "./plugins/dodi-dev"
+        "path": "./dodi-dev"
       },
       "policy": {
         "installation": "AVAILABLE",

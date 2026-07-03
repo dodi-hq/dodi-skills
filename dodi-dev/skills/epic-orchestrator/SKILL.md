@@ -74,7 +74,7 @@ The main loop routes, dispatches, and advances state — nothing else. Bulk read
 
 ## State Transitions
 
-Use the child-ticket and epic-level transition tables in `docs/specs/2026-05-02-epic-orchestration-design.md`. Child ticket branches move from `ready-for-child-pr` into child PR review and merge against the epic branch. Epic branches move to `epic-ready-for-pr` only after every child ticket is done.
+Use the child-ticket and epic-level transition tables and demotion rules in `state-transitions.md`, which ships in this skill's directory. Child ticket branches move from `ready-for-child-pr` into child PR review and merge against the epic branch. Epic branches move to `epic-ready-for-pr` only after every child ticket is done.
 
 ## Phase 3 PR Lifecycle
 
@@ -88,27 +88,9 @@ Allowed Phase 3 next actions:
 
 When every child ticket is `done`, transition the epic to `epic-ready-for-pr` and invoke `submit-epic-pr` after the epic readiness evidence is present. Epic readiness evidence must include a green full regression run on the integrated epic head, after the latest main/master sync; `submit-epic-pr` performs this run as a hard gate. Child PRs prove each ticket individually — only this run proves the merged children work together. Treat downstream GitHub Actions CI as the final safety gate before production, not the first line of defense; do not open the epic PR on a red or untested integrated branch.
 
-Child PR transitions:
-
-| Source state | Trigger | Required evidence | Durable writes | Next state | Fallback or error transition |
-| --- | --- | --- | --- | --- | --- |
-| ready-for-child-pr | local checks pass | branch, commits, review, verification, quality-gate evidence | child PR link and PR body | child-pr-reviewing | blocked if PR cannot be created |
-| child-pr-reviewing | child PR is open | clean PR review and local CI-equivalent evidence | PR comments and ticket evidence | ready-to-merge-child | returns to implementation-reviewing or verifying based on finding type |
-| ready-to-merge-child | child branch is current with epic | clean review/test evidence after latest epic sync | merge commit or squash merge link; child ticket done comment | done | blocked if merge conflict requires spec or plan judgment |
-| done | child PR merged into epic | merged PR state | child ticket final status | done | no transition unless ticket is reopened |
-
-Epic PR transitions:
-
-| Source state | Trigger | Required evidence | Durable writes | Next state | Fallback or error transition |
-| --- | --- | --- | --- | --- | --- |
-| epic-ready-for-pr | all children are done | child PR links, latest main/master sync, full regression suite green on integrated epic head, epic quality gate evidence | epic readiness summary | epic-pr-open | returns to epic-active if a child reopens, sync introduces required fixes, or the full regression suite fails |
-| epic-pr-open | epic PR created | PR link targeting main or master | epic ticket PR comment | epic-pr-open | existing GitHub Actions and review workflows take over |
-
-Do not auto-merge epic PRs. Existing GitHub Actions and review workflows take over after `epic-pr-open`.
+Child PR and epic PR transitions are in `state-transitions.md`. Do not auto-merge epic PRs. Existing GitHub Actions and review workflows take over after `epic-pr-open`.
 
 ## Evidence Rule
-
-Never advance from a worker success claim alone. Verify labels, comments, artifacts, branch/worktree state, commits, or command output first.
 
 The orchestrator may not advance state from a worker success claim alone. Verify durable PM labels, PM comments, artifact links, branch/worktree state, commits, or command output before advancing.
 

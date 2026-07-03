@@ -3,20 +3,20 @@
 ## Project Shape
 
 - This repository publishes Dodi developer workflow skills.
-- The Claude plugin marketplace entry is `.claude-plugin/marketplace.json`.
-- The Claude plugin metadata is `dodi-dev/.claude-plugin/plugin.json`.
-- Claude skills live under `dodi-dev/skills/*/SKILL.md`.
-- Codex plugin metadata and skills should live in a separate Codex plugin tree.
-- New workflow skills must be added to both Claude and Codex skill trees.
+- There is one canonical skill tree, `dodi-dev/skills/*/SKILL.md`, served to both runtimes.
+- The plugin directory `dodi-dev/` carries two metadata envelopes: `.claude-plugin/plugin.json` (Claude Code) and `.codex-plugin/plugin.json` (Codex).
+- Marketplace entries point at the same directory: `.claude-plugin/marketplace.json` (Claude) and `.agents/plugins/marketplace.json` (Codex), both with source `./dodi-dev`.
+- There is no mirror tree. Never reintroduce a copied skill tree; drift is a release bug.
 
 ## Editing Rules
 
-- Keep Claude and Codex skills functionally equivalent, but allow runtime-native wording and mechanics.
-- Do not use symlinks or generated exposure as the long-term distribution model.
-- If a released skill changes, update the relevant plugin versions for every affected runtime.
+- Skills are harness-neutral: one SKILL.md must read correctly on both Claude Code and Codex.
+- Write harness-specific mechanics (model aliases, Agent tool) as the Claude form plus the tier name, e.g. "Capable tier (`model: opus` on Claude Code)". Codex maps tiers per the table below.
+- If a released skill changes, bump the version in all three metadata files in the same change.
 - Preserve each skill's frontmatter with `name` and `description`.
 - Keep workflow instructions concrete and command-oriented.
 - Prefer adding supporting prompt files beside the owning skill when the prompt is too long for `SKILL.md`.
+- Skills must never reference files that exist only in this repository (e.g. `docs/specs/...`); policy a skill needs at runtime ships inside the skill's own directory.
 
 ## Model Tiers
 

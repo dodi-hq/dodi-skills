@@ -4,13 +4,13 @@ set -euo pipefail
 check_heading() {
   local file="$1"
   local heading="$2"
-  rg -n "^## ${heading}$" "$file" >/dev/null
+  grep -q "^## ${heading}$" "$file"
 }
 
 check_contains() {
   local file="$1"
   local text="$2"
-  rg -n --fixed-strings -- "$text" "$file" >/dev/null
+  grep -qF -- "$text" "$file"
 }
 
 check_count_at_least() {
@@ -18,7 +18,7 @@ check_count_at_least() {
   local text="$2"
   local minimum="$3"
   local count
-  count="$(rg --fixed-strings --count -- "$text" "$file" || true)"
+  count="$(grep -cF -- "$text" "$file" || true)"
   if (( count < minimum )); then
     echo "${file}: expected at least ${minimum} occurrences of ${text}, found ${count}" >&2
     exit 1

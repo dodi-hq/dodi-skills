@@ -26,8 +26,32 @@ skills=(
 
 for skill in "${skills[@]}"; do
   test -f "dodi-dev/skills/${skill}/SKILL.md"
-  test -f "plugins/dodi-dev/skills/${skill}/SKILL.md"
 done
+
+prompt_files=(
+  brainstorm/spec-reviewer-prompt.md
+  implement/implementer-prompt.md
+  review/review-prompt.md
+  write-plan/plan-reviewer-prompt.md
+  write-plan/plan-writer-prompt.md
+  epic-orchestrator/state-reader-prompt.md
+  epic-orchestrator/evidence-checker-prompt.md
+  epic-orchestrator/state-transitions.md
+  mature-ticket/spec-drafter-prompt.md
+  verify/test-runner-prompt.md
+  review-child-pr/pr-reviewer-prompt.md
+  submit-ticket-pr/local-ci-runner-prompt.md
+)
+
+for prompt in "${prompt_files[@]}"; do
+  test -f "dodi-dev/skills/${prompt}"
+done
+
+# Skills must not reference documents that only exist in this repository.
+if grep -rn -E "docs/specs/2026|docs/plans/2026|templates/ticket-comments" dodi-dev/skills; then
+  echo "skill references a repo-only document; ship policy inside the skill directory" >&2
+  exit 1
+fi
 
 testing_contract_checks=(
   "### Required Test Groups"
@@ -68,31 +92,26 @@ check_count_at_least() {
   local text="$2"
   local minimum="$3"
   local count
-  count="$(rg --fixed-strings --count -- "$text" "$file" || true)"
+  count="$(grep -cF -- "$text" "$file" || true)"
   if (( count < minimum )); then
     echo "${file}: expected at least ${minimum} occurrences of ${text}, found ${count}" >&2
     exit 1
   fi
 }
 
-for file in dodi-dev/skills/write-plan/SKILL.md plugins/dodi-dev/skills/write-plan/SKILL.md; do
-  rg -n "^## Testing Contract$" "$file" >/dev/null
-  for expected in "${testing_contract_checks[@]}"; do
-    rg -n --fixed-strings -- "$expected" "$file" >/dev/null
-  done
-  check_count_at_least "$file" "Reason: \`<why>\`" 3
-  check_count_at_least "$file" "Harness: \`<existing|setup-required|not-applicable>\`" 2
-  check_count_at_least "$file" "Minimum assertions: \`<specific flows>\`" 2
+file=dodi-dev/skills/write-plan/SKILL.md
+grep -q "^## Testing Contract$" "$file"
+for expected in "${testing_contract_checks[@]}"; do
+  grep -qF -- "$expected" "$file"
 done
+check_count_at_least "$file" "Reason: \`<why>\`" 3
+check_count_at_least "$file" "Harness: \`<existing|setup-required|not-applicable>\`" 2
+check_count_at_least "$file" "Minimum assertions: \`<specific flows>\`" 2
 
-find plugins/dodi-dev/skills -type l -print | while read -r link; do
-  echo "unexpected symlink: ${link}" >&2
-  exit 1
-done
 find dodi-dev/skills -type l -print | while read -r link; do
   echo "unexpected symlink: ${link}" >&2
   exit 1
 done
-find dodi-dev/skills plugins/dodi-dev/skills -maxdepth 2 -type f | sort
+find dodi-dev/skills -maxdepth 2 -type f | sort
 
 echo "phase skills ok"
