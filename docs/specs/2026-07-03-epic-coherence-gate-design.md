@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Add a Frontier-tier **epic-coherence review** at the post-merge seam: after each child merges into the epic branch and before any new work is dispatched for that epic, a fable reviewer checks the merged result against the epic's design intent — because every existing review is ticket-local, and small judgment calls compound as later children conform to earlier ones. The **epic ticket itself becomes the master decision register**: every notable judgment call and every verdict lands there as structured comments, and downstream spec drafters, plan writers, and lanes consume it as input. Legitimate divergence (child right, design stale) is a first-class outcome: the register updates, affected children lose their readiness labels, and the tick routes them back through `mature-ticket` automatically — no new machinery.
+Add a Frontier-tier **epic-coherence review** at the post-merge seam: after each child merges into the epic branch and before any new work is dispatched for that epic, a fable reviewer checks the merged result against the epic's design intent — because every existing review is ticket-local, and small judgment calls compound as later children conform to earlier ones. The **epic ticket itself becomes the master decision register**; legitimate divergence is a first-class outcome that updates the canon and re-matures affected children automatically. The child dependency graph moves to **native PM blocked-by relations**, and a **lights-out hardening** package (stalled-epic watchdog, dedicated escalation channel + daily digest, heartbeat, deploy/CI failure detection, structural Gate 2 via branch protection) guarantees that healthy-quiet and stalled never look the same, and that failure-to-self-correct always becomes a human ping.
 
 ## Key Points
 
@@ -15,7 +15,9 @@ Add a Frontier-tier **epic-coherence review** at the post-merge seam: after each
 - **Realignment is label hygiene, not new machinery.** For each affected child the reviewer names: strip `ready-to-implement` (and `spec-ready` only when the spec itself is invalidated); the tick then routes the child back through `mature-ticket`, whose drafter consumes the updated register. Divergence is judged once, at the seam — never re-derived inside lanes, which stay forbidden from redesigning mid-flight.
 - **Gate 1 amendment escape hatch.** A divergence that contradicts what the human explicitly approved at Gate 1 is never canonized by automation: escalate with the scannable header, hold dependent dispatches, and wait. Delegation covers routine choices, not silent rewrites of approved intent.
 - **The child dependency graph moves to native PM relations.** Hard sequencing edges are registered as blocked-by relations at planning time (today they live as prose in the epic assessment comment). Dispatch eligibility becomes a structural query — readiness labels ∧ no open blocking issues ∧ epic not `coherence-pending` — and the MATERIAL_DRIFT corrective ticket holds its dependents by relation, not by procedure. Soft parallelism signals (file-surface overlap) stay in the assessment; relations carry hard sequencing only.
-- **Watch the verdict distribution.** On a well-specified epic most verdicts should be ALIGNED. If the gate never fires beyond that across a few epics, the register alone may be doing the work — revisit whether the review can drop to sampling. The bet is the usual one: a bounded Frontier check per merge against unbounded compounted rework.
+- **Watch the verdict distribution.** On a well-specified epic most verdicts should be ALIGNED. If the gate never fires beyond that across a few epics, the register alone may be doing the work — revisit whether the review can drop to sampling. The bet is the usual one: a bounded Frontier check per merge against unbounded compounded rework.
+- **Lights-out hardening (this release, not later).** A stalled-epic watchdog and a daily "waiting on you" digest in the janitor, a dedicated needs-human escalation channel with re-escalation on staleness, a tick heartbeat as dead-man's switch, janitor escalation on failed production deploys and red/conflicted epic PRs, a progress-based retry ceiling and claim test, idempotent verdict writes, and a curated register canon. Healthy-quiet and stalled must never look the same, and failure-to-self-correct must always become a human ping.
+- **Gate 2 becomes structural, not procedural.** Setup prerequisite: branch protection on main/master requiring human review/merge, so automation *cannot* merge the epic PR even if misrouted. The markdown rule stays; GitHub enforces it.
 
 ---
 
@@ -52,6 +54,8 @@ Responsibilities:
 - for divergence, decide which side is right: the implementation or the design
 - name the affected children explicitly for any verdict that propagates
 - flag any divergence that touches Gate-1-approved intent as `GATE1_AMENDMENT` — never canonize it
+- judge **cumulative** drift, not just this merge: weigh the register as a whole against the Gate 1 package, and when accumulated superseded points have materially moved the epic from what was approved — even though each step was individually routine — escalate a **Gate 1 refresh** (scannable delta summary, human re-approves or redirects)
+- adversarial framing: the prompt instructs the reviewer to argue that the merge diverges and let the evidence defeat the argument, countering the correlated-blind-spot risk of Frontier reviewing Frontier-drafted designs
 
 Output:
 
@@ -70,6 +74,8 @@ Output:
 | LEGITIMATE_DIVERGENCE | the new decision recorded as canonical, superseding the design point (design artifact gets a superseded-by note, never silently edited) | affected children: strip `ready-to-implement`; strip `spec-ready` only if the spec itself is invalidated → tick re-routes through `mature-ticket` with the updated register | clear `coherence-pending` |
 | any + GATE1_AMENDMENT | entry marked ⚠ pending human ruling | dependent dispatches held | escalate with scannable header; `coherence-pending` stays until the human rules |
 
+**Verdict writes are idempotent.** The close-out is multi-step (register entry, label strips, corrective ticket, clearing `coherence-pending`), and a crashed run may have completed some steps. Every write is keyed to the merge SHA under review: before writing, check for an existing register entry / corrective ticket / label state for that SHA and skip what already exists. Re-running a coherence review after a crash must never double-file.
+
 Realignment is deliberately label-driven: no lane ever "checks and repairs" its own instructions. A lane whose plan predates a register change either was named as affected (and lost its labels before dispatch) or was not (and proceeds). Divergence is judged exactly once, at the seam, by the Frontier reviewer with the full picture.
 
 ## Decision Register (on the epic ticket)
@@ -80,12 +86,14 @@ The epic ticket is the master register. Mechanics:
 - Entries are append-only; a later entry may supersede an earlier one by reference, never by editing history.
 - The epic description gains a one-line pointer to the register convention so humans and agents know where to look.
 
-Consumers (all gain the register as required input):
+**Curation — the canon summary.** Registers grow with every merge, and an uncurated register recreates the context-bloat problem for every consumer. The coherence reviewer maintains one pinned **canon summary** comment: current canonical decisions only, supersede chains collapsed, one line each. Consumers read the canon summary; the full entry history remains for audit. The reviewer updates the summary as part of every verdict close-out (idempotent, keyed like all verdict writes).
+
+Consumers (all gain the register as required input — the canon summary, not the raw history):
 
 - `mature-ticket` spec drafter and `write-plan` plan writer: draft against the register; contradicting a canonical register decision is a review finding.
 - `deliver-ticket` lanes: receive the register at pickup as context; still forbidden from redesigning — a perceived register conflict mid-lane is a demote-to-spec surprise, as today.
 - The coherence reviewer itself: prior entries are precedent.
-- The Gate 1 package and epic readiness summary: link the register so both human gates see the accumulated decisions.
+- The Gate 1 package and epic readiness summary: link the register so both human gates see the accumulated decisions. The Gate 2 readiness summary gains a mandatory **"what changed since you signed off"** section — every canonized divergence from the Gate 1 package, one line each — so the merge decision sees the delta, not just the outcome.
 
 ## Native Dependency Relations
 
@@ -98,13 +106,52 @@ The dependency graph becomes structural PM state instead of comment prose:
 - **Hard sequencing only.** Predicted file-surface overlap and other parallelism signals remain advisory data in the assessment and plans — they inform lane concurrency, and encoding them as blocked-by would create false blocks.
 - **Janitor hygiene.** `reconcile-tickets` adds one check: a child whose blocking issues are all terminal but which still sits in a blocked state gets advanced (or escalated if evidence is ambiguous), citing the relation state.
 
+## Lights-Out Hardening
+
+The failure mode that breaks unattended operation is not a wrong action — the gates catch those — it is **silence**: an epic that sits still while every tick exits as a successful no-op, or an escalation that reaches no one. Two invariants: *healthy-quiet and stalled must never look the same*, and *failure-to-self-correct must always become a human ping*.
+
+### Stalled-epic watchdog (janitor check)
+
+`reconcile-tickets` gains: for every active epic (`epic-signed-off`, not done), if no durable progress (new checkpoint, merge, label transition, register entry) has occurred within the watchdog window (default 3 days) **and** the epic is not parked on an explicit human-wait state, escalate with a diagnosis: dispatchable children (or why none — including relation cycles: if no child is dispatchable and none is human-parked, say which blocked-by edges form the knot), live claims, `coherence-pending` age, open PR state. This converts every unknown-unknown stall — deadlocked relations, a stuck label, a routing bug — into a known escalation.
+
+### Escalation channel and the "waiting on you" digest
+
+- Needs-human events (Gate 1 refresh, `QUESTIONS_FOR_HUMAN`, demotions, blockers, retry ceiling, watchdog, deploy/CI failures) go to a **dedicated escalation channel** (Slack ping or equivalent) — never mixed into routine run-completion notifications, which are noise at tick cadence and must be mutable without losing escalations.
+- The janitor produces a daily **"waiting on you" digest**: every human-parked item across all epics — what it is, how long parked, the one-line ask, the link. Aggregation is the guard against human attention becoming the silent bottleneck.
+- **Re-escalation:** a human-parked item older than the staleness window (default 3 days) is re-pinged in the next digest with its age flagged. Escalations are not fire-and-forget.
+
+### Dead-man's switch
+
+The tick posts a daily heartbeat (one line, fixed location — a designated PM ticket or channel). The absence of the heartbeat is the signal that the substrate itself died (app closed, machine down) — the one failure the janitor cannot report because it dies with the same substrate. Interim measure until scheduling moves to managed infrastructure.
+
+### Deploy and epic-PR failure detection (janitor checks)
+
+- A production deployment reporting `failure`/`error` → escalate immediately; affected epics stay in Merged with a deploy-failed note. Detection only — triage remains the future devops leg.
+- An open epic PR that is conflicted against its base or has failing checks → escalate. Gate 2 notifications fire at PR-open; without this check, a later red X has no watcher.
+
+### Progress-based retry and claim semantics
+
+- **Retry ceiling counts stagnation, not resumes.** A `RESUMABLE` exit that added new durable checkpoint progress resets the counter; only attempts that end with no new progress count toward the ceiling. A big ticket that legitimately needs several context resets is healthy; three attempts that go nowhere are not.
+- **Claim liveness is progress-tested, not age-tested.** Before skipping (or expiring) a claim, check for durable progress since the claim's last update; a 3-hour-old claim with fresh checkpoints is alive regardless of lease age. The lease window is the fallback when there is no progress signal at all.
+
+### Multi-epic fairness
+
+Default posture: **one active epic at a time** — the tick's global priority order is defined for a single epic and will starve a second one behind long lanes. Running multiple concurrent epics requires round-robin by epic in the tick's selection step; until that is implemented, starting a second epic while one is active is a deliberate human choice, not a supported default.
+
+### Setup prerequisites (alongside the scheduled tasks)
+
+1. **Branch protection on main/master** requiring human review/merge — the structural enforcement of Gate 2. The procedural rule stays; GitHub makes it impossible rather than forbidden.
+2. The escalation channel wired and tested (one synthetic escalation end-to-end) before the first unattended epic.
+
 ## Out of Scope
 
 - Sampling or skipping coherence reviews on "small" children — run it every merge first; earn the optimization with verdict data.
+- Automated triage of failed deploys or red epic-PR CI — detection and escalation ship here; diagnosis/repair is the future devops leg (`babysit-epic-pr`, post-merge verification).
+- Round-robin multi-epic scheduling — single active epic is the supported posture this release.
 - Reverting merged children — correction is always forward (corrective ticket), never a revert by automation.
 - Coherence checks between concurrent in-flight lanes — covered indirectly at each lane's own merge seam; revisit with `maxParallelLanes` > 1.
 - Cross-epic coherence.
 
 ## Versioning
 
-Ships as `0.13.0`: new `epic-orchestrator/coherence-reviewer-prompt.md` (fable); `pickup-next` gains the `coherence-pending` action, dispatch blocks, and relation-based dispatch eligibility; `epic-orchestrator` merge step and state tables gain the seam; `file-ticket` and `assess-epic` gain native dependency-relation registration/repair; `mature-ticket`/spec-drafter, `write-plan`/plan-writer, and `deliver-ticket` gain the register as required input; `reconcile-tickets` gains the relation-hygiene check; new `templates/ticket-comments/decision-register-entry.md` wired into validation; AGENTS.md records the register convention.
+Ships as `0.13.0`: new `epic-orchestrator/coherence-reviewer-prompt.md` (fable, adversarial framing, cumulative-drift check, idempotent writes); `pickup-next` gains the `coherence-pending` action, dispatch blocks, relation-based dispatch eligibility, progress-based retry/claim semantics, and the daily heartbeat; `epic-orchestrator` merge step and state tables gain the seam; `file-ticket` and `assess-epic` gain native dependency-relation registration/repair; `mature-ticket`/spec-drafter, `write-plan`/plan-writer, and `deliver-ticket` consume the register canon summary; `submit-epic-pr` gains the "what changed since you signed off" section; `reconcile-tickets` gains relation hygiene, the stalled-epic watchdog, the "waiting on you" digest with re-escalation, and deploy/epic-PR failure detection; new `templates/ticket-comments/decision-register-entry.md` wired into validation; AGENTS.md records the register convention and the two lights-out invariants; setup prerequisites documented: branch protection on main/master and the escalation channel test.
