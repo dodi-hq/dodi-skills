@@ -30,7 +30,7 @@ Classify the epic and child tickets from durable PM and repository state. This s
 - Classify each child using the orchestrator-tracked table in `epic-orchestrator/state-transitions.md`.
 - Build ready work and maturity work queues.
 - Build the dependency map with parallelism in mind: it is what the orchestrator uses to decide which children may run in concurrent delivery lanes, so record file-surface overlap signals (shared modules, config, schema) alongside ticket dependencies.
-- **Verify and repair the native relation graph:** hard sequencing edges must exist as blocked-by relations on the tickets themselves (dispatch eligibility queries them — `scripts/dispatch-eligible.sh`). Add missing relations your analysis implies, flag relations that contradict it, and detect cycles (a cycle is a blocker, not a judgment call). After Gate 1 signoff the relation graph is canonical. Soft parallelism signals stay in the assessment comment — never encode them as blocked-by.
+- **Verify and repair the native relation graph:** hard sequencing edges must exist as blocked-by relations on the tickets themselves (dispatch eligibility queries them — `${CLAUDE_PLUGIN_ROOT}/scripts/dispatch-eligible.sh`). Add missing relations your analysis implies, flag relations that contradict it, and detect cycles (a cycle is a blocker, not a judgment call). After Gate 1 signoff the relation graph is canonical. Soft parallelism signals stay in the assessment comment — never encode them as blocked-by.
 - Treat `spec-ready` and `ready-to-implement` as hard gates.
 - The outputs feed the Gate 1 signoff package: state map, dependency map, and any child that should carry `needs-human-spec`.
 - Do not create PRs or dispatch lanes from this skill.

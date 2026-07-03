@@ -27,8 +27,8 @@ The janitor **repairs state; it never advances work**. It does not dispatch lane
 | Ticket `blocked` from the retry ceiling | the referenced blocker demonstrably resolved (e.g. the blocking dependency merged) | clear `blocked`, reset the attempt counter, comment the evidence |
 | Child parked as dependency-blocked | all its blocking relations are terminal (per the relation graph) | advance per the transition tables, citing the relation state |
 | Open epic PR | conflicted against its base, or failing required checks | escalate — Gate 2 notifications fire at PR-open; a later red X has no other watcher |
-| Production deployment | latest deployment reports failure/error (`scripts/check-deploy.sh` exit 4) | escalate immediately; affected epics stay Merged with a deploy-failed note. Detection only — triage is the future devops leg |
-| Any active epic | no durable progress (checkpoint, merge, label transition, register entry) within the watchdog window (default 3 days) and not parked on an explicit human-wait state | escalate with a diagnosis from `scripts/watchdog-scan.sh`: dispatchable children or why none (including relation cycles), live claims, `coherence-pending` age, open PR state |
+| Production deployment | latest deployment reports failure/error (`${CLAUDE_PLUGIN_ROOT}/scripts/check-deploy.sh` exit 4) | escalate immediately; affected epics stay Merged with a deploy-failed note. Detection only — triage is the future devops leg |
+| Any active epic | no durable progress (checkpoint, merge, label transition, register entry) within the watchdog window (default 3 days) and not parked on an explicit human-wait state | escalate with a diagnosis from `${CLAUDE_PLUGIN_ROOT}/scripts/watchdog-scan.sh`: dispatchable children or why none (including relation cycles), live claims, `coherence-pending` age, open PR state |
 | Anything ambiguous | evidence conflicts or is missing | post an escalation comment describing the conflict — never write a guessed state |
 
 ## Waiting-On-You Digest
@@ -37,12 +37,12 @@ Every run produces the daily digest of human-parked items across all epics: each
 
 ## Deploy Signal
 
-Production deploys are recorded as GitHub deployments; the nightly deploy (one per night, when anything is pending) is the only path to production. A merged epic commit counts as deployed when a production deployment whose SHA reaches it reports `success`. Run `scripts/check-deploy.sh <epic-merge-sha> <environment>`: exit 0 = deployed (proceed to cleanup), exit 1 = not yet, exit 4 = latest deployment failed (escalate). Do not restate or improvise the deployment-API mechanics — the script owns them.
+Production deploys are recorded as GitHub deployments; the nightly deploy (one per night, when anything is pending) is the only path to production. A merged epic commit counts as deployed when a production deployment whose SHA reaches it reports `success`. Run `${CLAUDE_PLUGIN_ROOT}/scripts/check-deploy.sh <epic-merge-sha> <environment>`: exit 0 = deployed (proceed to cleanup), exit 1 = not yet, exit 4 = latest deployment failed (escalate). Do not restate or improvise the deployment-API mechanics — the script owns them.
 
 ## Cleanup (deploy-confirmed only)
 
-- Delete the epic branch and any surviving child branches via `scripts/cleanup-branch.sh <branch> <base> [worktree]` — the script verifies merged-by-SHA-reachability and refuses otherwise; never delete by name or bypass it.
-- Expire dead claims via `scripts/release-claim.sh` after the progress test (fresh checkpoints since the claim's last update = alive, regardless of age).
+- Delete the epic branch and any surviving child branches via `${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-branch.sh <branch> <base> [worktree]` — the script verifies merged-by-SHA-reachability and refuses otherwise; never delete by name or bypass it.
+- Expire dead claims via `${CLAUDE_PLUGIN_ROOT}/scripts/release-claim.sh` after the progress test (fresh checkpoints since the claim's last update = alive, regardless of age).
 - Post the deploy-confirmation comment on the epic: deployment id, SHA, environment, tickets transitioned, branches and worktrees cleaned.
 
 ## Rules

@@ -82,7 +82,7 @@ Merges into the epic branch are orchestrator-owned and strictly serial:
 1. Take one `ready-to-merge-child` lane result.
 2. Verify its evidence via an evidence-checker worker (`evidence-checker-prompt.md`).
 3. Check the child branch is current with the epic head; if the epic moved, have the lane (re-dispatched if needed) sync and rerun relevant checks per `submit-ticket-pr` merge rules.
-4. Squash merge via `submit-ticket-pr` (Merge); verify the postcondition with `scripts/verify-merge.sh` and clean up with `scripts/cleanup-branch.sh`; post the done comment.
+4. Squash merge via `submit-ticket-pr` (Merge); verify the postcondition with `${CLAUDE_PLUGIN_ROOT}/scripts/verify-merge.sh` and clean up with `${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-branch.sh`; post the done comment.
 5. **Apply `coherence-pending` to the epic.** Dispatch the coherence reviewer (`coherence-reviewer-prompt.md`, `model: fable`) against the merge SHA; perform the verdict-routing writes it recommends (register entry + canon summary on the epic ticket, label changes on affected children, corrective ticket on MATERIAL_DRIFT — all idempotent, keyed to the merge SHA); clear `coherence-pending` on a clean route. GATE1_AMENDMENT or GATE1_REFRESH → escalate and leave the label in place.
 6. Only then take the next merge; new lane dispatches and maturation for this epic stay blocked while `coherence-pending`.
 
