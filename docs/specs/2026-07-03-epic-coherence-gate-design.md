@@ -14,6 +14,7 @@ Add a Frontier-tier **epic-coherence review** at the post-merge seam: after each
 - **Four verdicts, four routes.** ALIGNED → register entry only. MINOR_DRIFT → register entry + downstream notes; no rework. MATERIAL_DRIFT (child wandered, design right) → corrective ticket sequenced before dependent children; epic holds for dependents until corrected. LEGITIMATE_DIVERGENCE (child right, design stale) → the new decision becomes canonical in the register and affected children are realigned.
 - **Realignment is label hygiene, not new machinery.** For each affected child the reviewer names: strip `ready-to-implement` (and `spec-ready` only when the spec itself is invalidated); the tick then routes the child back through `mature-ticket`, whose drafter consumes the updated register. Divergence is judged once, at the seam — never re-derived inside lanes, which stay forbidden from redesigning mid-flight.
 - **Gate 1 amendment escape hatch.** A divergence that contradicts what the human explicitly approved at Gate 1 is never canonized by automation: escalate with the scannable header, hold dependent dispatches, and wait. Delegation covers routine choices, not silent rewrites of approved intent.
+- **The child dependency graph moves to native PM relations.** Hard sequencing edges are registered as blocked-by relations at planning time (today they live as prose in the epic assessment comment). Dispatch eligibility becomes a structural query — readiness labels ∧ no open blocking issues ∧ epic not `coherence-pending` — and the MATERIAL_DRIFT corrective ticket holds its dependents by relation, not by procedure. Soft parallelism signals (file-surface overlap) stay in the assessment; relations carry hard sequencing only.
 - **Watch the verdict distribution.** On a well-specified epic most verdicts should be ALIGNED. If the gate never fires beyond that across a few epics, the register alone may be doing the work — revisit whether the review can drop to sampling. The bet is the usual one: a bounded Frontier check per merge against unbounded compounted rework.
 
 ---
@@ -86,6 +87,17 @@ Consumers (all gain the register as required input):
 - The coherence reviewer itself: prior entries are precedent.
 - The Gate 1 package and epic readiness summary: link the register so both human gates see the accumulated decisions.
 
+## Native Dependency Relations
+
+The dependency graph becomes structural PM state instead of comment prose:
+
+- **Registration at planning time.** `file-ticket` sets blocked-by relations implied by the decomposition when it creates the children; `assess-epic` verifies and repairs the relations against its dependency analysis, and the Gate 1 package presents the graph (now also human-visible in the PM UI). Gate 1 approval canonizes it.
+- **Dispatch eligibility is a query, not a parse.** `pickup-next` dispatches `deliver-ticket` for a child only when: readiness labels present ∧ no open blocking issues on the child ∧ the epic is not `coherence-pending`. "B waits for A done *and* coherence-checked" needs no per-edge encoding — the relation covers "A done"; the epic-level label covers "coherence-checked" for every edge at once.
+- **`blocked-dependency` resolves natively.** The state-transition table's dependency check reads live relations; a child unblocks the moment its blocker reaches its terminal state, with no comment archaeology.
+- **Verdict routing uses relations.** MATERIAL_DRIFT: the corrective ticket is created with blocked-by relations from each dependent child — the "sequenced before dependents" hold is structural. LEGITIMATE_DIVERGENCE: relations are untouched unless the reviewer explicitly re-sequences; realignment is label-driven as above.
+- **Hard sequencing only.** Predicted file-surface overlap and other parallelism signals remain advisory data in the assessment and plans — they inform lane concurrency, and encoding them as blocked-by would create false blocks.
+- **Janitor hygiene.** `reconcile-tickets` adds one check: a child whose blocking issues are all terminal but which still sits in a blocked state gets advanced (or escalated if evidence is ambiguous), citing the relation state.
+
 ## Out of Scope
 
 - Sampling or skipping coherence reviews on "small" children — run it every merge first; earn the optimization with verdict data.
@@ -95,4 +107,4 @@ Consumers (all gain the register as required input):
 
 ## Versioning
 
-Ships as `0.13.0`: new `epic-orchestrator/coherence-reviewer-prompt.md` (fable); `pickup-next` gains the `coherence-pending` action and dispatch blocks; `epic-orchestrator` merge step and state tables gain the seam; `mature-ticket`/spec-drafter, `write-plan`/plan-writer, and `deliver-ticket` gain the register as required input; new `templates/ticket-comments/decision-register-entry.md` wired into validation; AGENTS.md records the register convention.
+Ships as `0.13.0`: new `epic-orchestrator/coherence-reviewer-prompt.md` (fable); `pickup-next` gains the `coherence-pending` action, dispatch blocks, and relation-based dispatch eligibility; `epic-orchestrator` merge step and state tables gain the seam; `file-ticket` and `assess-epic` gain native dependency-relation registration/repair; `mature-ticket`/spec-drafter, `write-plan`/plan-writer, and `deliver-ticket` gain the register as required input; `reconcile-tickets` gains the relation-hygiene check; new `templates/ticket-comments/decision-register-entry.md` wired into validation; AGENTS.md records the register convention.
