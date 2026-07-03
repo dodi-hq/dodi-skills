@@ -13,6 +13,7 @@ Collapse the per-ticket orchestration hops into a single `deliver-ticket` lane (
 - **Parallelism: `maxParallelLanes` default 2.** Lanes run concurrently only when the dependency map shows no edges and plans predict disjoint file surfaces; any predicted overlap forces serialization. Lanes never touch the epic branch; merges stay orchestrator-owned and strictly serial.
 - **Crash-safe via checkpoints.** Lanes post the existing per-state PM comments as they pass through; a dead lane is re-dispatched and resumes from the last durable checkpoint.
 - **Scannable artifact convention.** Specs, the Gate 1 package, the epic readiness summary, and human notifications all lead with `## TL;DR` (2–3 sentences) + `## Key Points` (5–9 bullets: decisions, tradeoffs, in/out scope, risks, ⚠-flagged assumptions). Notifications carry only that header plus links.
+- **Context is compacted deliberately, at logical stop points.** A deliberate compaction is a voluntary crash + resume: sessions reset at mandatory anchors (orchestrator after each merge and Gate 1; lane at the quality-gate→PR seam), write a continuation brief, and re-dispatch fresh from durable state. Harness auto-compaction becomes a backstop, not the mechanism.
 - **Demotion, evidence rules, and Testing Contracts are unchanged.** Judgment surprises still demote to the spec lane; the orchestrator still advances only on evidence-checker citations; the epic PR still requires a green full regression on the integrated head.
 
 ---
@@ -120,6 +121,26 @@ Allowed next actions become:
 Externally tracked child states collapse to: spec lane (unchanged) → `ready-to-implement` → `delivering` → `ready-to-merge-child` → `done`. The intermediate delivery states remain visible as checkpoint comments but are no longer orchestrator transitions. `state-transitions.md` gains the lane-boundary table; the inner table is retained as the lane's internal checkpoint contract.
 
 Evidence rule unchanged: `done` only on evidence-checker citations (merge commit present, PM comment posted), never on a lane's claim.
+
+## Context Hygiene: Compaction at Logical Stop Points
+
+Long-running sessions (the orchestrator, delivery lanes) must not drift into harness-forced compaction at arbitrary token thresholds — that summarizes mid-thought and loses state unpredictably. Instead, compact deliberately: **a deliberate compaction is a voluntary crash + resume.** The durable checkpoints and resume contract that make lanes crash-safe are exactly what make a deliberate reset lossless, and the mechanism is harness-neutral (it relies on durable state, not on any harness's compaction behavior).
+
+The judgment call "is now a good time?" is converted into four rules:
+
+1. **The Resumability Test defines a logical stop point.** A point is a legal reset point iff a fresh session, given only durable state (PM labels/comments, artifact links, branches, commits, the run ledger), would choose the same next action. Every checkpoint boundary that passes this test is a candidate.
+2. **Mandatory anchors make the common case mechanical.** The orchestrator resets after Gate 1 approval and after every child merge. A lane resets once at its biggest seam — after `quality-gating` is clean, before the PR stage. No judgment needed at these points; they always pass the test.
+3. **Emergency valve, never mid-step.** If the harness warns that context is running low between anchors, finish the current step (never abandon a review round, a merge, or a dispatch mid-flight), write a checkpoint comment, and exit `RESUMABLE` for re-dispatch. If a step cannot complete, write an explicit "interrupted at" comment so the resume does not double-execute.
+4. **Bias rule for what survives.** Durable state captures decisions but not soft signal — flaky tests noticed, a worker that needed two retries, a module that smells fragile. Sessions keep an append-only **notes** section (epic comment or run ledger entries) and write such observations *as they occur*, not at reset time. When unsure whether an observation is worth persisting: write it. Notes are cheap; lost context is not.
+
+Reset mechanics — the **continuation brief** written at every reset point (and consumed by the re-dispatched session before anything else):
+
+- current state per the transition tables, with evidence links
+- the chosen next action and one line of why
+- open concerns from the notes section that remain live
+- anything in flight that must NOT be redone (e.g. "child PR #42 already open")
+
+Harness-native auto-compaction remains as a backstop only; the goal is that it rarely fires because sessions reset first, at good boundaries, on their own schedule.
 
 ## Out of Scope
 
