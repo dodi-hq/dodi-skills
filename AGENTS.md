@@ -26,7 +26,7 @@ Every skill and worker dispatch declares a model tier. Two levers: `model:` in S
 |------|--------------|----------|
 | Frontier | `fable` | Spec drafting/review, plan writing/review, the final pre-PR review round |
 | Capable | `opus` | Per-round code review, PR review |
-| Standard | `sonnet` | Orchestration routing, writing code, writing tests, fixing findings, PR bodies, failure triage, quality gate |
+| Standard | `sonnet` | Orchestration routing, writing code, writing tests, fixing findings, PR bodies, failure triage, quality gate, research digests (API docs, harness/codebase orientation) |
 | Fast | `haiku` | Git mechanics, state classification, command/test runners, read-only state digests |
 
 - Aliases only — never full model IDs; aliases track model upgrades.
@@ -41,6 +41,7 @@ Every skill and worker dispatch declares a model tier. Two levers: `model:` in S
 The main loop is a router and conversation surface. Bulk reads, test runs, and evidence checks go to workers that return compact digests — for responsiveness in interactive skills, and for context longevity in autonomous epic runs (an orchestrator that reads raw diffs/logs/PM dumps compacts and loses state).
 
 - Delegate any step that pulls more than ~200 lines of file/log/PM content into the main loop, or runs longer than ~1 minute.
+- Every worker dispatch pins a model tier explicitly (the Agent tool's `model` parameter on Claude Code). A dispatch that omits the pin silently inherits the session model — in spec/plan sessions that is Frontier, which is a defect, not a default. Research and read-and-digest workers (external/integration API docs, local test-harness orientation, codebase exploration, prior-art lookups) pin `sonnet`: writing a trustworthy digest is comprehension work above the Fast tier, but the judgment about what the digest means stays in the Frontier main loop.
 - Worker return contract: `STATUS` (DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED, or Approved / Issues Found for reviewers) + `EVIDENCE` (commit ids, file paths, command + exit code, log path) + details capped at ~20 lines. No transcripts, no pasted logs.
 - Parallel dispatch for read-only workers (explorers, reviewers, evidence checkers) is always allowed. `deliver-ticket` lanes may run in parallel across independent children (no dependency edge, disjoint predicted file surfaces; when in doubt, serialize). Within a lane, implementers never run in parallel. Merges into the epic branch and PM state advances stay one at a time.
 

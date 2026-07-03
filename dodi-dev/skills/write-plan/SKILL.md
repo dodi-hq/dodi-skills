@@ -141,6 +141,7 @@ git commit -m "feat: specific change"
 
 - **Interactive sessions:** draft the plan in the main loop — the dialogue context is the input.
 - **Autonomous epic lane** (entered via `mature-ticket`): delegate drafting to a plan-writer subagent (see plan-writer-prompt.md); the main loop only runs the review loop on the returned draft.
+- **Research dispatches** (either mode): codebase exploration, test-harness orientation, and external/integration API research go to workers pinned at Standard tier (`model: sonnet` on Claude Code), returning ~20-line digests with source links. Never let a research dispatch inherit the session model — plan sessions run Frontier, and read-and-digest work gains nothing from it.
 
 ## Plan Review Loop
 

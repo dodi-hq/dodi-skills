@@ -11,7 +11,7 @@ Do NOT write code, scaffold, or invoke implementation skills until the user appr
 
 ## Process
 
-1. **Explore context** — dispatch parallel background Explore subagents for files, docs, and recent commits; ask the first clarifying question while they run. Keep the main loop in dialogue — don't read 40 files between user messages.
+1. **Explore context** — dispatch parallel background research subagents (Standard tier — `model: sonnet` on Claude Code) for files, docs, and recent commits; ask the first clarifying question while they run. Keep the main loop in dialogue — don't read 40 files between user messages.
 2. **Ask clarifying questions** — one at a time, prefer multiple choice
 3. **Propose 2-3 approaches** — with trade-offs and your recommendation
 4. **Present design** — section by section, get approval incrementally
@@ -19,6 +19,14 @@ Do NOT write code, scaffold, or invoke implementation skills until the user appr
 6. **Spec review loop** — dispatch spec-reviewer subagent (see spec-reviewer-prompt.md). If it reports any issues, fix them and dispatch a fresh spec-reviewer again. Repeat until a review round comes back clean with zero issues. Do not exit the loop on a round that still has findings — the final round must be clean.
 7. **User review gate** — ask user to review the written spec before proceeding
 8. **Transition** — invoke `dodi-dev:write-plan`
+
+## Research Delegation
+
+Unfamiliar territory gets researched by workers, not by the main loop — external/integration API docs (auth, endpoints, rate limits, webhooks, gotchas), the local test-harness setup, existing integrations, prior art. Dispatch these in parallel where independent.
+
+- Every research dispatch pins Standard tier explicitly (`model: sonnet` on Claude Code). Never let a research worker inherit the session model — the session runs Frontier for design judgment, and a read-and-digest task gains nothing from it.
+- Workers return a compact digest (~20 lines) with source links (doc URLs, file paths); no pasted docs or transcripts.
+- The main loop interrogates the digests and owns every design conclusion drawn from them — workers report what is, the Frontier loop decides what it means.
 
 ## Design Principles
 
