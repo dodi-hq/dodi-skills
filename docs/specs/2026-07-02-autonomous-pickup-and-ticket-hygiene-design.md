@@ -13,7 +13,7 @@ Retire the babysat `epic-orchestrator` session and replace it with a stateless `
 - **Status hygiene closes the loop after Gate 2.** Today nothing updates Linear when the epic PR merges to main/master, and nothing cleans up after deploy. Fix: (1) a PR↔ticket linking convention (branch names + magic words) so Linear's native GitHub integration attaches PRs to tickets; (2) epic merge moves the epic and all children to **Merged/Done**; (3) a confirmed production deploy moves them to **Deployed/Released** and triggers branch + worktree cleanup.
 - **`reconcile-tickets` (new skill, sonnet): the convergence janitor.** A second, less frequent scheduled task that compares Linear state against GitHub/git reality (PR states, merge commits, deploy signals, stale claims, expired lanes) and fixes drift with evidence-cited writes. Event-driven updates keep things fresh; the janitor guarantees eventual consistency and never invents state — ambiguity becomes an escalation comment, not a guess.
 - **Crash safety and retries are explicit.** The tick writes a claim marker on pickup (crash visibility + future multi-machine), lanes keep their checkpoint/RESUMABLE contract, and a per-ticket retry ceiling (3 consecutive RESUMABLE/failed runs) converts loops into `blocked` + escalation instead of infinite spin.
-- ⚠ **Deploy-detection is a configurable input, assumed available.** The design assumes some observable production-deploy signal (GitHub deployment status, release tag, or deploy-log endpoint). Which signal exists in Mike's pipeline must be confirmed per-repo before the deploy-cleanup leg activates.
+- **Deploy signal: GitHub deployment status, confirmed.** The janitor reads deployments and their statuses from the GitHub API (`gh api`). Deploys run on a **nightly schedule** (one deployment per night, if anything is pending), so the deploy-cleanup leg needs exactly one janitor run per day, shortly after the deploy window.
 - **Start serial, scale deliberately.** One tick task, one action per run — effectively `maxParallelLanes=1` — until trial data justifies more. Parallelism later means a second scheduled task or dispatching lanes as background agent sessions, not a smarter tick.
 
 ---
@@ -81,7 +81,7 @@ Child merges into the epic branch are tracked (orchestrator-owned `done` transit
 
 **2. Merge transition (epic PR → main/master).** When Gate 2 happens, the epic and all its children move to **Merged** (or the team's Done state). Mechanism, in order of preference: Linear's GitHub integration auto-transition on PR merge where its rules can express it; the `reconcile-tickets` janitor as the guaranteed backstop (it sees the merged epic PR and cites the merge commit in its transition comment).
 
-**3. Deploy transition + cleanup (production).** ⚠ Assumes a deploy signal exists (see Key Points). When the janitor observes that a merged epic commit is confirmed deployed:
+**3. Deploy transition + cleanup (production).** The deploy signal is the **GitHub deployment status** on the production environment, read via the GitHub API (`gh api repos/<owner>/<repo>/deployments` + per-deployment statuses). A merged epic commit counts as deployed when a production deployment whose SHA reaches it reports a `success` status. Deploys run nightly (one scheduled deployment when anything is pending), so this check is naturally a once-daily sweep. When the janitor confirms a deploy:
 
 - Move the epic and children **Merged → Deployed/Released** (team-configurable state name; a `deployed` label if the workflow has no such state).
 - Delete the epic branch and any surviving child branches (children normally delete at child-merge).
@@ -90,7 +90,7 @@ Child merges into the epic branch are tracked (orchestrator-owned `done` transit
 
 ### `reconcile-tickets` Skill Contract
 
-`model: sonnet`. Runs as its own scheduled task (hourly-ish; also invocable manually). One sweep per run:
+`model: sonnet`. Runs as its own scheduled task, **once daily, shortly after the nightly deploy window** (also invocable manually anytime). Daily is sufficient because deploys are nightly and merge transitions are primarily handled event-side by Linear's GitHub integration — the janitor is the convergence backstop, not the fast path. If the Linear GitHub integration turns out not to be configured, raise the cadence so Gate 2 merges don't sit stale for a day. One sweep per run:
 
 | Check | Drift detected | Action |
 | --- | --- | --- |
