@@ -28,6 +28,7 @@ Create the child ticket branch and worktree from the epic branch. This skill is 
 - Verify spec-ready and ready-to-implement are present.
 - Refresh the epic branch before branching.
 - Create the child branch and child worktree from the epic branch.
+- Name the child branch `<user>/<ticket-id>-<slug>` with the ticket id lowercase (the PM system's branch-name format, e.g. `mike/dodi-123-instantly-webhook`) — this is what lets the PM system's GitHub integration attach PR state to the ticket automatically.
 - Record the created branch and worktree before implementation starts.
 - Do not branch from main or master for child ticket work.
 - Do not create PRs or merge branches from this step; the deliver-ticket lane owns the PR stage and the orchestrator owns merges.

@@ -54,6 +54,16 @@ Every human-facing artifact — specs, the Gate 1 signoff package, the epic read
 
 The header must be self-sufficient: a human who reads nothing else can approve or redirect. Everything below is written for agents. Notifications carry only the header plus links. Spec reviewers treat a missing or stale header as a blocking finding.
 
+## Scheduled Operation
+
+Post-Gate-1 delivery runs as **scheduled ticks**, not resident sessions. `pickup-next` (the heartbeat) and `reconcile-tickets` (the janitor) each run as a harness-native scheduled task — never a hand-rolled cron/daemon wrapper around a headless CLI.
+
+- Ticks are stateless: a fresh session per run, with the PM system and git as the only memory. Anything a run needs must be reconstructible from durable state.
+- One action per tick. `pickup-next` advances exactly one ticket per run, then exits; the next tick picks up what's next. A no-op run is success.
+- Claim discipline: a tick (or a manual orchestrator session) posts a claim comment before acting on a ticket, skips live claims from other hosts, and closes the claim with its exit state. A retry ceiling (default 3 consecutive failed/`RESUMABLE` attempts) converts loops into `blocked` + escalation.
+- The janitor repairs state (merge/deploy transitions, stale claims, branch/worktree cleanup) but never advances work and never guesses — ambiguous evidence becomes an escalation comment.
+- Gate 2 is procedural and absolute: no scheduled run merges, auto-merges, or enables auto-merge on an epic PR, regardless of permission mode.
+
 ## Context Hygiene
 
 Long-running sessions compact deliberately — a deliberate compaction is a voluntary crash + resume against durable state, never a harness-forced mid-thought summary.

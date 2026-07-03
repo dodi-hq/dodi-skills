@@ -25,7 +25,7 @@ check_count_at_least() {
   fi
 }
 
-for file in epic-assessment spec-ready ready-to-implement demotion child-pr-ready epic-pr-ready epic-signoff-request; do
+for file in epic-assessment spec-ready ready-to-implement demotion child-pr-ready epic-pr-ready epic-signoff-request claim deploy-confirmation; do
   test -f "templates/ticket-comments/${file}.md"
 done
 
@@ -107,5 +107,16 @@ check_heading templates/ticket-comments/epic-signoff-request.md "Key Points"
 check_heading templates/ticket-comments/epic-signoff-request.md "Children"
 check_heading templates/ticket-comments/epic-signoff-request.md "Needs Human Input"
 check_heading templates/ticket-comments/epic-signoff-request.md "On Approval"
+
+check_heading templates/ticket-comments/claim.md "Claim"
+check_heading templates/ticket-comments/claim.md "Attempt"
+check_heading templates/ticket-comments/claim.md "Exit"
+check_contains templates/ticket-comments/claim.md "Consecutive attempt:"
+check_contains templates/ticket-comments/claim.md "Lease window:"
+
+check_heading templates/ticket-comments/deploy-confirmation.md "Deployment"
+check_heading templates/ticket-comments/deploy-confirmation.md "Tickets Updated"
+check_heading templates/ticket-comments/deploy-confirmation.md "Cleanup"
+check_contains templates/ticket-comments/deploy-confirmation.md "verified merged by SHA reachability"
 
 echo "ticket comment templates ok"

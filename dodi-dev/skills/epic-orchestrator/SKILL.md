@@ -1,12 +1,16 @@
 ---
 name: epic-orchestrator
-description: Top-level local epic workflow orchestrator; dispatches delivery lanes and phase skills without implementing, reviewing, or testing directly
+description: Interactive epic intake through Gate 1 signoff, and the shared routing contract (state tables, worker prompts) consumed by the pickup-next tick
 model: sonnet
 ---
 
 # Epic Orchestrator
 
-Orchestrate one feature epic from intake through the epic PR. Do not implement product code, review code directly, or run tests as the primary actor. Dispatch bounded lanes and workers and advance state only from durable evidence.
+Two roles. **Interactive entry point:** run epic intake through Gate 1 with the human at the monitor — pickup-epic, assess-epic, the Gate 1 signoff package. **Routing contract:** this directory is the home of the state-transition tables and the state-reader, evidence-checker, and gate1-package prompts that autonomous delivery routes on.
+
+After Gate 1, advancement is normally **tick-driven**: the `pickup-next` scheduled task scans for `epic-signed-off` epics and advances one ticket per run — there is no resident orchestrator session to babysit. A manually run orchestrator session remains valid (debugging, pushing a specific epic along) and must follow the same claim discipline as the tick so manual runs and scheduled ticks never act on the same ticket concurrently.
+
+Do not implement product code, review code directly, or run tests as the primary actor. Dispatch bounded lanes and workers and advance state only from durable evidence.
 
 Routine human involvement is exactly two gates: **Gate 1** (epic intent approval, up front) and **Gate 2** (manual merge of the epic PR into main/master — the production entry point). Everything between is autonomous, with event-driven exceptions.
 
@@ -14,7 +18,7 @@ Routine human involvement is exactly two gates: **Gate 1** (epic intent approval
 
 | Trigger | Inputs | Outputs | Durable writes | Allowed delegation | Failure states |
 | --- | --- | --- | --- | --- | --- |
-| Hive starts or resumes work on an epic | epic id, repo path, PM system context | next state decision, dispatched lanes and phase work, epic progress summary | epic comments, child ticket comments, labels, artifact links | deliver-ticket lanes, phase skills, workers, reviewers, test runners | awaiting epic signoff, human question, blocked dependency, tool/auth failure |
+| interactive epic intake, or a manual session pushing an epic along | epic id, repo path, PM system context | next state decision, dispatched lanes and phase work, epic progress summary | epic comments, child ticket comments, labels, claim comments, artifact links | deliver-ticket lanes, phase skills, workers, reviewers, test runners | awaiting epic signoff, human question, blocked dependency, tool/auth failure |
 
 ## Inputs
 
@@ -49,14 +53,20 @@ On approval: apply `epic-signed-off` to the epic and post a comment quoting what
 
 ## Allowed Next Actions
 
+Interactive intake (this skill's primary job):
+
 - Run `pickup-epic`.
 - Run `assess-epic`.
 - Request Gate 1 signoff (package → notify → hold).
+
+Post-Gate-1 (normally executed by the `pickup-next` tick; a manual session may perform them under the same claim discipline — claim the ticket first, skip live claims from other hosts):
+
 - Run `mature-ticket` for a child lacking readiness (auto-delegated under Gate 1).
 - Dispatch a `deliver-ticket` lane for a ready child (up to `maxParallelLanes`; see Parallel Lanes).
 - Merge a `ready-to-merge-child` lane result (strictly serial; see Merging).
 - Run `submit-epic-pr` when all children are done.
-- Stop: awaiting Gate 1, human question, concrete blocker, or `epic-pr-open` (Gate 2 is human-owned).
+
+Stop: awaiting Gate 1, human question, concrete blocker, or `epic-pr-open` (Gate 2 is human-owned).
 
 ## Parallel Lanes
 

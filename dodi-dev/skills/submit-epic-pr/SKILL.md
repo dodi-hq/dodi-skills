@@ -33,7 +33,7 @@ Treat GitHub Actions CI as the final safety gate before production, not the firs
 4. Run epic-level `quality-gate`.
 5. Prepare the epic readiness summary. It leads with the scannable header — `## TL;DR` (what this epic ships, 2-3 sentences) and `## Key Points` (5-9 bullets: what changed, risks, migrations, coverage, known gaps) — self-sufficient for the human who merges. Below the header: child tickets, child PRs, full-regression evidence (commands, exit codes, run on the post-sync epic head), release notes, and coverage detail.
 6. Push the epic branch.
-7. Open a PR from epic branch to main/master.
+7. Open a PR from epic branch to main/master. The PR body carries `Closes <epic-id>` plus the full child ticket id list — the closing reference is what drives the PM system's GitHub integration to transition tickets when Gate 2 merges; the `reconcile-tickets` janitor is the backstop.
 8. Leave the PR open.
 9. Update the epic ticket with the PR link and readiness summary, and notify `humanContact` that Gate 2 is ready — the notification carries the TL;DR + Key Points and the PR link, nothing more.
 

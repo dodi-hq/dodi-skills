@@ -21,6 +21,8 @@ skills=(
   submit-ticket-pr
   deliver-ticket
   submit-epic-pr
+  pickup-next
+  reconcile-tickets
 )
 
 for skill in "${skills[@]}"; do

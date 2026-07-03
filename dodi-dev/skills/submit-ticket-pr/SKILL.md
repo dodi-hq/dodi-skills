@@ -21,7 +21,7 @@ Two separately invoked halves. **Open** runs inside a `deliver-ticket` lane afte
 1. Verify the child branch is not main/master and targets the epic branch.
 2. Push the child branch.
 3. Open a PR from child branch to epic branch.
-4. Write a PR body with spec, plan, test evidence, quality-gate evidence, and ticket link.
+4. Write a PR body with spec, plan, test evidence, quality-gate evidence, and ticket link. Reference the ticket with the **non-closing** form `Part of <ticket-id>` — never `Closes`/`Fixes` on a child PR: children reach their terminal state when the epic merges to main/master, not when the child merges to the epic branch.
 5. Return to the lane — the lane runs `review` (child-PR context) next. Do not merge from this half.
 
 ```bash
