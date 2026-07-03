@@ -41,7 +41,7 @@ Production deploys are recorded as GitHub deployments; the nightly deploy (one p
 
 ## Cleanup (deploy-confirmed only)
 
-- Delete the epic branch and any surviving child branches via `${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-branch.sh <branch> <base> [worktree]` — the script verifies merged-by-SHA-reachability and refuses otherwise; never delete by name or bypass it.
+- Delete the epic branch and any surviving child branches via `${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-branch.sh <branch> <base> [worktree] [repo-dir] [verified-merge-sha]` — pass the merge SHA (from `verify-merge.sh` or the PR's merge commit) for squash-merged branches; the script verifies reachability plus content match and refuses otherwise. Never delete by name or bypass it.
 - Expire dead claims via `${CLAUDE_PLUGIN_ROOT}/scripts/release-claim.sh` after the progress test (fresh checkpoints since the claim's last update = alive, regardless of age).
 - Post the deploy-confirmation comment on the epic: deployment id, SHA, environment, tickets transitioned, branches and worktrees cleaned.
 

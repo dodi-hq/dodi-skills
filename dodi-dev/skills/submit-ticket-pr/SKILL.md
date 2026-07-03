@@ -32,23 +32,19 @@ gh pr create --base <epic-branch> --head <child-branch> --title "<ticket-id>: <t
 ## Merge (orchestrator-invoked, strictly serial)
 
 1. Require the lane's `ready-to-merge-child` report with clean child-PR review and local CI-equivalent evidence, verified by an evidence checker.
-2. Verify the child branch is current with the epic head. If the epic moved, return to the lane for a sync and rerun of relevant checks — do not merge a stale branch.
-3. Squash merge, then **verify the merge actually happened** — `gh pr merge` can succeed silently without merging. Confirm state and merge commit before claiming success.
-4. Delete the child branch. If the child branch is checked out in a worktree, `--delete-branch` fails or misbehaves — skip it and use the explicit sequence: delete the remote branch, remove the worktree, then delete the local branch.
+2. Verify the child branch is current with the epic head. If the epic moved, return to the lane for a sync and rerun of relevant checks — do not merge a stale branch. **De-minimis exception:** if everything the epic gained since the child branched is demonstrably disjoint from the child's file surface *and* touches no code (docs-only housekeeping), the merge slot may proceed — record the divergence assessment and the deviation in the done comment. Any code, config, schema, or generated-file movement means sync, no exceptions.
+3. Squash merge, then **verify the merge actually happened** — `gh pr merge` can succeed silently without merging (field-confirmed: zero output, no merge). Never claim the merge from the merge command's exit; claim it from the verification script.
+4. Clean up the child branch and worktree via the cleanup script, threading the verified merge SHA through — squash merges rewrite the SHA, so the script's content-match proof requires it.
 5. Update the child ticket with PR link, merge evidence (including the verified merge commit), and final status.
 
 ```bash
 gh pr merge <child-pr-number> --squash
 
-# Verification is mandatory — do not claim the merge from the merge command's exit alone.
-gh pr view <child-pr-number> --json state,mergeCommit   # expect state MERGED + a commit id
-git fetch origin <epic-branch>                          # merge commit reachable on the epic branch
+# Verification is mandatory; the script owns the postcondition mechanics.
+merge_sha="$("${CLAUDE_PLUGIN_ROOT}/scripts/verify-merge.sh" <child-pr-number> <epic-branch>)"
 
-# Branch cleanup when the child branch is checked out in a worktree
-# (skip `--delete-branch` in that case):
-git push origin --delete <child-branch>
-git worktree remove <child-worktree>
-git branch -D <child-branch>
+# Cleanup (handles worktree-checked-out branches; refuses without proof):
+"${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-branch.sh" <child-branch> <epic-branch> <child-worktree> . "$merge_sha"
 ```
 
 Expected evidence:
