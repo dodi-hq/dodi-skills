@@ -22,8 +22,8 @@ Use when a child ticket reaches `ready-for-child-pr`. Child PRs target the epic 
 2. Push the child branch.
 3. Open a PR from child branch to epic branch.
 4. Write a PR body with spec, plan, test evidence, quality-gate evidence, and ticket link.
-5. Invoke `review-child-pr`.
-6. If `review-child-pr` returns clean and the branch is current with epic, squash merge into the epic branch.
+5. Invoke `review` in the child-PR context.
+6. If the review returns clean and the branch is current with epic, squash merge into the epic branch.
 7. Delete the child branch after merge.
 8. Update the child ticket with PR link, merge evidence, and final status.
 
@@ -39,7 +39,7 @@ Expected evidence:
 
 - push output or remote branch URL
 - PR URL
-- clean `review-child-pr` evidence
+- clean child-PR review evidence (`review`, child-PR context)
 - local CI-equivalent command evidence
 - merge output
 - child ticket comment with final status

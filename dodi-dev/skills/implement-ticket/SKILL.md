@@ -36,8 +36,6 @@ Dispatch implementation workers against the clean plan. The implementation must 
 
 - Record worker status, commit ids, files changed, commands run, and surprise notes.
 - Record any demotion reason and the artifact that must be revised.
-- The orchestrator may not advance state from a worker success claim alone. Verify durable PM labels, PM comments, artifact links, branch/worktree state, commits, or command output before advancing.
-- Durable PM state is the source of truth.
 
 ## Stop Conditions
 

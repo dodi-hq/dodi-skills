@@ -17,9 +17,7 @@ skills=(
   mature-ticket
   pickup-ticket
   implement-ticket
-  review-implementation
   create-tests
-  review-child-pr
   submit-ticket-pr
   submit-epic-pr
 )
@@ -39,7 +37,6 @@ prompt_files=(
   epic-orchestrator/state-transitions.md
   mature-ticket/spec-drafter-prompt.md
   verify/test-runner-prompt.md
-  review-child-pr/pr-reviewer-prompt.md
   submit-ticket-pr/local-ci-runner-prompt.md
 )
 

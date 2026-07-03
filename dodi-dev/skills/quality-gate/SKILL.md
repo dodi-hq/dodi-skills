@@ -27,7 +27,7 @@ Run after the vertical work (implementation, review, tests, verify) is believed 
 
 Child PR gate:
 
-- Require clean `review-child-pr` evidence.
+- Require clean `review` (child-PR context) evidence, including the Frontier-tier final round.
 - Require local CI-equivalent command evidence.
 - Require proof that the child branch is current with the epic branch.
 - Do not pass if merge conflicts require product, architecture, scope, or spec/plan judgment.

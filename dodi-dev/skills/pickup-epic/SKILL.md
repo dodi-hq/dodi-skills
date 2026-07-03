@@ -36,8 +36,6 @@ Prepare the epic branch and epic worktree. This skill performs branch setup only
 - Record epic id, repo path, base branch, epic branch, and epic worktree.
 - Record branch creation or switch output.
 - Record the pull result from the base branch.
-- The orchestrator may not advance state from a worker success claim alone. Verify durable PM labels, PM comments, artifact links, branch/worktree state, commits, or command output before advancing.
-- Durable PM state is the source of truth.
 
 ## Stop Conditions
 

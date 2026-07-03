@@ -36,8 +36,6 @@ Classify the epic and child tickets from durable PM and repository state. This s
 
 - Record child state map, dependency map, ready work queue, maturity work queue, and blockers.
 - Record source links for labels, comments, specs, plans, branches, and worktrees.
-- The orchestrator may not advance state from a worker success claim alone. Verify durable PM labels, PM comments, artifact links, branch/worktree state, commits, or command output before advancing.
-- Durable PM state is the source of truth.
 
 ## Stop Conditions
 

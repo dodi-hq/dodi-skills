@@ -62,14 +62,14 @@ The main loop routes, dispatches, and advances state — nothing else. Bulk read
 - Run `mature-ticket`.
 - Run `pickup-ticket`.
 - Run `implement-ticket`.
-- Run `review-implementation`.
+- Run `review` (pre-PR context).
 - Run `create-tests`.
 - Run `verify`.
 - Run `quality-gate`.
 - Stop for human spec input.
 - Stop for a concrete blocker.
 - Run `submit-ticket-pr` for a child at `ready-for-child-pr`.
-- Run `review-child-pr`.
+- Run `review` (child-PR context).
 - Run `submit-epic-pr`.
 
 ## State Transitions
@@ -83,7 +83,7 @@ When a child ticket reaches `ready-for-child-pr`, invoke `submit-ticket-pr` inst
 Allowed Phase 3 next actions:
 
 - Run `submit-ticket-pr`.
-- Run `review-child-pr`.
+- Run `review` (child-PR context).
 - Run `submit-epic-pr`.
 
 When every child ticket is `done`, transition the epic to `epic-ready-for-pr` and invoke `submit-epic-pr` after the epic readiness evidence is present. Epic readiness evidence must include a green full regression run on the integrated epic head, after the latest main/master sync; `submit-epic-pr` performs this run as a hard gate. Child PRs prove each ticket individually — only this run proves the merged children work together. Treat downstream GitHub Actions CI as the final safety gate before production, not the first line of defense; do not open the epic PR on a red or untested integrated branch.

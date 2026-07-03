@@ -38,8 +38,6 @@ Move a child ticket through spec and plan maturity gates. This skill may draft a
 - Record spec artifact, plan artifact, reviewer type, review status, assumptions, dependency state, and labels applied or withheld.
 - Record human signoff or explicit delegation before planning.
 - Record why any ticket remains in maturity work.
-- The orchestrator may not advance state from a worker success claim alone. Verify durable PM labels, PM comments, artifact links, branch/worktree state, commits, or command output before advancing.
-- Durable PM state is the source of truth.
 
 ## Stop Conditions
 

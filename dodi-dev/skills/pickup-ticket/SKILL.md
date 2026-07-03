@@ -36,8 +36,6 @@ Create the child ticket branch and worktree from the epic branch. This skill is 
 
 - Record ticket id, epic branch, child branch, child worktree, spec artifact, and plan artifact.
 - Record readiness labels and latest epic branch sync evidence.
-- The orchestrator may not advance state from a worker success claim alone. Verify durable PM labels, PM comments, artifact links, branch/worktree state, commits, or command output before advancing.
-- Durable PM state is the source of truth.
 
 ## Stop Conditions
 

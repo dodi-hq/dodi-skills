@@ -36,8 +36,6 @@ Create or complete required tests from the plan's Testing Contract. Missing harn
 
 - Record test files, required groups, harness setup evidence, and rationale for any not-required group.
 - Record commands expected to be run by `verify`.
-- The orchestrator may not advance state from a worker success claim alone. Verify durable PM labels, PM comments, artifact links, branch/worktree state, commits, or command output before advancing.
-- Durable PM state is the source of truth.
 
 ## Stop Conditions
 

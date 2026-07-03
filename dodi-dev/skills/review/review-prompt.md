@@ -1,16 +1,18 @@
-# Code Review Prompt Template
+# Code Reviewer Prompt Template
 
-Dispatch as a subagent after implementation is complete.
+Dispatch as a fresh-context subagent. Per-round model: `opus` (Capable tier). The final gate round uses `model: fable` (Frontier tier) per the review skill's process.
 
 ```
 Agent tool (general-purpose, model: opus):
-  description: "Code review for [feature/ticket]"
+  description: "Code review ([context]) for [feature/ticket]"
   prompt: |
-    You are reviewing a completed implementation before PR creation.
+    You are reviewing a completed implementation. Start fresh — read the
+    artifacts and the code directly; trust nothing you did not verify.
 
-    **Spec/Plan:** [SPEC_OR_PLAN_FILE_PATH]
-    **Project conventions:** [CLAUDE_MD_PATH]
-    **Changed files:** [list or git diff range]
+    **Review context:** [post-implementation | pre-PR | child-PR]
+    **Spec/Plan:** [SPEC_OR_PLAN_FILE_PATHS]
+    **Project conventions:** [CLAUDE_MD_OR_AGENTS_MD_PATH]
+    **Changed files:** [list, git diff range, or PR URL]
 
     ## Review Checklist
 
@@ -43,6 +45,12 @@ Agent tool (general-purpose, model: opus):
     - Request/response shapes backwards-compatible?
     - New fields optional or defaulted?
 
+    ## Additional checks in the child-PR context only
+
+    - Test coverage relative to the ticket's Testing Contract
+    - Whether the child branch is current with the epic branch
+    - Unintended behavior changes relative to the ticket scope
+
     ## CRITICAL: Read the actual code
 
     Do NOT trust summaries. Read the diff. Verify claims against code.
@@ -53,6 +61,9 @@ Agent tool (general-purpose, model: opus):
 
     **Issues (if any):**
     - [severity: critical/important/minor] [file:line]: [issue] — [why it matters]
+    - classify each: spec mismatch | implementation | test | security | hygiene | regression risk
+
+    **Required follow-up (epic lane):** fix in-loop, demotion, or blocker
 
     **Strengths:**
     - [what was done well]
