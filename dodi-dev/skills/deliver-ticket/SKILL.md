@@ -53,6 +53,10 @@ A re-dispatched lane reconstructs its position from durable state before doing a
 - **Continuation brief** (posted as a ticket comment): current state per the checkpoint contract with evidence links, the next action and one line of why, live concerns from notes, and anything in flight that must not be redone.
 - **Notes discipline:** append soft observations to the ticket's notes as they occur — flaky tests, retried workers, fragile modules. When unsure whether an observation is worth persisting: write it.
 
+## Awaiting Workers
+
+The lane is itself a subagent, so completion notifications from its own workers (implementers, reviewers, test runners) do not reliably arrive — never yield the turn to "wait" for one; that is a stall, not a wait. On Claude Code: after dispatching, poll the worker's `output_file` from inside a single long-timeout Bash call until the file's mtime has been stable for more than 60 seconds, then read only the final JSONL entries for the worker's result. Never read the whole transcript file — it overflows the lane's context.
+
 ## Rules
 
 - Never merge; never push to or rebase the epic branch.

@@ -25,6 +25,8 @@ Move a child ticket through spec and plan maturity gates under the two-gate mode
 
 The `model: fable` frontmatter pin covers this skill's main loop only — it never flows into worker dispatches. Every dispatch carries its own explicit pin: spec drafter, spec/plan reviewers, and plan writer carry Frontier pins in their prompt templates; research and read-and-digest workers (external/integration API docs, test-harness orientation, codebase exploration) pin Standard tier (`model: sonnet` on Claude Code). A dispatch without a pin inherits `fable` — that is a defect, not a default.
 
+When this skill runs as a worker itself (dispatched by the tick or an orchestrator session), completion notifications from its own dispatches (drafter, reviewers, research workers) do not reliably arrive. Never yield to "wait": on Claude Code, poll the dispatched worker's `output_file` in a single long-timeout Bash call until its mtime is stable for more than 60 seconds, then read only the final JSONL entries — never the whole transcript.
+
 ## Process
 
 - Draft the spec — dispatch a spec-drafter subagent (see spec-drafter-prompt.md); the main loop coordinates and runs review loops. Specs lead with the scannable header (`## TL;DR` + `## Key Points`).

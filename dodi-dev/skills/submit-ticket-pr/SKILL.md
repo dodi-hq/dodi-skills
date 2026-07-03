@@ -33,11 +33,22 @@ gh pr create --base <epic-branch> --head <child-branch> --title "<ticket-id>: <t
 
 1. Require the lane's `ready-to-merge-child` report with clean child-PR review and local CI-equivalent evidence, verified by an evidence checker.
 2. Verify the child branch is current with the epic head. If the epic moved, return to the lane for a sync and rerun of relevant checks — do not merge a stale branch.
-3. Squash merge and delete the child branch.
-4. Update the child ticket with PR link, merge evidence, and final status.
+3. Squash merge, then **verify the merge actually happened** — `gh pr merge` can succeed silently without merging. Confirm state and merge commit before claiming success.
+4. Delete the child branch. If the child branch is checked out in a worktree, `--delete-branch` fails or misbehaves — skip it and use the explicit sequence: delete the remote branch, remove the worktree, then delete the local branch.
+5. Update the child ticket with PR link, merge evidence (including the verified merge commit), and final status.
 
 ```bash
-gh pr merge <child-pr-number> --squash --delete-branch
+gh pr merge <child-pr-number> --squash
+
+# Verification is mandatory — do not claim the merge from the merge command's exit alone.
+gh pr view <child-pr-number> --json state,mergeCommit   # expect state MERGED + a commit id
+git fetch origin <epic-branch>                          # merge commit reachable on the epic branch
+
+# Branch cleanup when the child branch is checked out in a worktree
+# (skip `--delete-branch` in that case):
+git push origin --delete <child-branch>
+git worktree remove <child-worktree>
+git branch -D <child-branch>
 ```
 
 Expected evidence:
@@ -46,7 +57,7 @@ Expected evidence:
 - PR URL
 - clean child-PR review evidence (`review`, child-PR context)
 - local CI-equivalent command evidence
-- merge output
+- merge verification: `gh pr view` showing state MERGED plus the merge commit id (merge command output alone is not evidence)
 - child ticket comment with final status
 
 ## Rules

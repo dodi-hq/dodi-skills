@@ -62,7 +62,7 @@ Interactive intake (this skill's primary job):
 Post-Gate-1 (normally executed by the `pickup-next` tick; a manual session may perform them under the same claim discipline — claim the ticket first, skip live claims from other hosts):
 
 - Run `mature-ticket` for a child lacking readiness (auto-delegated under Gate 1).
-- Dispatch a `deliver-ticket` lane for a ready child (up to `maxParallelLanes`; see Parallel Lanes).
+- Dispatch a `deliver-ticket` lane for a ready child (up to `maxParallelLanes`; see Parallel Lanes) using `lane-dispatch-prompt.md` — exit contract, checkpoint mechanics, and worker-await rules are baked into the template, not re-spelled per dispatch.
 - Merge a `ready-to-merge-child` lane result (strictly serial; see Merging).
 - Run `submit-epic-pr` when all children are done.
 

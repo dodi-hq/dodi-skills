@@ -30,7 +30,7 @@ This skill replaces the resident orchestrator loop. It only acts **after Gate 1*
    1. Merge a `ready-to-merge-child` (serial merge slot; evidence-checker verification per `epic-orchestrator/evidence-checker-prompt.md` before merging).
    2. Run `submit-epic-pr` when all children of an epic are done and no epic PR is open.
    3. Resume a lane that exited `RESUMABLE` (attempt counter below the retry ceiling).
-   4. Dispatch `deliver-ticket` for a `ready-to-implement` child with dependencies clear.
+   4. Dispatch `deliver-ticket` for a `ready-to-implement` child with dependencies clear (use `epic-orchestrator/lane-dispatch-prompt.md`).
    5. Run `mature-ticket` for a child lacking `spec-ready` or `ready-to-implement`.
 3. **Claim.** Before acting, post the claim comment on the chosen ticket: host, timestamp, intended action, consecutive-attempt counter for that ticket+action. Skip any ticket carrying a live claim from another host that is younger than the lease window (2 hours) — `reconcile-tickets` expires stale claims; the tick never steals one.
 4. **Act.** Run the selected lane skill to its natural exit. Lane-internal behavior is unchanged: checkpoint comments, worker dispatch discipline, tier pins, stop conditions all per the lane skill.

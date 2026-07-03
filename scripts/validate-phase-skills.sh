@@ -39,6 +39,7 @@ prompt_files=(
   epic-orchestrator/evidence-checker-prompt.md
   epic-orchestrator/state-transitions.md
   epic-orchestrator/gate1-package-prompt.md
+  epic-orchestrator/lane-dispatch-prompt.md
   mature-ticket/spec-drafter-prompt.md
   verify/test-runner-prompt.md
   submit-ticket-pr/local-ci-runner-prompt.md
