@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Add a Frontier-tier **epic-coherence review** at the post-merge seam: after each child merges into the epic branch and before any new work is dispatched for that epic, a fable reviewer checks the merged result against the epic's design intent — because every existing review is ticket-local, and small judgment calls compound as later children conform to earlier ones. The **epic ticket itself becomes the master decision register**; legitimate divergence is a first-class outcome that updates the canon and re-matures affected children automatically. The child dependency graph moves to **native PM blocked-by relations**, and a **lights-out hardening** package (stalled-epic watchdog, dedicated escalation channel + daily digest, heartbeat, deploy/CI failure detection, structural Gate 2 via branch protection) guarantees that healthy-quiet and stalled never look the same, and that failure-to-self-correct always becomes a human ping.
+Add a Frontier-tier **epic-coherence review** at the post-merge seam: after each child merges into the epic branch and before any new work is dispatched for that epic, a fable reviewer checks the merged result against the epic's design intent — because every existing review is ticket-local, and small judgment calls compound as later children conform to earlier ones. The **epic ticket itself becomes the master decision register**; legitimate divergence is a first-class outcome that updates the canon and re-matures affected children automatically. The child dependency graph moves to **native PM blocked-by relations**, and a **lights-out hardening** package (stalled-epic watchdog, dedicated escalation channel + daily digest, heartbeat, deploy/CI failure detection, structural Gate 2 via branch protection) guarantees that healthy-quiet and stalled never look the same, and that failure-to-self-correct always becomes a human ping. Architecturally, this release gives the framework its **deterministic skeleton**: every mechanical invariant ships as a script or hook inside the plugin — code enforces what code can enforce — while SKILL.md files remain the judgment contracts.
 
 ## Key Points
 
@@ -18,6 +18,7 @@ Add a Frontier-tier **epic-coherence review** at the post-merge seam: after each
 - **Watch the verdict distribution.** On a well-specified epic most verdicts should be ALIGNED. If the gate never fires beyond that across a few epics, the register alone may be doing the work — revisit whether the review can drop to sampling. The bet is the usual one: a bounded Frontier check per merge against unbounded compounded rework.
 - **Lights-out hardening (this release, not later).** A stalled-epic watchdog and a daily "waiting on you" digest in the janitor, a dedicated needs-human escalation channel with re-escalation on staleness, a tick heartbeat as dead-man's switch, janitor escalation on failed production deploys and red/conflicted epic PRs, a progress-based retry ceiling and claim test, idempotent verdict writes, and a curated register canon. Healthy-quiet and stalled must never look the same, and failure-to-self-correct must always become a human ping.
 - **Gate 2 becomes structural, not procedural.** Setup prerequisite: branch protection on main/master requiring human review/merge, so automation *cannot* merge the epic PR even if misrouted. The markdown rule stays; GitHub enforces it.
+- **Invariants become code; judgment stays prose.** Every field bug to date (lane stalls, silent merges, tier inheritance) lived in the mechanical layer, where prose is a probabilistic interpreter for what should be deterministic. This release ships the mechanical layer as plugin-bundled scripts (`dodi-dev/scripts/`) and hooks; skills shrink to "run the script, judge the result." Prose is never asked to be persuasive about a postcondition again.
 
 ---
 
@@ -106,6 +107,37 @@ The dependency graph becomes structural PM state instead of comment prose:
 - **Hard sequencing only.** Predicted file-surface overlap and other parallelism signals remain advisory data in the assessment and plans — they inform lane concurrency, and encoding them as blocked-by would create false blocks.
 - **Janitor hygiene.** `reconcile-tickets` adds one check: a child whose blocking issues are all terminal but which still sits in a blocked state gets advanced (or escalated if evidence is ambiguous), citing the relation state.
 
+## Deterministic Skeleton: Scripts and Hooks
+
+The dividing rule: **anything with an invariant becomes code; anything with a judgment stays prose.** Scripts ship inside the plugin (`dodi-dev/scripts/`), so they version, validate, and install with the skills that call them.
+
+### Script inventory
+
+| Script | Owns | Replaces prose in |
+| --- | --- | --- |
+| `await-worker.sh` | poll a dispatched worker's `output_file` until mtime stable >60s; print only the final JSONL entries | AGENTS.md await contract, `deliver-ticket`, `mature-ticket`, lane-dispatch prompt |
+| `claim.sh` / `release-claim.sh` | claim comment create/update with the progress-based liveness test | `pickup-next` claim step, orchestrator claim discipline |
+| `dispatch-eligible.sh` | the eligibility query: readiness labels ∧ no open blocking issues ∧ epic not `coherence-pending` | `pickup-next` selection step |
+| `verify-merge.sh` | post-merge postcondition: PR state MERGED + merge commit reachable on the target branch | `submit-ticket-pr` merge verification |
+| `cleanup-branch.sh` | merged-by-SHA-reachability check, then remote delete → worktree remove → local delete | `submit-ticket-pr`, janitor cleanup |
+| `check-deploy.sh` | production deployment status + SHA reachability for a given epic merge commit | janitor deploy transition |
+| `watchdog-scan.sh` | per-epic durable-progress staleness scan, relation-cycle detection | janitor watchdog |
+| `heartbeat.sh` | post the daily heartbeat line | tick close-out |
+
+Scripts are plain bash + `gh` + the PM API — portable to any runtime that can run a shell. A script also outranks a Fast-tier worker for pure mechanics: where the tier table said "haiku for git mechanics," prefer the script — zero-variance beats low-latency.
+
+### Hooks (Claude Code)
+
+- **Gate 2, client-side:** a PreToolUse hook blocks any `gh pr merge` (and equivalent) whose target branch is main/master. Branch protection remains the server-side enforcement; the hook makes the attempt fail fast and loudly inside the session.
+- **Dispatch pins, enforced:** a PreToolUse hook rejects any Agent dispatch without an explicit `model` parameter. The 0.11.1 rule ("an unpinned dispatch is a defect") stops being a sentence agents must remember and becomes a wall they cannot walk through.
+
+Hooks are Claude-Code-specific. On Codex, the prose rules and server-side branch protection carry the same invariants; hooks are defense-in-depth, not the sole enforcement.
+
+### Drift protection
+
+- When a mechanic exists as a script, skills must **reference the script, never restate the mechanism** — a skill re-describing `await-worker.sh`'s polling loop in prose is a review finding (restated mechanics are how the two layers diverge).
+- Validation grows accordingly: scripts exist and are executable; hook configuration parses; every script named in a skill exists in `dodi-dev/scripts/`.
+
 ## Lights-Out Hardening
 
 The failure mode that breaks unattended operation is not a wrong action — the gates catch those — it is **silence**: an epic that sits still while every tick exits as a successful no-op, or an escalation that reaches no one. Two invariants: *healthy-quiet and stalled must never look the same*, and *failure-to-self-correct must always become a human ping*.
@@ -154,4 +186,4 @@ Default posture: **one active epic at a time** — the tick's global priority or
 
 ## Versioning
 
-Ships as `0.13.0`: new `epic-orchestrator/coherence-reviewer-prompt.md` (fable, adversarial framing, cumulative-drift check, idempotent writes); `pickup-next` gains the `coherence-pending` action, dispatch blocks, relation-based dispatch eligibility, progress-based retry/claim semantics, and the daily heartbeat; `epic-orchestrator` merge step and state tables gain the seam; `file-ticket` and `assess-epic` gain native dependency-relation registration/repair; `mature-ticket`/spec-drafter, `write-plan`/plan-writer, and `deliver-ticket` consume the register canon summary; `submit-epic-pr` gains the "what changed since you signed off" section; `reconcile-tickets` gains relation hygiene, the stalled-epic watchdog, the "waiting on you" digest with re-escalation, and deploy/epic-PR failure detection; new `templates/ticket-comments/decision-register-entry.md` wired into validation; AGENTS.md records the register convention and the two lights-out invariants; setup prerequisites documented: branch protection on main/master and the escalation channel test.
+Ships as `0.13.0`: the deterministic skeleton (`dodi-dev/scripts/` — await-worker, claim/release-claim, dispatch-eligible, verify-merge, cleanup-branch, check-deploy, watchdog-scan, heartbeat — plus the two PreToolUse hooks and validator coverage); new `epic-orchestrator/coherence-reviewer-prompt.md` (fable, adversarial framing, cumulative-drift check, idempotent writes); `pickup-next` gains the `coherence-pending` action, dispatch blocks, relation-based dispatch eligibility, progress-based retry/claim semantics, and the daily heartbeat; `epic-orchestrator` merge step and state tables gain the seam; `file-ticket` and `assess-epic` gain native dependency-relation registration/repair; `mature-ticket`/spec-drafter, `write-plan`/plan-writer, and `deliver-ticket` consume the register canon summary; `submit-epic-pr` gains the "what changed since you signed off" section; `reconcile-tickets` gains relation hygiene, the stalled-epic watchdog, the "waiting on you" digest with re-escalation, and deploy/epic-PR failure detection; new `templates/ticket-comments/decision-register-entry.md` wired into validation; AGENTS.md records the register convention and the two lights-out invariants; setup prerequisites documented: branch protection on main/master and the escalation channel test.
