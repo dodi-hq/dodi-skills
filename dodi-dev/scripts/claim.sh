@@ -92,7 +92,12 @@ while :; do
 done
 
 # Inspect the most recent per-ticket claim comment (# Ticket Claim only).
-claim_info="$(RESP="$resp" LEASE_H="$lease_hours" python3 <<'PY'
+# NOTE: heredocs live inside functions, not inside $(...) — bash 3.2 (macOS
+# /bin/bash) cannot parse heredocs within command substitution when the body
+# contains backticks or odd apostrophes. Same reason the python builds
+# backticks via chr(96).
+_read_claim_info() {
+  RESP="$resp" LEASE_H="$lease_hours" python3 <<'PY'
 import json, os
 from datetime import datetime, timezone
 lease_hours = float(os.environ["LEASE_H"])
@@ -105,15 +110,19 @@ if not claims:
     raise SystemExit
 c = claims[-1]
 body = c["body"]
-open_claim = "- Exit state: `<open>`" in body
-csrid = next((l.split("`")[1] for l in body.splitlines() if l.startswith("- Session run id:") and "`" in l), "")
+# BT: literal backticks inside a heredoc inside $(...) break bash 3.2's parser
+# (macOS /bin/bash) — build them via chr(96) instead.
+BT = chr(96)
+open_claim = f"- Exit state: {BT}<open>{BT}" in body
+csrid = next((l.split(BT)[1] for l in body.splitlines() if l.startswith("- Session run id:") and BT in l), "")
 updated = datetime.fromisoformat(c["updatedAt"].replace("Z","+00:00"))
 age_h = (now - updated).total_seconds()/3600
 # tier-2 pre-compute: latest progress-species comment attributable to csrid, in hours-ago.
 # (Species classification is applied in bash; here we just export the claim facts.)
 print(f"{'open' if open_claim else 'closed'}\t{csrid}\t{age_h:.3f}\t{c['id']}\t{c['updatedAt']}")
 PY
-)"
+}
+claim_info="$(_read_claim_info)"
 
 cstate="$(cut -f1 <<<"$claim_info")"
 csrid="$(cut -f2 <<<"$claim_info")"
@@ -140,7 +149,8 @@ if [[ "$cstate" == "open" && -n "$csrid" && "$csrid" != "$srid" ]]; then
   fi
   # Tier 2: a progress-species checkpoint attributable to csrid within one lease window of now?
   if [[ "$tier1" != "yes" ]]; then
-    tier2="$(RESP="$resp" CSRID="$csrid" LEASE_H="$lease_hours" python3 <<'PY'
+    _tier2_signal() {
+      RESP="$resp" CSRID="$csrid" LEASE_H="$lease_hours" python3 <<'PY'
 import json, os
 from datetime import datetime, timezone
 lease_hours = float(os.environ["LEASE_H"]); csrid = os.environ["CSRID"]
@@ -148,7 +158,8 @@ data = json.loads(os.environ["RESP"]); now = datetime.now(timezone.utc)
 alive = "no"
 for c in data["data"]["issue"]["comments"]["nodes"]:
     b = c["body"]
-    if f"Run id: `{csrid}`" not in b and f"Run id: {csrid}" not in b:
+    BT = chr(96)  # no literal backticks in a $()-heredoc — bash 3.2 parser bug
+    if f"Run id: {BT}{csrid}{BT}" not in b and f"Run id: {csrid}" not in b:
         continue
     # Species check: only the two progress headers a session posts under its run
     # id (Lane Checkpoint, Decision Register Entry) carry a run-id field, so an
@@ -164,7 +175,8 @@ for c in data["data"]["issue"]["comments"]["nodes"]:
         alive = "yes"; break
 print(alive)
 PY
-)"
+    }
+    tier2="$(_tier2_signal)"
   fi
 fi
 
