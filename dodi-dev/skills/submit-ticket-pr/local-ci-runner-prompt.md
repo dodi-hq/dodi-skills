@@ -23,3 +23,5 @@ Responsibilities:
 Do not skip required checks because a harness is absent. Set up the harness or report a concrete blocker.
 
 Return a digest only: commands, exit codes, failing test names, and log file paths. Never paste raw logs or full test output into your report.
+
+- **Awaiting your own workers (Claude Code):** never yield the turn to "wait" — run `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` (event-based: polls the transcript's final lines for the terminal record, STALLED on stall, chunk-bounded). Never read the whole transcript.

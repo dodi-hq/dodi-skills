@@ -1,4 +1,4 @@
-# Lane Dispatch Prompt
+# Deliver-Ticket Lane Dispatch Prompt
 
 Dispatch with the Agent tool, `model: sonnet` (Standard tier). Used by `pickup-next` (or a manual orchestrator session) to launch one `deliver-ticket` lane per ready child.
 
@@ -26,8 +26,7 @@ Checkpoint mechanics:
 
 Awaiting your own workers:
 
-- You are a subagent; completion notifications from your workers (implementers, reviewers, test runners) do not reliably reach you. Never yield the turn to "wait."
-- On Claude Code, run the script — do not re-derive the mechanism: `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` (polls until mtime is stable >60s, prints only the final JSONL entries). Never read the whole transcript.
+- **Awaiting your own workers (Claude Code):** never yield the turn to "wait" — run `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` (event-based: polls the transcript's final lines for the terminal record, STALLED on stall, chunk-bounded). Never read the whole transcript.
 - Every worker dispatch pins its model tier explicitly per the skill's step definitions (implementers default `sonnet` per implement/implementer-prompt.md).
 
 Output (final message):

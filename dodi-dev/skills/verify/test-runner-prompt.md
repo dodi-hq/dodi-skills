@@ -25,3 +25,5 @@ Output a digest only:
 - **Classification (on failure):** test bug, implementation bug, environment/harness issue, or unclear
 
 Never paste raw logs or full test output. The dispatching skill claims results only from your commands + exit codes, per the verify gate.
+
+- **Awaiting your own workers (Claude Code):** never yield the turn to "wait" — run `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` (event-based: polls the transcript's final lines for the terminal record, STALLED on stall, chunk-bounded). Never read the whole transcript.

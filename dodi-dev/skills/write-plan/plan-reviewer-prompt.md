@@ -36,3 +36,5 @@ Agent tool (general-purpose, model: fable):
     **Recommendations (advisory):**
     - [suggestions that don't block approval]
 ```
+
+- **Awaiting your own workers (Claude Code):** never yield the turn to "wait" — run `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` (event-based: polls the transcript's final lines for the terminal record, STALLED on stall, chunk-bounded). Never read the whole transcript.

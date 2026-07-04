@@ -25,3 +25,5 @@ Output a compact state map, 40 lines maximum:
 - discrepancies between sources, if any
 
 Never include raw ticket bodies, comment threads, diffs, or logs — links and one-line summaries only.
+
+- **Awaiting your own workers (Claude Code):** never yield the turn to "wait" — run `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` (event-based: polls the transcript's final lines for the terminal record, STALLED on stall, chunk-bounded). Never read the whole transcript.

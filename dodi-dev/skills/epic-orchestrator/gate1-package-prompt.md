@@ -40,3 +40,5 @@ Rules:
 - Do not apply labels or notify anyone; return the package to the orchestrator.
 
 Report: **Status:** PACKAGE_READY or QUESTIONS_FOR_HUMAN, plus the package (or the blocking questions).
+
+- **Awaiting your own workers (Claude Code):** never yield the turn to "wait" — run `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` (event-based: polls the transcript's final lines for the terminal record, STALLED on stall, chunk-bounded). Never read the whole transcript.
