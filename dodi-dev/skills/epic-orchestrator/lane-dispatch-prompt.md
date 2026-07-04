@@ -21,7 +21,7 @@ Exit contract:
 
 Checkpoint mechanics:
 
-- Post the standard PM checkpoint comment at each boundary **as it is crossed** (`implementing`, `implementation-reviewing`, `testing`, `verifying`, `quality-gating`, `ready-for-child-pr`, `child-pr-reviewing`) — never batched at the end. They are the audit trail and the resume contract.
+- Post a **Lane Checkpoint** comment (pinned `# Lane Checkpoint` header carrying your session run id) at each boundary **as it is crossed** (`implementing`, `implementation-reviewing`, `testing`, `verifying`, `quality-gating`, `ready-for-child-pr`, `child-pr-reviewing`) — never batched at the end. The pinned header is what keeps the checkpoint visible to the liveness consumers (a headerless comment defaults to bookkeeping). They are the audit trail and the resume contract.
 - Mandatory context reset at the quality-gate→PR seam: write the continuation brief, exit `RESUMABLE`.
 
 Awaiting your own workers:

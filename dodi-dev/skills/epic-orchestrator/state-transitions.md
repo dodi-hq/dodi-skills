@@ -22,7 +22,7 @@ These are the states the orchestrator routes on. The delivery pipeline between `
 
 ## Lane Checkpoint Contract (inside deliver-ticket)
 
-The lane posts these as PM comments at each boundary. They are the audit trail and the resume contract — a re-dispatched lane continues from the last completed checkpoint.
+The lane posts these as **Lane Checkpoint** comments (pinned `# Lane Checkpoint` header, session-run-id field; repo mirror `lane-checkpoint.md` for validation) at each boundary. They are the audit trail and the resume contract — a re-dispatched lane continues from the last completed checkpoint. The pinned header is required: the comment-species partition classifies an unknown header as bookkeeping, which would hide the checkpoint from the wedged-driver probe and the liveness hierarchy.
 
 | Checkpoint | Reached when | Evidence in the comment |
 | --- | --- | --- |
