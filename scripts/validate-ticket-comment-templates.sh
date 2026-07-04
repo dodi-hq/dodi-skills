@@ -25,7 +25,7 @@ check_count_at_least() {
   fi
 }
 
-for file in epic-assessment spec-ready ready-to-implement demotion child-pr-ready epic-pr-ready epic-signoff-request claim deploy-confirmation decision-register-entry; do
+for file in epic-assessment spec-ready ready-to-implement demotion child-pr-ready epic-pr-ready epic-signoff-request claim deploy-confirmation decision-register-entry driver-claim continuation-brief lane-checkpoint; do
   test -f "templates/ticket-comments/${file}.md"
 done
 
@@ -127,5 +127,28 @@ check_heading templates/ticket-comments/decision-register-entry.md "Affected Chi
 check_heading templates/ticket-comments/decision-register-entry.md "Supersedes"
 check_heading templates/ticket-comments/decision-register-entry.md "Canon Summary"
 check_contains templates/ticket-comments/decision-register-entry.md "Merge SHA:"
+
+check_heading templates/ticket-comments/driver-claim.md "Claim"
+check_heading templates/ticket-comments/driver-claim.md "Exit"
+check_contains templates/ticket-comments/driver-claim.md "Session run id:"
+
+check_heading templates/ticket-comments/continuation-brief.md "State Map Reference"
+check_heading templates/ticket-comments/continuation-brief.md "Chosen Next Action"
+check_heading templates/ticket-comments/continuation-brief.md "In Flight (must not be redone)"
+
+check_heading templates/ticket-comments/lane-checkpoint.md "Session"
+check_heading templates/ticket-comments/lane-checkpoint.md "Evidence"
+check_contains templates/ticket-comments/lane-checkpoint.md "Run id:"
+
+# claim.md session-id + coherence-review enum
+check_contains templates/ticket-comments/claim.md "Session run id:"
+check_contains templates/ticket-comments/claim.md "coherence-review"
+
+# decision-register-entry.md new fields + RULING variant
+check_contains templates/ticket-comments/decision-register-entry.md "Run id:"
+check_heading templates/ticket-comments/decision-register-entry.md "Held Route (GATE1_AMENDMENT only — the not-yet-performed writes the approve branch executes)"
+check_heading templates/ticket-comments/decision-register-entry.md "Per-Decision Affected Children (GATE1_REFRESH only — which children's specs consumed EACH superseded decision)"
+check_heading templates/ticket-comments/decision-register-entry.md "Ruling (RULING variant only — the durable resolution record for a pending-human entry)"
+check_contains templates/ticket-comments/decision-register-entry.md "RULING"
 
 echo "ticket comment templates ok"

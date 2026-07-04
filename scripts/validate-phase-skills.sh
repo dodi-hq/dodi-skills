@@ -23,6 +23,7 @@ skills=(
   submit-epic-pr
   pickup-next
   reconcile-tickets
+  drive-epic
 )
 
 for skill in "${skills[@]}"; do
@@ -62,6 +63,9 @@ plugin_scripts=(
   check-deploy.sh
   watchdog-scan.sh
   heartbeat.sh
+  driver-claim.sh
+  reap-workers.sh
+  comment-species.sh
   hook-gate2-guard.sh
   hook-require-model-pin.sh
 )
