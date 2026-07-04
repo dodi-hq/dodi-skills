@@ -4,9 +4,10 @@ Ticket: `<ticket-id>`
 
 ## Claim
 
+- Session run id: `<session-run-id>`
 - Host: `<hostname>`
 - Claimed at: `<ISO-8601 timestamp>`
-- Action: `<mature-ticket | deliver-ticket | merge-child | submit-epic-pr>`
+- Action: `<mature-ticket | deliver-ticket | merge-child | submit-epic-pr | coherence-review>`
 - Lease window: `<duration, default 2h>`
 
 ## Attempt
