@@ -43,7 +43,7 @@ The main loop is a router and conversation surface. Bulk reads, test runs, and e
 - Delegate any step that pulls more than ~200 lines of file/log/PM content into the main loop, or runs longer than ~1 minute.
 - Every worker dispatch pins a model tier explicitly (the Agent tool's `model` parameter on Claude Code). A dispatch that omits the pin silently inherits the session model — in spec/plan sessions that is Frontier, which is a defect, not a default. Research and read-and-digest workers (external/integration API docs, local test-harness orientation, codebase exploration, prior-art lookups) pin `sonnet`: writing a trustworthy digest is comprehension work above the Fast tier, but the judgment about what the digest means stays in the Frontier main loop.
 - Worker return contract: `STATUS` (DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED, or Approved / Issues Found for reviewers) + `EVIDENCE` (commit ids, file paths, command + exit code, log path) + details capped at ~20 lines. No transcripts, no pasted logs.
-- **Async-worker await contract.** Agent-tool workers launch asynchronously regardless of flags, and completion notifications do not reliably reach a session that is itself a subagent (a lane or a dispatched drafter). Never yield the turn to "wait" for a worker — a yielded turn with no notification is a stall. On Claude Code: poll the worker's `output_file` from inside a single long-timeout Bash call until the file's mtime has been stable for more than 60 seconds, then read only the final JSONL entries for the result — never the whole transcript (it overflows context). Sessions dispatched directly by the top-level harness may rely on completion notifications; sessions running as workers themselves must poll.
+- **Async-worker await contract.** Agent-tool workers launch asynchronously regardless of flags, and completion notifications do not reliably reach a session that is itself a subagent (a lane or a dispatched drafter). On Claude Code, never yield the turn to "wait" for a worker — run `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>`, which detects completion by the transcript's terminal record (final-lines content check, STALLED on stall, chunk-bounded), and read only its final-lines output. Sessions dispatched directly by the top-level harness may rely on completion notifications; sessions running as workers themselves must poll via the script.
 - Parallel dispatch for read-only workers (explorers, reviewers, evidence checkers) is always allowed. `deliver-ticket` lanes may run in parallel across independent children (no dependency edge, disjoint predicted file surfaces; when in doubt, serialize). Within a lane, implementers never run in parallel. Merges into the epic branch and PM state advances stay one at a time.
 
 ## Scannable Artifacts
@@ -57,7 +57,7 @@ The header must be self-sufficient: a human who reads nothing else can approve o
 
 ## Deterministic Skeleton
 
-**Anything with an invariant becomes code; anything with a judgment stays prose.** Mechanical operations ship as scripts in `dodi-dev/scripts/` (worker await, claims, dispatch eligibility, merge verification, branch cleanup, deploy checks, watchdog data, heartbeat) and as plugin hooks (Gate 2 merge guard, dispatch-pin enforcement).
+**Anything with an invariant becomes code; anything with a judgment stays prose.** Mechanical operations ship as scripts in `dodi-dev/scripts/` (worker await, claims, driver claims, comment-species classification, worker reaping, dispatch eligibility, merge verification, branch cleanup, deploy checks, watchdog data, heartbeat) and as plugin hooks (Gate 2 merge guard, dispatch-pin enforcement).
 
 **Path resolution:** scripts live at the **plugin root**, not under any skill directory. Skills reference them as `${CLAUDE_PLUGIN_ROOT}/scripts/<name>.sh` — the installed plugin root (a versioned directory under the plugin cache), two levels up from a skill's own directory. Never resolve a script path relative to the skill that names it.
 
@@ -72,25 +72,26 @@ Each epic ticket is the master decision register for its epic. Coherence reviews
 
 ## Lights-Out Invariants
 
-- **Healthy-quiet and stalled must never look the same.** Every guard label, claim, and relation is a new way to sit still silently; the janitor's watchdog, digest, and the tick's heartbeat exist to break that symmetry.
-- **Failure-to-self-correct must always become a human ping.** Needs-human events go to the dedicated escalation channel with re-escalation on staleness — never only to routine run notifications.
+- **Healthy-quiet and stalled must never look the same.** Every guard label, claim, and relation is a new way to sit still silently; the janitor's watchdog, digest, and the driver's heartbeat exist to break that symmetry.
+- **Failure-to-self-correct must always become a human ping.** Needs-human events go to the dedicated escalation channel with re-escalation on staleness — never only to routine run notifications. Pending-human **coherence rulings are delivered by invoking the `drive-epic` skill with the instruction `rule-coherence <sha> approve|reject|redirect`** — a session run (drive-epic's Step 0a parses that instruction into ruling mode), never a separate command and never a chat reply. (AGENTS.md is the cross-runtime doctrine carrier: the Slack ping governs outbound notification, this governs the answer surface — a session, not a chat reply.)
 
 ## Scheduled Operation
 
-Post-Gate-1 delivery runs as **scheduled ticks**, not resident sessions. `pickup-next` (the heartbeat) and `reconcile-tickets` (the janitor) each run as a harness-native scheduled task — never a hand-rolled cron/daemon wrapper around a headless CLI.
+Post-Gate-1 delivery runs as a **resident driver** (`drive-epic`) — one long-lived orchestrator session per active epic, booted by a slow hourly liveness guard and advancing on completion events — with cron demoted to that guard plus the daily janitor (`reconcile-tickets`). Each runs as a harness-native scheduled task — never a hand-rolled cron/daemon wrapper around a headless CLI.
 
-- Ticks are stateless: a fresh session per run, with the PM system and git as the only memory. Anything a run needs must be reconstructible from durable state.
-- One action per tick. `pickup-next` advances exactly one ticket per run, then exits; the next tick picks up what's next. A no-op run is success.
-- Claim discipline: a tick (or a manual orchestrator session) posts a claim comment before acting on a ticket, skips live claims from other hosts, and closes the claim with its exit state. A retry ceiling (default 3 consecutive failed/`RESUMABLE` attempts) converts loops into `blocked` + escalation.
+- The driver boots from durable state: it reconstructs the dependency graph and decision-register canon from the PM system and git — the only memory — then holds them in context for the run. Anything a run needs must be reconstructible from durable state.
+- The driver runs a drive loop: select by the priority table, dispatch a lane, await its completion event, close out, re-select — advancing as many actions as fit before **park** (no automated action possible) or **bloat** (context degraded). The paused `pickup-next` fallback is still one-action-per-tick.
+- Claim discipline: the driver (or a manual orchestrator session, or the paused tick) posts a claim comment before acting on a ticket, skips live claims from other **sessions** (session-scoped foreignness, driver-claim-topped liveness hierarchy), and closes the claim with its exit state. A retry ceiling (default 3 consecutive failed/`RESUMABLE` attempts) converts loops into `blocked` + escalation.
 - The janitor repairs state (merge/deploy transitions, stale claims, branch/worktree cleanup) but never advances work and never guesses — ambiguous evidence becomes an escalation comment.
 - Gate 2 is procedural and absolute: no scheduled run merges, auto-merges, or enables auto-merge on an epic PR, regardless of permission mode.
+- Layering rule: **claims serialize tickets; worktrees serialize files; nothing serializes runs; the driver is the epic worktree's only writer.**
 
 ## Context Hygiene
 
 Long-running sessions compact deliberately — a deliberate compaction is a voluntary crash + resume against durable state, never a harness-forced mid-thought summary.
 
 - A legal reset point passes the Resumability Test: a fresh session, given only durable state, would choose the same next action.
-- Mandatory anchors: orchestrator after Gate 1 approval and after every child merge; lanes at the quality-gate→PR seam.
+- Mandatory anchors: orchestrator after Gate 1 approval; lanes at the quality-gate→PR seam. In the resident driver, the child-merge close-out is a **durable-brief anchor point** (register + continuation brief kept current), not a session reset — an actual context reset happens only at park or bloat. (A mandatory reset per merge would recreate the one-action tick the resident model replaces.)
 - Never reset mid-step; finish the step, write the continuation brief (state + evidence links, next action + why, live concerns, in-flight work that must not be redone), then reset.
 - Soft observations (flaky tests, retried workers, fragile modules) are appended to notes as they occur — when unsure, write it down.
 

@@ -55,7 +55,7 @@ A re-dispatched lane reconstructs its position from durable state before doing a
 
 ## Awaiting Workers
 
-The lane is itself a subagent, so completion notifications from its own workers (implementers, reviewers, test runners) do not reliably arrive — never yield the turn to "wait" for one; that is a stall, not a wait. On Claude Code, await each worker via `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` — the script owns the polling mechanics and prints only the final JSONL entries. Never read the whole transcript file — it overflows the lane's context.
+The lane is itself a subagent, so completion notifications from its own workers (implementers, reviewers, test runners) do not reliably arrive — never yield the turn to "wait" for one; that is a stall, not a wait. On Claude Code, await each worker via `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` — the script detects completion by the transcript's terminal record (final-lines content check, STALLED on stall, chunk-bounded) and prints only its final lines. Never read the whole transcript.
 
 ## Rules
 

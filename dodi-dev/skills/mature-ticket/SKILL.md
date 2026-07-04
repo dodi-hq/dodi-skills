@@ -34,6 +34,7 @@ When this skill runs as a worker itself (dispatched by the tick or an orchestrat
 - **Pre-register epics** (no canon summary exists — the epic predates the register): proceed and note its absence in the artifact; absence is not a blocker and does not trigger a retroactive review from this skill. The epic's first coherence review seeds the register, bootstrapping prior canon at depth proportional to artifact quality (per the coherence-reviewer prompt).
 - Run spec review until the final round is clean; a missing or stale scannable header is a review finding.
 - Run write-plan after the spec is clean (and signed off, where the Signoff Model requires it).
+- **Ephemeral worktree, per-gate push-back:** maturity runs in an ephemeral worktree off the epic branch. Push back to the epic branch at **each gate transition before** posting that gate's comment/label — `dispatch-eligible.sh` checks labels, not artifact presence, so a durable label against an artifact in a dangling worktree would arm dispatch against a missing plan. Cite SHAs only post-push (patch-id fallback per the 0.13.5 precedent). Layering rule: claims serialize tickets; worktrees serialize files; nothing serializes runs.
 - Run plan review until the final round is clean.
 - Apply `spec-ready` after clean spec review; apply `ready-to-implement` only after clean plan review and dependency check.
 - Do not move to implementation without both labels.
