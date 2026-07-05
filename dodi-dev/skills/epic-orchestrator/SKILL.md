@@ -18,7 +18,7 @@ Routine human involvement is exactly two gates: **Gate 1** (epic intent approval
 
 | Trigger | Inputs | Outputs | Durable writes | Allowed delegation | Failure states |
 | --- | --- | --- | --- | --- | --- |
-| interactive epic intake, or a manual session pushing an epic along | epic id, repo path, PM system context | next state decision, dispatched lanes and phase work, epic progress summary | epic comments, child ticket comments, labels, claim comments, artifact links | deliver-ticket lanes, phase skills, workers, reviewers, test runners | awaiting epic signoff, human question, blocked dependency, tool/auth failure |
+| interactive epic intake, or a manual session pushing an epic along | epic id, repo path, PM system context | next state decision, inline lane playbooks and phase work, epic progress summary | epic comments, child ticket comments, labels, claim comments, artifact links | deliver-ticket / mature-ticket playbooks executed inline (0.14.1 leaf-worker contract — never nested lane subagents), phase skills, leaf workers, reviewers, test runners | awaiting epic signoff, human question, blocked dependency, tool/auth failure |
 
 ## Inputs
 

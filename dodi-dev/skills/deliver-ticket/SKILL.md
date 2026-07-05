@@ -8,7 +8,7 @@ model: sonnet
 
 One lane session per child ticket. The lane runs the full local delivery sequence in the child's worktree, posting checkpoint comments as it crosses each state boundary. The lane never merges and never touches the epic branch.
 
-Dispatched by `epic-orchestrator` as a worker (Agent tool, `model: sonnet`), one lane per ticket, up to the orchestrator's `maxParallelLanes`. May also be invoked directly for a single ticket.
+**Executed inline by the top-level session** — the resident driver (`drive-epic`) or an interactive session — walking this sequence itself and dispatching each phase worker as its own leaf. **Never dispatched as a nested subagent lane** (0.14.1 interim; see Execution Model below). May also be invoked directly for a single ticket from an interactive session.
 
 ## Contract
 
@@ -53,9 +53,9 @@ A re-dispatched lane reconstructs its position from durable state before doing a
 - **Continuation brief** (posted as a ticket comment): current state per the checkpoint contract with evidence links, the next action and one line of why, live concerns from notes, and anything in flight that must not be redone.
 - **Notes discipline:** append soft observations to the ticket's notes as they occur — flaky tests, retried workers, fragile modules. When unsure whether an observation is worth persisting: write it.
 
-## Awaiting Workers
+## Execution Model (0.14.1 interim)
 
-The lane is itself a subagent, so completion notifications from its own workers (implementers, reviewers, test runners) do not reliably arrive — never yield the turn to "wait" for one; that is a stall, not a wait. On Claude Code, await each worker via `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` — the script detects completion by the transcript's terminal record (final-lines content check, STALLED on stall, chunk-bounded) and prints only its final lines. Never read the whole transcript.
+**Never run this sequence as a dispatched subagent lane.** Verified harness limitation (2026-07-05): a subagent that dispatches its own worker and ends its turn is never woken — the completion notification routes to the top-level session instead, and no blocking dispatch mode exists (field failure rate 5/5). The top-level session executes this sequence **inline**: it dispatches each phase worker (implementer, reviewer, test runner) as its own **leaf** — every worker prompt carries the leaf rule (work directly; never dispatch sub-agents; the final message is the result) — awaits via dual-wake (native notification primary, `await-worker.sh` backstop), and posts the Lane Checkpoint comments itself. The RESUMABLE/continuation-brief mechanics in Context Hygiene apply when this sequence runs as its own top-level session; when the driver walks it inline, the driver's park/bloat machinery is the pressure valve. The 0.15.0 flatten redesign owns the durable architecture.
 
 ## Rules
 

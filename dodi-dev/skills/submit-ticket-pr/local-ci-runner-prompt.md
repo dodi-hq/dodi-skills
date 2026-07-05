@@ -24,4 +24,4 @@ Do not skip required checks because a harness is absent. Set up the harness or r
 
 Return a digest only: commands, exit codes, failing test names, and log file paths. Never paste raw logs or full test output into your report.
 
-- **Awaiting your own workers (Claude Code):** never yield the turn to "wait" — run `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` (event-based: polls the transcript's final lines for the terminal record, STALLED on stall, chunk-bounded). Never read the whole transcript.
+- **Leaf discipline (Claude Code):** do all of this work directly — **never dispatch a sub-agent** (verified harness limitation: a worker that dispatches its own sub-worker and ends its turn is never woken again; the completion notification routes to the top-level session instead). Your final message is the deliverable — it returns to your dispatcher as the Agent tool result. End by writing the digest itself; never SendMessage it.

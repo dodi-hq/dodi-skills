@@ -25,7 +25,7 @@ Move a child ticket through spec and plan maturity gates under the two-gate mode
 
 The `model: fable` frontmatter pin covers this skill's main loop only — it never flows into worker dispatches. Every dispatch carries its own explicit pin: spec drafter, spec/plan reviewers, and plan writer carry Frontier pins in their prompt templates; research and read-and-digest workers (external/integration API docs, test-harness orientation, codebase exploration) pin Standard tier (`model: sonnet` on Claude Code). A dispatch without a pin inherits `fable` — that is a defect, not a default.
 
-When this skill runs as a worker itself (dispatched by the tick or an orchestrator session), completion notifications from its own dispatches (drafter, reviewers, research workers) do not reliably arrive. Never yield to "wait": on Claude Code, await each dispatch via `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` — the script owns the polling mechanics; never read the whole transcript.
+**Execution model (0.14.1 interim):** never run this skill as a dispatched subagent. Verified harness limitation (2026-07-05): a subagent that dispatches its own worker (drafter, reviewer) and ends its turn is never woken — the completion notification routes to the top-level session instead, and no blocking dispatch mode exists. The top-level session (the resident driver or an interactive session) executes this sequence **inline**; every dispatch it makes is a **leaf** worker whose prompt carries the leaf rule (work directly; never dispatch sub-agents; the final message is the result), awaited via dual-wake (native notification primary, `await-worker.sh` backstop). The 0.15.0 flatten redesign owns the durable architecture.
 
 ## Process
 

@@ -15,8 +15,8 @@ Inputs:
 Responsibilities:
 
 - read the spec and the relevant code directly
-- delegate bulk research to Standard-tier workers (`model: sonnet` on Claude Code) — external/integration API docs, test-harness setup, broad codebase orientation beyond the provided digest — each returning a ~20-line digest with source links. Reserve your own Frontier context for the plan itself. Never dispatch a worker without an explicit `model` pin — it would inherit your Frontier model
-- **Awaiting your own workers (Claude Code):** never yield the turn to "wait" — run `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` (event-based: polls the transcript's final lines for the terminal record, STALLED on stall, chunk-bounded). Never read the whole transcript.
+- do your own bulk research directly — external/integration API docs, test-harness setup, codebase orientation beyond the provided digest — you cannot delegate it (see Leaf discipline below). Read selectively: pull only the sections you need, distill each source to a few retained lines, and reserve the rest of your Frontier context for the plan itself
+- **Leaf discipline (Claude Code):** do all of this work directly — **never dispatch a sub-agent** (verified harness limitation: a worker that dispatches its own sub-worker and ends its turn is never woken again; the completion notification routes to the top-level session instead). Your final message is the deliverable — it returns to your dispatcher as the Agent tool result. End by writing the digest itself; never SendMessage it.
 - produce a plan per the write-plan template: exact file paths, complete code in steps, exact commands with expected output, bite-sized tasks with checkbox steps
 - include the full Testing Contract — required test groups, scope, reasons, minimum assertions, harness status, commands, critical flows, regression surface
 - save to `docs/plans/YYYY-MM-DD-<feature-name>.md`

@@ -1,5 +1,7 @@
 # Deliver-Ticket Lane Dispatch Prompt
 
+> **⛔ Do not dispatch this prompt (0.14.1 interim).** A dispatched lane strands at its first own-worker dispatch — a subagent that ends its turn with a child in flight is never woken (verified harness limitation, 2026-07-05; 5/5 field hangs). The top-level session executes the `deliver-ticket` sequence **inline** instead (see `deliver-ticket` § Execution Model and `drive-epic` drive-loop step 3). Retained as input to the 0.15.0 flatten redesign.
+
 Dispatch with the Agent tool, `model: sonnet` (Standard tier). Used by `pickup-next` (or a manual orchestrator session) to launch one `deliver-ticket` lane per ready child.
 
 You are a `deliver-ticket` lane for one child ticket. Follow the `deliver-ticket` skill exactly.
@@ -24,9 +26,9 @@ Checkpoint mechanics:
 - Post a **Lane Checkpoint** comment (pinned `# Lane Checkpoint` header carrying your session run id) at each boundary **as it is crossed** (`implementing`, `implementation-reviewing`, `testing`, `verifying`, `quality-gating`, `ready-for-child-pr`, `child-pr-reviewing`) — never batched at the end. The pinned header is what keeps the checkpoint visible to the liveness consumers (a headerless comment defaults to bookkeeping). They are the audit trail and the resume contract.
 - Mandatory context reset at the quality-gate→PR seam: write the continuation brief, exit `RESUMABLE`.
 
-Awaiting your own workers:
+Worker discipline:
 
-- **Awaiting your own workers (Claude Code):** never yield the turn to "wait" — run `${CLAUDE_PLUGIN_ROOT}/scripts/await-worker.sh <output_file>` (event-based: polls the transcript's final lines for the terminal record, STALLED on stall, chunk-bounded). Never read the whole transcript.
+- **Leaf discipline (Claude Code):** do all of this work directly — **never dispatch a sub-agent** (verified harness limitation: a worker that dispatches its own sub-worker and ends its turn is never woken again; the completion notification routes to the top-level session instead). Your final message is the deliverable — it returns to your dispatcher as the Agent tool result. End by writing the digest itself; never SendMessage it.
 - Every worker dispatch pins its model tier explicitly per the skill's step definitions (implementers default `sonnet` per implement/implementer-prompt.md).
 
 Output (final message):
