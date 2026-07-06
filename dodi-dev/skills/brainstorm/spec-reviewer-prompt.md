@@ -29,6 +29,7 @@ Agent tool (general-purpose, model: fable):
 
     **Issues (if any):**
     - [Section X]: [specific issue] - [why it matters]
+    - tag each: `caught-by: spec-review/<round>/<tier>` — round and tier appended by the dispatcher when posting
 
     **Recommendations (advisory):**
     - [suggestions that don't block approval]

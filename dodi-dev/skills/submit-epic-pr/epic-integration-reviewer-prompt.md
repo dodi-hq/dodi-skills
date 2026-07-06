@@ -71,6 +71,7 @@ Agent tool (general-purpose, model: opus):
     - [severity: critical/important/minor] [file:line]: [issue] — [why it matters]
     - classify each: implementation compliance | security | hygiene | regression risk | docs | operational | contract seam
     - **also classify each finding `mechanical` or `judgment` (required):** mechanical ≡ **no runtime-behavior effect** (docs, config samples, comments, formatting/hygiene); anything touching **runtime behavior** — flags, contracts, data shapes — is **judgment**; **when in doubt ⇒ judgment**
+    - tag each: `caught-by: epic-integration/<round>/<tier>` — round and tier appended by the dispatcher when posting (rounds count within this epic-PR attempt)
 
     **Required follow-up:** mechanical ⇒ fix in-loop (the walking session's fix workers) + fresh round; judgment ⇒ corrective child ticket + stop — never fixed in place
 
