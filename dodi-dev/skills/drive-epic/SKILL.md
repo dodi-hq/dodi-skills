@@ -14,7 +14,7 @@ The resident driver. One long-lived session per active epic. It absorbs `pickup-
 
 | Trigger | Inputs | Outputs | Durable writes | Allowed delegation | Failure states |
 | --- | --- | --- | --- | --- | --- |
-| hourly liveness cron, or manual invocation | PM scope, repo path(s), heartbeat location, retry ceiling (default 3), optional humanContact | epic advanced through as many actions as fit before park/bloat, or a clean no-op | driver claim + refreshes, continuation brief, daily heartbeat, everything the lane playbooks write | lane playbooks (`mature-ticket`, `deliver-ticket`) executed **inline** with their phase workers dispatched as this session's own leaves; `submit-ticket-pr` Merge and `submit-epic-pr` inline; state-reader / evidence-checker leaf workers | PM unreachable, claim yield, retry ceiling, fence trip, tool/auth failure |
+| hourly liveness cron, or manual invocation | PM scope, repo path(s), heartbeat location, retry ceiling (default 3), optional humanContact | epic advanced through as many actions as fit before park/bloat, or a clean no-op | driver claim + refreshes, continuation brief, daily heartbeat, everything the lane playbooks write | lane playbooks (`mature-ticket`, `deliver-ticket`) executed **inline** with their phase workers dispatched as this session's own leaves; `submit-ticket-pr` Merge and `submit-epic-pr` inline; state-reader / evidence-checker leaf workers (checker conditional per the `epic-orchestrator` Evidence Rule — the driver's inline-walked lanes are the primary skip case) | PM unreachable, claim yield, retry ceiling, fence trip, tool/auth failure |
 
 ## Step 0a — parse the invocation (first step, before anything else)
 

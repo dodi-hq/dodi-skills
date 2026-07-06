@@ -27,7 +27,7 @@ Each step is the named phase skill's process, executed inside this lane with the
 5. `verify` — one test-runner worker per group plus the local-CI runner dispatch (repo-local gates + broader checks, discovery mandate intact); claim results only from digests; every runner digest records the head SHA it ran against; a product-code fix here triggers the focused re-review (`review` § Epic Lane Rules) before the seam.
 6. **Context reset seam (verify→PR)** — see Context Hygiene below.
 7. `submit-ticket-pr` (Open only) — push the child branch, open the PR against the epic branch, write the PR body.
-8. `review` (child-PR context) — the delta-scoped integration pair (one `opus` integration round + a `fable` integration final per `review/child-pr-integration-prompt.md`) and the local CI runner in parallel.
+8. `review` (child-PR context) — the delta-scoped integration pair (one `opus` integration round + a `fable` integration final per `review/child-pr-integration-prompt.md`) ∥ conditional local CI (dispatched in parallel unless the skip predicate holds — per `review`, child-PR context).
 9. Report `ready-to-merge-child` with the evidence trail. Do not merge.
 
 ## Checkpoints
