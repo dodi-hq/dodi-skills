@@ -80,7 +80,7 @@ Stop: awaiting Gate 1, human question, concrete blocker, or `epic-pr-open` (Gate
 Merges into the epic branch are orchestrator-owned and strictly serial:
 
 1. Take one `ready-to-merge-child` lane result.
-2. Verify its evidence via an evidence-checker worker (`evidence-checker-prompt.md`).
+2. **Scoped evidence-checker rule (the single source, with § Evidence Rule):** dispatch the evidence-checker worker (`evidence-checker-prompt.md`) **iff this session is adopting work it did not execute and directly observe** — any Lane Checkpoint in the trail carries a foreign or missing session run id, **or** any own-run-id checkpoint predates this session's last compaction (a deliberate compaction is a voluntary crash + resume: post-compaction knowledge of prior steps is reconstructed from durable state, not observed — treat those checkpoints as adopted). When every checkpoint was written by this session in its current context window, skip the checker: results were claimed only from leaf digests as the lane was walked, and the merge retains its script-owned postcondition (step 5, `verify-merge.sh`) and the branch-currency check (step 3). **When in doubt, dispatch — the predicate fails closed.** (Scope: the merge-slot adoption gate; the janitor's read-only reconciliation checkers in `reconcile-tickets` are a different context, untouched.)
 3. Check the child branch is current with the epic head; if the epic moved, have the lane (re-dispatched if needed) sync and rerun relevant checks per `submit-ticket-pr` merge rules.
 4. **Merge-eligibility guard: no merge is eligible while the epic holds `coherence-pending`** (reviews stay serial, the register append-ordered). **Apply `coherence-pending` to the epic _before_ the merge command** (fail-closed label-before-merge): the irreversible write is the inlined `submit-ticket-pr` Merge (`gh pr merge`) — the sequence contains no push — so a crash between merge and label under the old merge-then-label order left a merged child with no coherence review and no detector.
 5. Squash merge via `submit-ticket-pr` (Merge); verify the postcondition with `${CLAUDE_PLUGIN_ROOT}/scripts/verify-merge.sh`, then clean up with `${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-branch.sh`, **passing the merge SHA verify-merge.sh printed as the final argument** — squash merges rewrite the SHA, so the cleanup proof requires it; post the done comment.
@@ -101,7 +101,7 @@ Compact deliberately — a deliberate compaction is a voluntary crash + resume; 
 
 ## Evidence Rule
 
-The orchestrator may not advance state from a lane or worker success claim alone. Verify durable PM labels, PM comments, artifact links, branch/worktree state, commits, or command output before advancing — via the evidence-checker worker.
+The orchestrator may not advance state from a lane or worker success claim alone. Verify durable PM labels, PM comments, artifact links, branch/worktree state, commits, or command output before advancing. The evidence-checker worker is the **adoption** instrument — Merging step 2 states the single test with this section: own-session work walked in the current context window advances on its leaf digests and the durable writes made as each boundary was crossed; adopted work (a foreign or missing run id, or own checkpoints predating the last compaction) takes the checker. Non-merge state advances follow the same adoption test. When in doubt, dispatch — the predicate fails closed.
 
 Durable PM state is the source of truth.
 
