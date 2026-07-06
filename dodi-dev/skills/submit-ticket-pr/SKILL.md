@@ -6,7 +6,7 @@ model: sonnet
 
 # Submit Ticket PR
 
-Two separately invoked halves. **Open** runs inside a `deliver-ticket` lane after the quality gate; **Merge** runs in the orchestrator's serial merge slot after the lane reports `ready-to-merge-child`. Child PRs target the epic branch, never main/master.
+Two separately invoked halves. **Open** runs inside a `deliver-ticket` lane after verify; **Merge** runs in the orchestrator's serial merge slot after the lane reports `ready-to-merge-child`. Child PRs target the epic branch, never main/master.
 
 ## Inputs
 
@@ -14,14 +14,14 @@ Two separately invoked halves. **Open** runs inside a `deliver-ticket` lane afte
 - child branch
 - epic branch
 - child worktree
-- evidence summary from implementation, review, tests, verification, and quality gate
+- evidence summary from implementation, review, tests, and verification
 
 ## Open (lane-invoked)
 
 1. Verify the child branch is not main/master and targets the epic branch.
 2. Push the child branch.
 3. Open a PR from child branch to epic branch.
-4. Write a PR body with spec, plan, test evidence, quality-gate evidence, and ticket link. Reference the ticket with the **non-closing** form `Part of <ticket-id>` — never `Closes`/`Fixes` on a child PR: children reach their terminal state when the epic merges to main/master, not when the child merges to the epic branch.
+4. Write a PR body with spec, plan, test evidence, verification evidence (incl. repo-local + broader checks), and ticket link. Reference the ticket with the **non-closing** form `Part of <ticket-id>` — never `Closes`/`Fixes` on a child PR: children reach their terminal state when the epic merges to main/master, not when the child merges to the epic branch.
 5. Return to the lane — the lane runs `review` (child-PR context) next. Do not merge from this half.
 
 ```bash

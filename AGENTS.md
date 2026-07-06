@@ -26,7 +26,7 @@ Every skill and worker dispatch declares a model tier. Two levers: `model:` in S
 |------|--------------|----------|
 | Frontier | `fable` | Spec drafting/review, plan writing/review, the final pre-PR review round |
 | Capable | `opus` | Per-round code review, PR review, delivery (implementers + fix workers) on `needs-capable-delivery` tickets |
-| Standard | `sonnet` | Orchestration routing, writing code, writing tests, fixing findings, PR bodies, failure triage, quality gate, research digests (API docs, harness/codebase orientation) |
+| Standard | `sonnet` | Orchestration routing, writing code, writing tests, fixing findings, PR bodies, failure triage, research digests (API docs, harness/codebase orientation) |
 | Fast | `haiku` | Git mechanics, state classification, command/test runners, read-only state digests |
 
 - Aliases only — never full model IDs; aliases track model upgrades.
@@ -92,7 +92,7 @@ Post-Gate-1 delivery runs as a **resident driver** (`drive-epic`) — one long-l
 Long-running sessions compact deliberately — a deliberate compaction is a voluntary crash + resume against durable state, never a harness-forced mid-thought summary.
 
 - A legal reset point passes the Resumability Test: a fresh session, given only durable state, would choose the same next action.
-- Mandatory anchors: orchestrator after Gate 1 approval; lanes at the quality-gate→PR seam. In the resident driver, the child-merge close-out is a **durable-brief anchor point** (register + continuation brief kept current), not a session reset — an actual context reset happens only at park or bloat. (A mandatory reset per merge would recreate the one-action tick the resident model replaces.)
+- Mandatory anchors: orchestrator after Gate 1 approval; lanes at the verify→PR seam. In the resident driver, the child-merge close-out is a **durable-brief anchor point** (register + continuation brief kept current), not a session reset — an actual context reset happens only at park or bloat. (A mandatory reset per merge would recreate the one-action tick the resident model replaces.)
 - Never reset mid-step; finish the step, write the continuation brief (state + evidence links, next action + why, live concerns, in-flight work that must not be redone), then reset.
 - Soft observations (flaky tests, retried workers, fragile modules) are appended to notes as they occur — when unsure, write it down.
 
