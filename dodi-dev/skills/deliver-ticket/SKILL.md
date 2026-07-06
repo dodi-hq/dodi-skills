@@ -24,16 +24,15 @@ Each step is the named phase skill's process, executed inside this lane with the
 2. `implement-ticket` — implementation workers, exact plan adherence.
 3. `review` (pre-PR context) — loop capped at 5 rounds plus the Frontier final round.
 4. `create-tests` — satisfy the Testing Contract.
-5. `verify` — one test-runner worker per group; claim results only from digests.
-6. `quality-gate` — horizontal checks with command evidence.
-7. **Context reset seam** — see Context Hygiene below.
-8. `submit-ticket-pr` (Open only) — push the child branch, open the PR against the epic branch, write the PR body.
-9. `review` (child-PR context) — the delta-scoped integration pair (one `opus` integration round + a `fable` integration final per `review/child-pr-integration-prompt.md`) and the local CI runner in parallel.
-10. Report `ready-to-merge-child` with the evidence trail. Do not merge.
+5. `verify` — one test-runner worker per group plus the local-CI runner dispatch (repo-local gates + broader checks, discovery mandate intact); claim results only from digests; every runner digest records the head SHA it ran against; a product-code fix here triggers the focused re-review (`review` § Epic Lane Rules) before the seam.
+6. **Context reset seam (verify→PR)** — see Context Hygiene below.
+7. `submit-ticket-pr` (Open only) — push the child branch, open the PR against the epic branch, write the PR body.
+8. `review` (child-PR context) — the delta-scoped integration pair (one `opus` integration round + a `fable` integration final per `review/child-pr-integration-prompt.md`) and the local CI runner in parallel.
+9. Report `ready-to-merge-child` with the evidence trail. Do not merge.
 
 ## Checkpoints
 
-Post a **Lane Checkpoint** comment (pinned `# Lane Checkpoint` header, carrying the session run id — repo mirror `lane-checkpoint.md` for validation) at each boundary as it is crossed: `implementing`, `implementation-reviewing`, `testing`, `verifying`, `quality-gating`, `ready-for-child-pr`, `child-pr-reviewing`. The pinned header is load-bearing: under the comment-species partition's unknown⇒bookkeeping default, a headerless checkpoint is invisible to every liveness consumer. These are the audit trail and the resume contract — never batch them at the end.
+Post a **Lane Checkpoint** comment (pinned `# Lane Checkpoint` header, carrying the session run id — repo mirror `lane-checkpoint.md` for validation) at each boundary as it is crossed: `implementing`, `implementation-reviewing`, `testing`, `verifying`, `ready-for-child-pr`, `child-pr-reviewing`. The pinned header is load-bearing: under the comment-species partition's unknown⇒bookkeeping default, a headerless checkpoint is invisible to every liveness consumer. These are the audit trail and the resume contract — never batch them at the end.
 
 ## Exit States
 
@@ -48,7 +47,7 @@ A re-dispatched lane reconstructs its position from durable state before doing a
 
 ## Context Hygiene
 
-- **Mandatory reset at the quality-gate→PR seam:** after `quality-gate` passes, write the continuation brief and exit `RESUMABLE`. The orchestrator re-dispatches a fresh lane that opens the PR and runs child-PR review. This is the lane's biggest natural boundary; a fresh context reviews the PR without implementation bias.
+- **Mandatory reset at the verify→PR seam:** after `verify` is green (Contract groups + the local-CI runner scope; focused re-review clean if fixes occurred), write the continuation brief and exit `RESUMABLE`. The orchestrator re-dispatches a fresh lane that opens the PR and runs child-PR review. This is the lane's biggest natural boundary; a fresh context reviews the PR without implementation bias.
 - **Emergency reset:** if the harness warns context is low mid-lane, finish the current step — never abandon a review round or a dispatched worker — write the continuation brief, and exit `RESUMABLE`. If a step cannot complete, post an explicit "interrupted at" comment so the resume does not double-execute.
 - **Continuation brief** (posted as a ticket comment): current state per the checkpoint contract with evidence links, the next action and one line of why, live concerns from notes, and anything in flight that must not be redone.
 - **Notes discipline:** append soft observations to the ticket's notes as they occur — flaky tests, retried workers, fragile modules. When unsure whether an observation is worth persisting: write it.
