@@ -45,6 +45,7 @@ prompt_files=(
   mature-ticket/spec-drafter-prompt.md
   verify/test-runner-prompt.md
   submit-ticket-pr/local-ci-runner-prompt.md
+  submit-epic-pr/epic-integration-reviewer-prompt.md
 )
 
 for prompt in "${prompt_files[@]}"; do
