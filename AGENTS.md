@@ -25,7 +25,7 @@ Every skill and worker dispatch declares a model tier. Two levers: `model:` in S
 | Tier | Claude alias | Used for |
 |------|--------------|----------|
 | Frontier | `fable` | Spec drafting/review, plan writing/review, the final pre-PR review round |
-| Capable | `opus` | Per-round code review, PR review, delivery (implementers + fix workers) on `needs-capable-delivery` tickets |
+| Capable | `opus` | Per-round code review, PR review, integrated-head epic review, delivery (implementers + fix workers) on `needs-capable-delivery` tickets |
 | Standard | `sonnet` | Orchestration routing, writing code, writing tests, fixing findings, PR bodies, failure triage, research digests (API docs, harness/codebase orientation) |
 | Fast | `haiku` | Git mechanics, state classification, command/test runners, read-only state digests |
 
@@ -85,7 +85,7 @@ Post-Gate-1 delivery runs as a **resident driver** (`drive-epic`) — one long-l
 - Claim discipline: the driver (or a manual orchestrator session, or the paused tick) posts a claim comment before acting on a ticket, skips live claims from other **sessions** (session-scoped foreignness, driver-claim-topped liveness hierarchy), and closes the claim with its exit state. A retry ceiling (default 3 consecutive failed/`RESUMABLE` attempts) converts loops into `blocked` + escalation.
 - The janitor repairs state (merge/deploy transitions, stale claims, branch/worktree cleanup) but never advances work and never guesses — ambiguous evidence becomes an escalation comment.
 - Gate 2 is procedural and absolute: no scheduled run merges, auto-merges, or enables auto-merge on an epic PR, regardless of permission mode.
-- Layering rule: **claims serialize tickets; worktrees serialize files; nothing serializes runs; the driver is the epic worktree's only writer.**
+- Layering rule: **claims serialize tickets; worktrees serialize files; nothing serializes runs; the driver is the epic worktree's only writer** — leaf fix workers dispatched by the walking session write under its ownership (one supervising session still serializes all epic-worktree writes).
 
 ## Context Hygiene
 
