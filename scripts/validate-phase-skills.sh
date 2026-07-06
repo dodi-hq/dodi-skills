@@ -6,7 +6,6 @@ skills=(
   file-ticket
   implement
   pickup
-  quality-gate
   review
   submit
   verify
