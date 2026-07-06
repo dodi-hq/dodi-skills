@@ -1,6 +1,6 @@
 # Implementer Subagent Prompt Template
 
-Dispatch one per task.
+Dispatch one per task. Default pin is `model: sonnet`; if the ticket carries `needs-capable-delivery`, pin `model: opus` for every task and fix worker instead (no per-task demotion — see `implement/SKILL.md` Model Selection).
 
 ```
 Agent tool (general-purpose or implementation-engineer, model: sonnet):

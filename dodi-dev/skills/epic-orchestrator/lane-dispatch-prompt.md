@@ -29,7 +29,7 @@ Checkpoint mechanics:
 Worker discipline:
 
 - **Leaf discipline (Claude Code):** do all of this work directly — **never dispatch a sub-agent** (verified harness limitation: a worker that dispatches its own sub-worker and ends its turn is never woken again; the completion notification routes to the top-level session instead). Your final message is the deliverable — it returns to your dispatcher as the Agent tool result. End by writing the digest itself; never SendMessage it.
-- Every worker dispatch pins its model tier explicitly per the skill's step definitions (implementers default `sonnet` per implement/implementer-prompt.md).
+- Every worker dispatch pins its model tier explicitly per the skill's step definitions (implementers default `sonnet` per implement/implementer-prompt.md; every implementer and fix worker pins `opus` when the child carries `needs-capable-delivery`).
 
 Output (final message):
 

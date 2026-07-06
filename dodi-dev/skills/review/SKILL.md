@@ -29,7 +29,7 @@ Comprehensive fresh-context, agent-driven code review with a fix loop. One skill
 
 1. Identify the spec/plan and the diff (`git diff <base>...HEAD`, or the PR diff in the child-PR context).
 2. Dispatch the reviewer subagent (see review-prompt.md) with the context named. In the **child-PR context**, dispatch the local CI runner (`submit-ticket-pr/local-ci-runner-prompt.md`) **in parallel** — one message, two Agent calls; they are independent.
-3. **Review loop** — if the reviewer reports issues, dispatch fix workers, then a fresh reviewer. Cap at 5 rounds; if still not clean, stop and escalate with the unresolved findings.
+3. **Review loop** — if the reviewer reports issues, dispatch fix workers (`model: sonnet`; `model: opus` when the ticket carries `needs-capable-delivery`), then a fresh reviewer. Cap at 5 rounds; if still not clean, stop and escalate with the unresolved findings.
 4. **Final round at Frontier tier** — when a round comes back clean, dispatch one last fresh reviewer at `model: fable`. The gate is clean only when this round reports zero issues. If it finds issues, fix them and resume the loop at the per-round tier.
 5. On clean:
    - post-implementation → proceed to `dodi-dev:submit`

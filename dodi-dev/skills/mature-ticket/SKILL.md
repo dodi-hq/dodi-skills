@@ -37,11 +37,13 @@ The `model: fable` frontmatter pin covers this skill's main loop only — it nev
 - **Ephemeral worktree, per-gate push-back:** maturity runs in an ephemeral worktree off the epic branch. Push back to the epic branch at **each gate transition before** posting that gate's comment/label — `dispatch-eligible.sh` checks labels, not artifact presence, so a durable label against an artifact in a dangling worktree would arm dispatch against a missing plan. Cite SHAs only post-push (patch-id fallback per the 0.13.5 precedent). Layering rule: claims serialize tickets; worktrees serialize files; nothing serializes runs.
 - Run plan review until the final round is clean.
 - Apply `spec-ready` after clean spec review; apply `ready-to-implement` only after clean plan review and dependency check.
+- **Delivery-tier label:** the plan reviewer's output includes a required delivery-tier classification (standard | capable — see `write-plan/plan-reviewer-prompt.md`). If **any** chunk's final clean round classifies `capable`, apply `needs-capable-delivery` at the same gate transition as `ready-to-implement`, before the gate comment. The label routes every implementer and fix worker in the delivery lane to Capable tier (`opus`); its absence means Standard-tier delivery. Escalation is pre-routed here, never improvised mid-lane.
 - Do not move to implementation without both labels.
 
 ## Evidence
 
 - Record spec artifact, plan artifact, reviewer type, review status, assumptions, dependency state, and labels applied or withheld.
+- Record the delivery-tier classification (standard | capable) with the reviewer's one-line reason; on `capable`, record the `needs-capable-delivery` label application.
 - Record which signoff path applied: Gate 1 delegation (link the epic delegation comment), per-child signoff, or human answers to drafter questions.
 - Record why any ticket remains in maturity work.
 

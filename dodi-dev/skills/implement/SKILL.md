@@ -25,7 +25,11 @@ Default is `model: sonnet` (pinned in implementer-prompt.md). Adjust per task:
 
 - **Mechanical tasks** (1-2 files, clear spec): `model: haiku`
 - **Integration tasks** (multi-file, pattern matching): `model: sonnet`
-- **Architecture/judgment tasks**: `model: opus` — but in the epic lane, judgment surprises demote to the spec lane instead of escalating the model
+- **Architecture/judgment tasks**: `model: opus`
+
+**Ticket-level override — `needs-capable-delivery`:** if the ticket carries the label (applied at plan review — see `mature-ticket`), pin **every implementer and fix worker at `model: opus`**, with no per-task demotion. The label means the plan reviewer judged the work invariant-dense; on that class of work the bugs live in tasks that look structural, so the per-task adjustments above do not apply.
+
+In the epic lane, escalation is pre-routed by the label, never improvised mid-lane: a judgment surprise on an unlabeled ticket demotes to the spec lane instead of escalating the model.
 
 ## Handling Implementer Status
 

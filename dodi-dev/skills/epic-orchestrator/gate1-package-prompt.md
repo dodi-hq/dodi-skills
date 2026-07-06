@@ -27,6 +27,9 @@ Output — the package, following the scannable artifact convention:
 ## Children
 
 - `<ticket-id>` — one-line intent — depends on: `<ids or none>`
+  — suffix `⚠ likely capable-tier delivery` for children whose intent reads
+  invariant-dense (concurrency/locking, distributed-state reconciliation,
+  ordering/idempotence, cross-component state machines)
 
 ## Needs Human Input
 
@@ -37,6 +40,7 @@ Rules:
 
 - YAGNI on the epic scope: flag scope creep across children as a key point, do not silently accept it.
 - Every ⚠ assumption must be concrete enough that approval genuinely delegates it ("⚠ soft-delete, not hard-delete" — not "⚠ some data questions").
+- The `⚠ likely capable-tier delivery` suffix is advisory cost-profile visibility for the human — the binding classification happens at plan review (`needs-capable-delivery`, see `mature-ticket`). Flag from intent, do not deep-read code to decide.
 - Do not apply labels or notify anyone; return the package to the orchestrator.
 
 Report: **Status:** PACKAGE_READY or QUESTIONS_FOR_HUMAN, plus the package (or the blocking questions).

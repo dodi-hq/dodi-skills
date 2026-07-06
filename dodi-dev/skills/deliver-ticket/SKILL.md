@@ -18,7 +18,7 @@ One lane session per child ticket. The lane runs the full local delivery sequenc
 
 ## Internal Sequence
 
-Each step is the named phase skill's process, executed inside this lane with the same worker dispatch discipline (implementers `model: sonnet` per task — the default pinned in `implement/implementer-prompt.md`, with per-task adjustments per `implement/SKILL.md`; fresh-context reviewers with `opus` rounds and a `fable` final round; `haiku` test runners):
+Each step is the named phase skill's process, executed inside this lane with the same worker dispatch discipline (implementers `model: sonnet` per task — the default pinned in `implement/implementer-prompt.md`, with per-task adjustments per `implement/SKILL.md`; **on a ticket carrying `needs-capable-delivery`, every implementer and fix worker pins `model: opus` instead, no per-task demotion**; fresh-context reviewers with `opus` rounds and a `fable` final round; `haiku` test runners):
 
 1. `pickup-ticket` — create the child branch and worktree from the current epic branch.
 2. `implement-ticket` — implementation workers, exact plan adherence.

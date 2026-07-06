@@ -25,7 +25,7 @@ Every skill and worker dispatch declares a model tier. Two levers: `model:` in S
 | Tier | Claude alias | Used for |
 |------|--------------|----------|
 | Frontier | `fable` | Spec drafting/review, plan writing/review, the final pre-PR review round |
-| Capable | `opus` | Per-round code review, PR review |
+| Capable | `opus` | Per-round code review, PR review, delivery (implementers + fix workers) on `needs-capable-delivery` tickets |
 | Standard | `sonnet` | Orchestration routing, writing code, writing tests, fixing findings, PR bodies, failure triage, quality gate, research digests (API docs, harness/codebase orientation) |
 | Fast | `haiku` | Git mechanics, state classification, command/test runners, read-only state digests |
 
@@ -33,6 +33,7 @@ Every skill and worker dispatch declares a model tier. Two levers: `model:` in S
 - Aliases are Claude Code vocabulary. On Codex, map tiers to the closest local equivalents (Frontier/Capable → highest-reasoning configuration, Standard → default coding model, Fast → small fast model); a skill that names a Claude alias means that tier.
 - Pick tiers by capability match, never by cost — the goal is intelligence-effectiveness; dollars and token counts fall where they fall. Use Frontier wherever judgment quality compounds downstream (specs, plans, review gates). Use lower tiers only where frontier intelligence adds nothing to the output (git mechanics, test execution, state digests) — they are faster and lower-latency, which is itself effectiveness.
 - The review pipeline intentionally mixes tiers for reviewer diversity, not thrift: `opus` per-round and a fresh `fable` final gate have different failure modes, so the final round is a genuinely independent check rather than one more identical pass. When a task smells like judgment, escalate the tier — never economize on it.
+- **Per-ticket delivery-tier routing (`needs-capable-delivery`):** the plan reviewer classifies every plan's delivery tier (standard | capable) as a required output; `mature-ticket` applies the label alongside `ready-to-implement`. A labeled ticket pins **every implementer and fix worker** in its delivery lane at `opus` — no per-task demotion: on invariant-dense tickets (concurrency/locking protocols, distributed-state reconciliation, ordering/idempotence invariants, cross-component state machines) the Standard tier reliably gets the structure right and misses the invariants, so the bugs live in tasks that look structural. Escalation is pre-routed at plan review, never improvised mid-lane; a mid-flight judgment surprise still demotes to the spec lane. The review pipeline is unchanged either way, preserving the invariant that **the final gate is always a different model from the writer** (the writer is never `fable`).
 - Judgment-heavy interactive skills (brainstorm, write-plan) omit `model:` and inherit the session model — run those sessions on the Frontier model. Mechanical interactive skills (pickup, file-ticket, submit) pin `sonnet`. In the autonomous epic lane, `mature-ticket`'s `fable` pin persists for the rest of the turn into the spec/plan work it chains into.
 - Never set `CLAUDE_CODE_SUBAGENT_MODEL` on hive machines — it outranks every per-dispatch pin.
 

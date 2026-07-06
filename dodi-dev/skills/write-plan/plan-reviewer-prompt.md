@@ -26,9 +26,27 @@ Agent tool (general-purpose, model: fable):
     - Missing verification steps or expected outputs
     - Incomplete code blocks
 
+    ## Delivery Tier Classification (required)
+
+    Classify this chunk's delivery tier:
+
+    - **capable** — the chunk is invariant-dense: concurrency/locking
+      protocols, distributed-state reconciliation, ordering/idempotence
+      invariants, cross-component state machines, undo/redo semantics, or
+      correctness that hinges on subtle "must never" conditions rather than
+      structure. On this class of work, Standard-tier implementers reliably
+      get the structure right and miss the invariants.
+    - **standard** — everything else: integration work, pattern-matching,
+      CRUD-shaped changes, mechanical refactors.
+
+    When in doubt, classify capable: a wrong capable costs tokens; a wrong
+    standard costs a full review→rework cycle.
+
     ## Output
 
     **Status:** ✅ Approved | ❌ Issues Found
+
+    **Delivery tier:** standard | capable — [one-line reason]
 
     **Issues (if any):**
     - [Task X, Step Y]: [specific issue] - [why it matters]
