@@ -1,6 +1,6 @@
 # Lane Checkpoint
 
-Ticket: `<child-ticket-id>` · Boundary: `<implementing | implementation-reviewing | testing | verifying | quality-gating | ready-for-child-pr | child-pr-reviewing>`
+Ticket: `<child-ticket-id>` · Boundary: `<implementing | implementation-reviewing | testing | verifying | ready-for-child-pr | child-pr-reviewing>`
 
 ## Session
 
@@ -9,7 +9,7 @@ Ticket: `<child-ticket-id>` · Boundary: `<implementing | implementation-reviewi
 
 ## Evidence
 
-- `<branch / worktree / plan link / commit ids / review evidence / test files / harness evidence / gate evidence — per the boundary's row in state-transitions.md>`
+- `<branch / worktree / plan link / commit ids / review evidence / test files / harness evidence / verification evidence (incl. recorded runner head SHAs at the ready-for-child-pr boundary) — per the boundary's row in state-transitions.md>`
 
 ## Notes
 
