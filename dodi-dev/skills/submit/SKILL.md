@@ -14,9 +14,9 @@ Compatibility submit entry point. Epic orchestration uses dedicated PR lifecycle
    - Verify you're on a feature branch (not main/master)
    - Check for uncommitted changes — commit or warn
    - Ensure branch is pushed to remote
-   - **Run `/quality-gate`** — this is mandatory. Invoke the quality-gate skill to run compliance checks, create tests, and run the test suite. Do NOT skip this step.
+   - **Pre-PR verification** — this is mandatory. Confirm clean post-implementation `review` evidence exists; run `create-tests` if the Testing Contract requires test groups not yet present; then run `verify` — all Testing Contract command lines plus the local-CI runner scope (repo-local gates + broader checks). Do NOT skip this step.
 2. For epic workflows, route child ticket branches to `submit-ticket-pr` and epic branches to `submit-epic-pr`.
-3. Report the branch, commit range, review evidence, verification evidence, and quality-gate evidence.
+3. Report the branch, commit range, review evidence, and verification evidence (incl. repo-local + broader checks).
 
 ## Key Rules
 

@@ -42,4 +42,4 @@ Create or complete required tests from the plan's Testing Contract. Missing harn
 - Stop on invalid Testing Contract, missing harness blocker, or spec/plan mismatch.
 - Stop if a required harness cannot be set up and report the concrete blocker.
 - Stop if test creation reveals an implementation issue that must be fixed first.
-- Stop at `ready-for-child-pr` only after verification and quality gate are clean.
+- Stop at `ready-for-child-pr` only after verification (incl. repo-local checks) is clean.

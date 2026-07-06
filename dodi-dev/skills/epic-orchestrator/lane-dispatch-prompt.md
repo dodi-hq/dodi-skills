@@ -23,8 +23,8 @@ Exit contract:
 
 Checkpoint mechanics:
 
-- Post a **Lane Checkpoint** comment (pinned `# Lane Checkpoint` header carrying your session run id) at each boundary **as it is crossed** (`implementing`, `implementation-reviewing`, `testing`, `verifying`, `quality-gating`, `ready-for-child-pr`, `child-pr-reviewing`) — never batched at the end. The pinned header is what keeps the checkpoint visible to the liveness consumers (a headerless comment defaults to bookkeeping). They are the audit trail and the resume contract.
-- Mandatory context reset at the quality-gate→PR seam: write the continuation brief, exit `RESUMABLE`.
+- Post a **Lane Checkpoint** comment (pinned `# Lane Checkpoint` header carrying your session run id) at each boundary **as it is crossed** (`implementing`, `implementation-reviewing`, `testing`, `verifying`, `ready-for-child-pr`, `child-pr-reviewing`) — never batched at the end. The pinned header is what keeps the checkpoint visible to the liveness consumers (a headerless comment defaults to bookkeeping). They are the audit trail and the resume contract.
+- Mandatory context reset at the verify→PR seam: write the continuation brief, exit `RESUMABLE`.
 
 Worker discipline:
 
@@ -34,5 +34,5 @@ Worker discipline:
 Output (final message):
 
 - **Exit state:** one of the four named states
-- **Evidence:** checkpoint links, commits, PR link, review/verify/gate digests
+- **Evidence:** checkpoint links, commits, PR link, review/verify digests
 - **Notes:** soft observations worth persisting (flaky tests, fragile modules), one line each

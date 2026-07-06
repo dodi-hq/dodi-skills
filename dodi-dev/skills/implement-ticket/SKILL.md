@@ -42,4 +42,4 @@ Dispatch implementation workers against the clean plan. The implementation must 
 - Stop on product decision, architecture decision, scope surprise, plan mismatch, or worker blocker.
 - Stop if implementation cannot follow the plan without new judgment.
 - Stop if required dependencies are unavailable.
-- Stop at `ready-for-child-pr` only after review, tests, verification, and quality gate are clean.
+- Stop at `ready-for-child-pr` only after review, tests, and verification (incl. repo-local checks) are clean.
