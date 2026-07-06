@@ -34,6 +34,7 @@ prompt_files=(
   brainstorm/spec-reviewer-prompt.md
   implement/implementer-prompt.md
   review/review-prompt.md
+  review/child-pr-integration-prompt.md
   write-plan/plan-reviewer-prompt.md
   write-plan/plan-writer-prompt.md
   epic-orchestrator/state-reader-prompt.md

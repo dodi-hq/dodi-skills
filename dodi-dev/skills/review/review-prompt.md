@@ -1,6 +1,6 @@
 # Code Reviewer Prompt Template
 
-Dispatch as a fresh-context subagent. Per-round model: `opus` (Capable tier). The final gate round uses `model: fable` (Frontier tier) per the review skill's process.
+Dispatch as a fresh-context subagent. Per-round model: `opus` (Capable tier). The final gate round uses `model: fable` (Frontier tier) per the review skill's process. Serves the post-implementation and pre-PR contexts, plus the focused re-review (changed-files input = the verify-stage fix delta and its blast surface; full checklist scoped to that delta). The child-PR gate uses child-pr-integration-prompt.md instead.
 
 ```
 Agent tool (general-purpose, model: opus):
@@ -9,7 +9,7 @@ Agent tool (general-purpose, model: opus):
     You are reviewing a completed implementation. Start fresh — read the
     artifacts and the code directly; trust nothing you did not verify.
 
-    **Review context:** [post-implementation | pre-PR | child-PR]
+    **Review context:** [post-implementation | pre-PR | focused re-review]
     **Spec/Plan:** [SPEC_OR_PLAN_FILE_PATHS]
     **Project conventions:** [CLAUDE_MD_OR_AGENTS_MD_PATH]
     **Changed files:** [list, git diff range, or PR URL]
@@ -45,11 +45,11 @@ Agent tool (general-purpose, model: opus):
     - Request/response shapes backwards-compatible?
     - New fields optional or defaulted?
 
-    ## Additional checks in the child-PR context only
+    **Documentation:**
+    - Docs, README, and config samples updated when behavior changes?
 
-    - Test coverage relative to the ticket's Testing Contract
-    - Whether the child branch is current with the epic branch
-    - Unintended behavior changes relative to the ticket scope
+    **Operational concerns:**
+    - Logging, error surfacing, flags, rollout/rollback handled where behavior shifts?
 
     ## CRITICAL: Read the actual code
 
