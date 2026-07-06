@@ -30,12 +30,13 @@ The lane posts these as **Lane Checkpoint** comments (pinned `# Lane Checkpoint`
 | implementation-reviewing | implementation commits complete | commit ids, worker evidence |
 | testing | pre-PR review clean (incl. fable final round) | review evidence, reviewed diff range |
 | verifying | Testing Contract tests exist | test files, harness evidence |
-| quality-gating | verification green | commands, exit codes, per-group digests |
-| ready-for-child-pr | quality gate passed — mandatory lane context reset here | gate evidence; continuation brief |
+| ready-for-child-pr | verification green (Contract groups + local-CI runner scope; focused re-review clean if fixes occurred) — mandatory lane context reset here | verification evidence, including each runner digest's recorded head SHA with the local-CI runner's named explicitly; continuation brief |
 | child-pr-reviewing | child PR open against epic branch | PR link, PR body |
 | (exit) ready-to-merge-child | child-PR review + local CI clean | reviewer status, CI digests |
 
 Failure routing inside the lane mirrors the previous per-skill rules: implementation bug → back to implementing; test bug or harness work → back to testing; judgment surprise at any checkpoint → demote-to-spec and exit.
+
+**Resume mapping (pre-0.15.0 checkpoints):** a previously posted `quality-gating` checkpoint reads as `verifying` complete; the next boundary is `ready-for-child-pr`. A pre-0.15.0 lane resuming past `verifying` never ran the verify-stage local-CI runner: run it before posting `ready-for-child-pr`, or post that boundary noting the runner's absence.
 
 ## Epic-Level Transitions
 
