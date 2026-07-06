@@ -31,7 +31,9 @@ gh pr create --base <epic-branch> --head <child-branch> --title "<ticket-id>: <t
 
 ## Merge (orchestrator-invoked, strictly serial)
 
-1. Require the lane's `ready-to-merge-child` report with clean child-PR review and local CI-equivalent evidence, verified by an evidence checker.
+This section is the **single source of merge eligibility** — consumers reference it, never restate it.
+
+1. Require the lane's `ready-to-merge-child` report with clean child-PR review and local CI-equivalent evidence — evidence-checker citations when adopting (per the epic-orchestrator Evidence Rule); own-session evidence trail otherwise.
 2. Verify the child branch is current with the epic head. If the epic moved, return to the lane for a sync and rerun of relevant checks — do not merge a stale branch. **De-minimis exception:** if everything the epic gained since the child branched is demonstrably disjoint from the child's file surface *and* touches no code (docs-only housekeeping), the merge slot may proceed — record the divergence assessment and the deviation in the done comment. Any code, config, schema, or generated-file movement means sync, no exceptions.
 3. Squash merge, then **verify the merge actually happened** — `gh pr merge` can succeed silently without merging (field-confirmed: zero output, no merge). Never claim the merge from the merge command's exit; claim it from the verification script.
 4. Clean up the child branch and worktree via the cleanup script, threading the verified merge SHA through — squash merges rewrite the SHA, so the script's content-match proof requires it.
@@ -52,7 +54,7 @@ Expected evidence:
 - push output or remote branch URL
 - PR URL
 - clean child-PR review evidence (`review`, child-PR context)
-- local CI-equivalent command evidence
+- local CI-equivalent command evidence — a child-PR-stage local CI digest, or the **checkpoint-recorded** verify-stage local-CI digest when the conditional-CI predicate held (`review`, child-PR context; the durable record, not session memory)
 - merge verification: `gh pr view` showing state MERGED plus the merge commit id (merge command output alone is not evidence)
 - child ticket comment with final status
 

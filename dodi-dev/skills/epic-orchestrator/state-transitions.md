@@ -17,7 +17,7 @@ These are the states the orchestrator routes on. The delivery pipeline between `
 | blocked-dependency | dependency ticket or branch state changes | dependency implemented or explicitly accounted for | dependency status comment | ready-to-implement | remains blocked-dependency if dependency is unresolved |
 | ready-to-implement | orchestrator dispatches a deliver-ticket lane | `spec-ready`, `ready-to-implement`, clean spec, clean plan, lane slot free per parallelism policy | lane dispatch comment | delivering | blocked if branch/worktree cannot be created cleanly |
 | delivering | lane exits | lane exit state with checkpoint trail | lane checkpoint comments (see next table) | ready-to-merge-child | demote-to-spec on judgment surprise; blocked on concrete blocker; re-dispatch on RESUMABLE |
-| ready-to-merge-child | orchestrator takes the serial merge slot | evidence-checker citations; child branch current with epic head | apply `coherence-pending` (before the merge, fail-closed), squash merge, branch deletion, child done comment | done | blocked if merge conflict requires spec or plan judgment; back to lane for sync + rerun if epic moved |
+| ready-to-merge-child | orchestrator takes the serial merge slot | own-session evidence trail (all checkpoints this run id, written this context window) or evidence-checker citations (adoption); child branch current with epic head | apply `coherence-pending` (before the merge, fail-closed), squash merge, branch deletion, child done comment | done | blocked if merge conflict requires spec or plan judgment; back to lane for sync + rerun if epic moved |
 | done | child PR merged into epic | merged PR state | child ticket final status | done | no transition unless ticket is reopened |
 
 ## Lane Checkpoint Contract (inside deliver-ticket)
@@ -32,11 +32,11 @@ The lane posts these as **Lane Checkpoint** comments (pinned `# Lane Checkpoint`
 | verifying | Testing Contract tests exist | test files, harness evidence |
 | ready-for-child-pr | verification green (Contract groups + local-CI runner scope; focused re-review clean if fixes occurred) — mandatory lane context reset here | verification evidence, including each runner digest's recorded head SHA with the local-CI runner's named explicitly; continuation brief |
 | child-pr-reviewing | child PR open against epic branch | PR link, PR body |
-| (exit) ready-to-merge-child | child-PR review + local CI clean | reviewer status, CI digests |
+| (exit) ready-to-merge-child | child-PR review clean + local CI clean *or* verify-stage local-CI digest under the conditional-CI predicate (per `submit-ticket-pr` § Merge) | reviewer status, CI digests |
 
 Failure routing inside the lane mirrors the previous per-skill rules: implementation bug → back to implementing; test bug or harness work → back to testing; judgment surprise at any checkpoint → demote-to-spec and exit.
 
-**Resume mapping (pre-0.15.0 checkpoints):** a previously posted `quality-gating` checkpoint reads as `verifying` complete; the next boundary is `ready-for-child-pr`. A pre-0.15.0 lane resuming past `verifying` never ran the verify-stage local-CI runner: run it before posting `ready-for-child-pr`, or post that boundary noting the runner's absence.
+**Resume mapping (pre-0.15.0 checkpoints):** a previously posted `quality-gating` checkpoint reads as `verifying` complete; the next boundary is `ready-for-child-pr`. A pre-0.15.0 lane resuming past `verifying` never ran the verify-stage local-CI runner: run it before posting `ready-for-child-pr`, or post that boundary noting the runner's absence (the no-digest⇒dispatch backstop then forces the child-PR CI run).
 
 ## Epic-Level Transitions
 
