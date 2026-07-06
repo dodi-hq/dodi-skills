@@ -57,6 +57,7 @@ Agent tool (general-purpose, model: opus for the integration round; model: fable
     **Issues (if any):**
     - [severity: critical/important/minor] [file:line]: [issue] — [why it matters]
     - classify each: spec mismatch | implementation | test | security | hygiene | regression risk
+    - tag each: `caught-by: child-pr/<round>/<tier>` — round and tier appended by the dispatcher when posting
 
     **Required follow-up (epic lane):** fix in-loop, demotion, or blocker
 

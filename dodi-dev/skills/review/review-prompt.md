@@ -62,6 +62,7 @@ Agent tool (general-purpose, model: opus):
     **Issues (if any):**
     - [severity: critical/important/minor] [file:line]: [issue] — [why it matters]
     - classify each: spec mismatch | implementation | test | security | hygiene | regression risk
+    - tag each: `caught-by: [GATE_TOKEN]/<round>/<tier>` — the dispatcher supplies [GATE_TOKEN] from the invoking context (`pre-pr` | `focused-re-review`; interactive post-implementation carries `pre-pr`-equivalent attribution or none) and appends round and tier when posting
 
     **Required follow-up (epic lane):** fix in-loop, demotion, or blocker
 

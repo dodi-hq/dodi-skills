@@ -57,6 +57,14 @@ The pre-PR gate already ran the full checklist; the child-PR gate re-reviews the
 - Child-PR context: if the epic branch moved, update the child branch from the epic branch and rerun relevant checks; stop on an unresolved merge conflict requiring judgment.
 - Record reviewer status, findings, fixes, reviewed diff range, commands and exit codes, and the final clean-round evidence.
 
+## Catch Attribution
+
+Every posted review-evidence finding — lane checkpoint evidence, review comments, escalations, demotion comments — carries a per-finding tag `caught-by: <gate>/<round>/<tier>`, gate ∈ {spec-review, plan-review, pre-pr, focused-re-review, verify, local-ci, child-pr, epic-integration, coherence}. Reviewer prompts emit the tag per finding — single-gate prompts hard-code their gate token; review-prompt.md serves two epic-lane gates plus the interactive context, so its gate token is supplied by the dispatcher from the invoking context (`pre-pr` | `focused-re-review`; interactive post-implementation runs carry `pre-pr`-equivalent attribution or none). The dispatcher appends round and tier when posting, and itself tags `verify`/local-CI **failures** (runners stay pure — the tag never enters a runner prompt).
+
+- **Round grammar:** `<round>` is an integer counting rounds within that gate's loop for this ticket — a `fable` final is its integer, never "final"; single-shot gates (verify, local-ci, coherence) use `1` per attempt; epic-integration counts rounds within its per-attempt loop like the review gates. `<tier>` is the catching round's model tier alias (e.g. `opus`, `fable`).
+- **Tagging surfaces (append-only — never edit a posted checkpoint):** tags land in the next boundary's evidence — a verify-stage failure tags in the `ready-for-child-pr` checkpoint evidence; a child-PR-stage local-CI failure (when the conditional dispatches it) tags in the lane's `ready-to-merge-child` exit report.
+- No new artifact, no script: the tag is grep-aggregatable from PM comments.
+
 ## Don't Skip This
 
 "Tests pass" is not a review. Tests verify behavior; review verifies intent, quality, and risk.
