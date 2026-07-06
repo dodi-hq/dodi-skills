@@ -43,4 +43,4 @@ Create the child ticket branch and worktree from the epic branch. This skill is 
 - Stop on missing readiness labels, stale epic branch, branch conflict, or dirty worktree.
 - Stop if spec or plan artifacts are missing or not clean.
 - Stop if branch creation would overwrite local work.
-- Stop at `ready-for-child-pr` only after local implementation, review, tests, verify, and quality-gate complete.
+- Stop at `ready-for-child-pr` only after local implementation, review, tests, and verification (incl. repo-local checks) complete.
