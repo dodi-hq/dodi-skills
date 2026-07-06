@@ -34,5 +34,5 @@ Worker discipline:
 Output (final message):
 
 - **Exit state:** one of the four named states
-- **Evidence:** checkpoint links, commits, PR link, review/verify/gate digests
+- **Evidence:** checkpoint links, commits, PR link, review/verify digests
 - **Notes:** soft observations worth persisting (flaky tests, fragile modules), one line each
