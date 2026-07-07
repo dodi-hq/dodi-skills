@@ -17,7 +17,7 @@ These are the states the orchestrator routes on. The delivery pipeline between `
 | blocked-dependency | dependency ticket or branch state changes | dependency implemented or explicitly accounted for | dependency status comment | ready-to-implement | remains blocked-dependency if dependency is unresolved |
 | ready-to-implement | orchestrator dispatches a deliver-ticket lane | `spec-ready`, `ready-to-implement`, clean spec, clean plan, lane slot free per parallelism policy | lane dispatch comment | delivering | blocked if branch/worktree cannot be created cleanly |
 | delivering | lane exits | lane exit state with checkpoint trail | lane checkpoint comments (see next table) | ready-to-merge-child | demote-to-spec on judgment surprise; blocked on concrete blocker; re-dispatch on RESUMABLE |
-| ready-to-merge-child | orchestrator takes the serial merge slot | evidence-checker citations; child branch current with epic head | apply `coherence-pending` (before the merge, fail-closed), squash merge, branch deletion, child done comment | done | blocked if merge conflict requires spec or plan judgment; back to lane for sync + rerun if epic moved |
+| ready-to-merge-child | orchestrator takes the serial merge slot | own-session evidence trail (all checkpoints this run id, written this context window) or evidence-checker citations (adoption); child branch current with epic head | apply `coherence-pending` (before the merge, fail-closed), squash merge, branch deletion, child done comment | done | blocked if merge conflict requires spec or plan judgment; back to lane for sync + rerun if epic moved |
 | done | child PR merged into epic | merged PR state | child ticket final status | done | no transition unless ticket is reopened |
 
 ## Lane Checkpoint Contract (inside deliver-ticket)
@@ -30,12 +30,13 @@ The lane posts these as **Lane Checkpoint** comments (pinned `# Lane Checkpoint`
 | implementation-reviewing | implementation commits complete | commit ids, worker evidence |
 | testing | pre-PR review clean (incl. fable final round) | review evidence, reviewed diff range |
 | verifying | Testing Contract tests exist | test files, harness evidence |
-| quality-gating | verification green | commands, exit codes, per-group digests |
-| ready-for-child-pr | quality gate passed — mandatory lane context reset here | gate evidence; continuation brief |
+| ready-for-child-pr | verification green (Contract groups + local-CI runner scope; focused re-review clean if fixes occurred) — mandatory lane context reset here | verification evidence, including each runner digest's recorded head SHA with the local-CI runner's named explicitly; continuation brief |
 | child-pr-reviewing | child PR open against epic branch | PR link, PR body |
-| (exit) ready-to-merge-child | child-PR review + local CI clean | reviewer status, CI digests |
+| (exit) ready-to-merge-child | child-PR review clean + local CI clean *or* verify-stage local-CI digest under the conditional-CI predicate (per `submit-ticket-pr` § Merge) | reviewer status, CI digests |
 
 Failure routing inside the lane mirrors the previous per-skill rules: implementation bug → back to implementing; test bug or harness work → back to testing; judgment surprise at any checkpoint → demote-to-spec and exit.
+
+**Resume mapping (pre-0.15.0 checkpoints):** a previously posted `quality-gating` checkpoint reads as `verifying` complete; the next boundary is `ready-for-child-pr`. A pre-0.15.0 lane resuming past `verifying` never ran the verify-stage local-CI runner: run it before posting `ready-for-child-pr`, or post that boundary noting the runner's absence (the no-digest⇒dispatch backstop then forces the child-PR CI run).
 
 ## Epic-Level Transitions
 
@@ -45,7 +46,7 @@ Failure routing inside the lane mirrors the previous per-skill rules: implementa
 | awaiting-epic-signoff | Gate 1 package posted and human notified | human approval of the package | `epic-signed-off` label; delegation comment quoting what was approved | epic-active | stays awaiting-epic-signoff on ambiguous or partial response |
 | epic-active | at least one child is not done | current child state map | next-action summary | epic-active | blocked only if all next actions require human/tool intervention |
 | coherence-pending | label applied at the merge close-out **before** the merge command (fail-closed), or by the set-difference boot audit finding a merged-but-unregistered SHA | merged child diff + spec, epic design artifact, Gate 1 package, decision register | register entry + canon summary, label changes on affected children per verdict, corrective ticket on MATERIAL_DRIFT — all keyed to the per-entry merge SHA | epic-active when the register-wide clear predicate holds — the set-difference is empty (every merged child PR holds a register entry) ∧ no register entry over the epic's merged SHAs is unresolved (a pending-human GATE1_AMENDMENT/GATE1_REFRESH entry with no later `RULING` for its SHA) | remains coherence-pending on an unresolved pending-human entry — the human resolves it via `rule-coherence`; the driver/guard/tick no-op on the park; the merge slot and all canon-consuming dispatches (spec, plan, lane, epic-PR drafting) blocked throughout — operator-ordered housekeeping that consumes no canon is exempt |
-| epic-ready-for-pr | all children are done | child PR links, latest main/master sync, full regression suite green on integrated epic head, epic quality gate evidence | scannable epic readiness summary | epic-pr-open | returns to epic-active if a child reopens, sync introduces required fixes, or the full regression suite fails |
+| epic-ready-for-pr | all children are done | child PR links, latest main/master sync, full regression suite green on integrated epic head, integrated-head review evidence **current with the epic head** (reviewed SHA = regression SHA = PR head) | scannable epic readiness summary | epic-pr-open | returns to epic-active if a child reopens, sync introduces required fixes, the full regression suite fails, or an integrated-head **judgment** finding files a corrective child ticket (epic-active via the not-done child); integrated-head loop-cap exhaustion ⇒ blocked + escalation |
 | epic-pr-open | epic PR created — Gate 2 | PR link targeting main or master | epic ticket PR comment; human notified | epic-pr-open | human merges (production entry); automation never does |
 
 ## Realignment (LEGITIMATE_DIVERGENCE)

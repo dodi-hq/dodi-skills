@@ -24,15 +24,16 @@ Every skill and worker dispatch declares a model tier. Two levers: `model:` in S
 
 | Tier | Claude alias | Used for |
 |------|--------------|----------|
-| Frontier | `fable` | Spec drafting/review, plan writing/review, the final pre-PR review round |
-| Capable | `opus` | Per-round code review, PR review, delivery (implementers + fix workers) on `needs-capable-delivery` tickets |
-| Standard | `sonnet` | Orchestration routing, writing code, writing tests, fixing findings, PR bodies, failure triage, quality gate, research digests (API docs, harness/codebase orientation) |
+| Frontier | `fable` | Spec drafting/review, plan writing/review, the final pre-PR review round, the child-PR integration final |
+| Capable | `opus` | Per-round code review, PR review, integrated-head epic review, delivery (implementers + fix workers) on `needs-capable-delivery` tickets |
+| Standard | `sonnet` | Orchestration routing, writing code, writing tests, fixing findings, PR bodies, failure triage, research digests (API docs, harness/codebase orientation) |
 | Fast | `haiku` | Git mechanics, state classification, command/test runners, read-only state digests |
 
 - Aliases only — never full model IDs; aliases track model upgrades.
 - Aliases are Claude Code vocabulary. On Codex, map tiers to the closest local equivalents (Frontier/Capable → highest-reasoning configuration, Standard → default coding model, Fast → small fast model); a skill that names a Claude alias means that tier.
 - Pick tiers by capability match, never by cost — the goal is intelligence-effectiveness; dollars and token counts fall where they fall. Use Frontier wherever judgment quality compounds downstream (specs, plans, review gates). Use lower tiers only where frontier intelligence adds nothing to the output (git mechanics, test execution, state digests) — they are faster and lower-latency, which is itself effectiveness.
-- The review pipeline intentionally mixes tiers for reviewer diversity, not thrift: `opus` per-round and a fresh `fable` final gate have different failure modes, so the final round is a genuinely independent check rather than one more identical pass. When a task smells like judgment, escalate the tier — never economize on it.
+- The review pipeline intentionally mixes tiers for reviewer diversity, not thrift: `opus` per-round and a fresh `fable` final gate have different failure modes, so the final round is a genuinely independent check rather than one more identical pass. The delivery lane runs two `fable` rounds per ticket with deliberately diverse aims — the pre-PR final judges the full gate, the child-PR integration final judges the integration delta — and seam-only material still sees both tiers (`opus` integration round + `fable` integration final). When a task smells like judgment, escalate the tier — never economize on it.
+- Every posted review-evidence finding carries `caught-by: <gate>/<round>/<tier>` — grammar and tagging surfaces are pinned in the `review` skill (§ Catch Attribution); per-gate catch rates are grep-aggregatable from PM comments.
 - **Per-ticket delivery-tier routing (`needs-capable-delivery`):** the plan reviewer classifies every plan's delivery tier (standard | capable) as a required output; `mature-ticket` applies the label alongside `ready-to-implement`. A labeled ticket pins **every implementer and fix worker** in its delivery lane at `opus` — no per-task demotion: on invariant-dense tickets (concurrency/locking protocols, distributed-state reconciliation, ordering/idempotence invariants, cross-component state machines) the Standard tier reliably gets the structure right and misses the invariants, so the bugs live in tasks that look structural. Escalation is pre-routed at plan review, never improvised mid-lane; a mid-flight judgment surprise still demotes to the spec lane. The review pipeline is unchanged either way, preserving the invariant that **the final gate is always a different model from the writer** (the writer is never `fable`).
 - Judgment-heavy interactive skills (brainstorm, write-plan) omit `model:` and inherit the session model — run those sessions on the Frontier model. Mechanical interactive skills (pickup, file-ticket, submit) pin `sonnet`. In the autonomous epic lane, `mature-ticket`'s `fable` pin persists for the rest of the turn into the spec/plan work it chains into.
 - Never set `CLAUDE_CODE_SUBAGENT_MODEL` on hive machines — it outranks every per-dispatch pin.
@@ -85,14 +86,14 @@ Post-Gate-1 delivery runs as a **resident driver** (`drive-epic`) — one long-l
 - Claim discipline: the driver (or a manual orchestrator session, or the paused tick) posts a claim comment before acting on a ticket, skips live claims from other **sessions** (session-scoped foreignness, driver-claim-topped liveness hierarchy), and closes the claim with its exit state. A retry ceiling (default 3 consecutive failed/`RESUMABLE` attempts) converts loops into `blocked` + escalation.
 - The janitor repairs state (merge/deploy transitions, stale claims, branch/worktree cleanup) but never advances work and never guesses — ambiguous evidence becomes an escalation comment.
 - Gate 2 is procedural and absolute: no scheduled run merges, auto-merges, or enables auto-merge on an epic PR, regardless of permission mode.
-- Layering rule: **claims serialize tickets; worktrees serialize files; nothing serializes runs; the driver is the epic worktree's only writer.**
+- Layering rule: **claims serialize tickets; worktrees serialize files; nothing serializes runs; the driver is the epic worktree's only writer** — leaf fix workers dispatched by the walking session write under its ownership (one supervising session still serializes all epic-worktree writes).
 
 ## Context Hygiene
 
 Long-running sessions compact deliberately — a deliberate compaction is a voluntary crash + resume against durable state, never a harness-forced mid-thought summary.
 
 - A legal reset point passes the Resumability Test: a fresh session, given only durable state, would choose the same next action.
-- Mandatory anchors: orchestrator after Gate 1 approval; lanes at the quality-gate→PR seam. In the resident driver, the child-merge close-out is a **durable-brief anchor point** (register + continuation brief kept current), not a session reset — an actual context reset happens only at park or bloat. (A mandatory reset per merge would recreate the one-action tick the resident model replaces.)
+- Mandatory anchors: orchestrator after Gate 1 approval; lanes at the verify→PR seam. In the resident driver, the child-merge close-out is a **durable-brief anchor point** (register + continuation brief kept current), not a session reset — an actual context reset happens only at park or bloat. (A mandatory reset per merge would recreate the one-action tick the resident model replaces.)
 - Never reset mid-step; finish the step, write the continuation brief (state + evidence links, next action + why, live concerns, in-flight work that must not be redone), then reset.
 - Soft observations (flaky tests, retried workers, fragile modules) are appended to notes as they occur — when unsure, write it down.
 

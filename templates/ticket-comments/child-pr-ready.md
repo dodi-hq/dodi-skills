@@ -12,7 +12,7 @@ Ticket: `<ticket-id>`
 - Implementation commits: `<commits>`
 - Pre-PR review: `<clean evidence>`
 - Verification: `<commands and status>`
-- Quality gate: `<pass evidence>`
+- Repo-local + broader checks: `<pass evidence>`
 
 ## Local Checks
 

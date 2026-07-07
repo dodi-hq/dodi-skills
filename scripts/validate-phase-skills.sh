@@ -6,7 +6,6 @@ skills=(
   file-ticket
   implement
   pickup
-  quality-gate
   review
   submit
   verify
@@ -34,6 +33,7 @@ prompt_files=(
   brainstorm/spec-reviewer-prompt.md
   implement/implementer-prompt.md
   review/review-prompt.md
+  review/child-pr-integration-prompt.md
   write-plan/plan-reviewer-prompt.md
   write-plan/plan-writer-prompt.md
   epic-orchestrator/state-reader-prompt.md
@@ -45,6 +45,7 @@ prompt_files=(
   mature-ticket/spec-drafter-prompt.md
   verify/test-runner-prompt.md
   submit-ticket-pr/local-ci-runner-prompt.md
+  submit-epic-pr/epic-integration-reviewer-prompt.md
 )
 
 for prompt in "${prompt_files[@]}"; do

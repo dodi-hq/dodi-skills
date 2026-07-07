@@ -20,6 +20,7 @@ Output a digest only:
 
 - **Group:** which test group
 - **Commands:** each command with its exit code
+- **Head SHA:** the worktree commit the commands ran against (`git rev-parse HEAD`)
 - **Result:** pass / fail counts; failing test names (names only)
 - **Log path:** file containing the full output
 - **Classification (on failure):** test bug, implementation bug, environment/harness issue, or unclear

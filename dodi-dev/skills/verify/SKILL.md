@@ -46,6 +46,10 @@ Run the command. Read the output. THEN claim the result.
 
 Dispatch test execution to test-runner workers (see test-runner-prompt.md), one per test group, instead of running suites in the main loop — suite output floods context and blocks everything else. The gate is preserved: each runner returns a digest with commands, exit codes, failing test names, and a log path, and you claim results only from that evidence. A runner's "passed" without commands + exit codes is a worker success claim — reject it. Quick read-only checks (`git diff`, single-file inspection) stay in the main loop.
 
+**Local-CI runner — required stage element:** alongside the per-group runners, dispatch the **local-CI runner** (`submit-ticket-pr/local-ci-runner-prompt.md`): repo-local gates (lint, typecheck, validation scripts named in the repo instructions) plus broader cross-area regression checks, with its discover-and-run mandate intact — where the Testing Contract's Broader-regression line is `to-be-discovered` or narrow, the runner's discovery obligation governs. Pass it a `groups-covered-elsewhere` scope note naming the test groups the per-group runners already cover, so the same suites are not run twice in one stage.
+
+**Digest head-SHA rule:** every runner digest — per-group and local-CI alike — records the head SHA its commands ran against, so downstream gates can tie each green result to the exact tree state that produced it. A digest without its head SHA is incomplete evidence — reject it the same way as a missing exit code.
+
 ## Epic Orchestration Verification Rules
 
 - Read the Testing Contract before choosing commands.

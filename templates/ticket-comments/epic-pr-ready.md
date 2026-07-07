@@ -26,7 +26,7 @@ Epic: `<epic-id>`
 
 - `<ticket-id>`: `<pr-url>`
 
-## Quality Gate Evidence
+## Integrated-Head Review Evidence
 
 - `<command or evidence link>`
 
@@ -43,4 +43,4 @@ Epic: `<epic-id>`
 - Unit: `<summary>`
 - Integration: `<summary>`
 - E2E: `<summary>`
-- Local CI-equivalent: `<summary>`
+- Repo-local + broader checks: `<summary>`
