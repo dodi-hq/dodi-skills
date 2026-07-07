@@ -1,6 +1,6 @@
 # Deliver-Ticket Lane Dispatch Prompt
 
-> **⛔ Do not dispatch this prompt (0.14.1 interim).** A dispatched lane strands at its first own-worker dispatch — a subagent that ends its turn with a child in flight is never woken (verified harness limitation, 2026-07-05; 5/5 field hangs). The top-level session executes the `deliver-ticket` sequence **inline** instead (see `deliver-ticket` § Execution Model and `drive-epic` drive-loop step 3). Retained as input to the 0.15.0 flatten redesign.
+> **⛔ Do not dispatch this prompt (0.14.1 interim).** A dispatched lane strands at its first own-worker dispatch — a subagent that ends its turn with a child in flight is never woken (verified harness limitation, 2026-07-05; 5/5 field hangs). The top-level session executes the `deliver-ticket` sequence **inline** instead (see `deliver-ticket` § Execution Model and `drive-epic` drive-loop step 3). Retained as input to the 0.16.0 flatten redesign.
 
 Dispatch with the Agent tool, `model: sonnet` (Standard tier). Used by `pickup-next` (or a manual orchestrator session) to launch one `deliver-ticket` lane per ready child.
 
