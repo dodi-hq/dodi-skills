@@ -7,16 +7,16 @@
 
 ## TL;DR
 
-Dissolve the 0.14.1 interim lane abstraction: lane sequences become single-canon playbook docs under `epic-orchestrator/` that drive-epic executes natively, with `deliver-ticket`/`mature-ticket` reduced to thin manual wrappers. Add two riders the driver's dispatch ownership makes possible: workflow modes (sprint/waterfall as an assess-epic-chosen scheduling policy over the same lane primitives; hotfix declared at filing, reserved this release) and the fable availability policy (per-gate `fable-policy: hard | deferred | soft` with a `pending-capacity` park and a batched make-up queue — never a silent downgrade). pickup-next is finally deleted; the driver gains a planned context refresh every 3 merged children.
+Dissolve the 0.14.1 interim lane abstraction: lane sequences become single-canon playbook docs under `epic-orchestrator/` that drive-epic executes natively, with `deliver-ticket`/`mature-ticket` reduced to thin manual wrappers. Add two riders the driver's dispatch ownership makes possible: workflow modes (sprint/waterfall as an assess-epic-chosen epic scheduling policy over the same lane primitives; hotfix as a per-ticket filing-time declaration, reserved this release) and the fable availability policy (per-gate `fable-policy: hard | deferred | soft` with a `pending-capacity` park and a batched make-up round — never a silent downgrade). pickup-next is finally deleted; the driver gains a planned context refresh every 3 merged children.
 
 ## Key Points
 
 - **Flatten (C1):** the "inline, leaf-dispatch, dual-wake" execution contract is stated **once** in a new `epic-orchestrator/execution-model.md`; lane sequences move to `epic-orchestrator/lanes/{mature,deliver}-playbook.md`. The three duplicated copies (drive-epic + both lane skills) collapse to pointers. `lane-dispatch-prompt.md` is deleted; the leaf rule is reframed from "0.14.1 interim" to the permanent architecture.
 - **Serial now, seams ready:** 0.16.0 stays one-lane-in-flight, but `execution-model.md` pins the four isolation invariants (per-lane worktrees, worker-id-keyed manifest, worker-id wake attribution, serial merges/PM writes) so a later release can enable N parallel leaf implementers without re-architecture.
-- **Workflow modes (C2):** mode `sprint | waterfall | hotfix` is durable per-epic state (epic label + decision-register entry) re-read every driver loop pass; assess-epic decides sprint-vs-waterfall from inter-child coupling unless the Gate 1 delegation pre-declares it; mid-epic flips are first-class, each landing a register entry. Hotfix is *declared at filing, never derived* — 0.16.0 ships the declaration slot and routes hotfix work around the epic machinery via escalation; the full minimal-gate hotfix path is a follow-up standalone release.
-- **Fable policy (C3):** every fable-seated gate declares `fable-policy` in the AGENTS.md tier table. **Hard** (park-and-wait via `pending-capacity`, guard probes for capacity return): spec authoring, final spec-review round, coherence checks, capable-tier final pre-merge round — all four Mike-ruled. **Deferred** (opus substitutes now, fable make-up batched at the integrated-head round): standard-tier child-PR final round, plan-review final round ⚠. **Soft** (substitute, no make-up): post-clean-pass confirmation sweeps, Gate 1 package drafting ⚠. Every substitution stamps `tier-degraded` on the catch-attribution tag.
+- **Workflow modes (C2):** the epic mode enum is two-valued — `sprint | waterfall` — durable per-epic state (epic label + decision-register entry) re-read every driver loop pass; assess-epic decides it from inter-child coupling unless the Gate 1 delegation pre-declares it; mid-epic flips are first-class, each landing a register entry. Hotfix is *not* an epic mode: it is a per-ticket filing-time declaration (*declared, never derived*) — 0.16.0 ships the declaration slot and routes hotfix work around the epic machinery via escalation; the full minimal-gate hotfix path is a follow-up standalone release.
+- **Fable policy (C3):** every fable-seated gate declares `fable-policy` in the AGENTS.md tier table — the assignment table in C3 covers all of them. **Hard** (park-and-wait via `pending-capacity`, guard probes for capacity return): spec authoring, final spec-review round, coherence checks, capable-tier child-PR final round — all four Mike-ruled — plus the make-up round itself (hard by construction). **Deferred** (opus substitutes now, fable make-up batched at a dedicated fable round in submit-epic-pr): standard-tier child-PR final, pre-PR final, plan writing, plan-review final ⚠. **Soft** (substitute, no make-up): non-final spec/plan review rounds, post-clean-pass confirmation sweeps, Gate 1 package drafting ⚠. Every substitution stamps `tier-degraded` on the catch-attribution tag; `review/SKILL.md`'s gate-clean invariants and pinned catch-tag grammar are amended policy-aware.
 - **Planned refresh (C4):** the driver parks deliberately at the first post-merge close-out after 3 merged children (⚠ default, invocation-overridable), posting the continuation brief and releasing with new exit state `refresh-park`; the guard boots the successor. Emergency bloat-park is unchanged as backstop.
-- **Deletions & riders (C5):** pickup-next skill + scheduled task deleted (three stale references decoupled); resident-orchestrator spec §45 `taken-over` release-enum sync; 0.15.0 spec Change 5 erratum [C5-d] docs-only fix; the four 0.16.0 promise strings (AGENTS.md:49, deliver-ticket:57, mature-ticket:28, lane-dispatch-prompt:3) resolved.
+- **Deletions & riders (C5):** pickup-next skill + scheduled task deleted, with a full reference sweep (six surfaces enumerated in C5 — including AGENTS.md:85, drive-epic's overview line, and epic-orchestrator's frontmatter, all missed by earlier counts); resident-orchestrator spec §45 release-enum sync (current six states + `refresh-park`); 0.15.0 spec [C5-d] erratum fixed inline (the contradictory `verifying`-checkpoint tagging phrase); the four 0.16.0 promise strings (AGENTS.md:49, deliver-ticket:57, mature-ticket:28, lane-dispatch-prompt:3) resolved.
 - **⚠ Assumptions for Gate 1:** playbook home under `epic-orchestrator/` (not drive-epic); mode stored as label-plus-register-entry (label is the cheap cache, register is truth); the deferred/soft bucket assignments beyond the four hard rulings; refresh budget default of 3; the guard's fable probe as a minimal one-shot dispatch.
 - **Out of scope:** actual parallel lane dispatch; full hotfix machinery (entry criteria, minimal gates, auto-filed debt ticket); machine-off/cloud operation; any change to claim discipline, Gate 2, or the coherence-ruling route.
 - **Risk:** wrapper/playbook drift is designed out (wrappers carry no sequence prose — pointers only); mode label drift vs register is janitor-checked (reconcile-tickets); deleting pickup-next removes the manual fallback tick, covered by manual drive-epic invocation running the identical guard.
@@ -76,12 +76,15 @@ All four surfaces carrying "the 0.16.0 flatten redesign owns the durable archite
 
 ### Mode state
 
-Enum: `sprint | waterfall | hotfix`. Sprint and waterfall are **scheduling policies over the same lane primitives** — same playbooks, different dispatch order. Storage (⚠ Gate 1):
+The epic mode enum is **two-valued**: `sprint | waterfall` — scheduling policies over the same lane primitives (same playbooks, different dispatch order). Hotfix is deliberately *not* an epic mode: it is a per-ticket filing-time declaration that routes around the epic machinery entirely (see below). Storage (⚠ Gate 1):
 
 - **Epic label** `mode-sprint` / `mode-waterfall` — the cheap re-readable cache the driver checks every loop pass (piggybacking the per-iteration re-scan; no extra API round-trip beyond the label read).
-- **Decision-register entry** (`# Decision Register Entry` header, keyed by epic id + seam timestamp instead of a merge SHA) carrying the coupling rationale — the truth the label caches. Every mode *flip* lands a new register entry; the janitor (reconcile-tickets) flags label-vs-latest-entry mismatch.
+- **Decision-register entry** (`# Decision Register Entry` header, `Kind: MODE`, keyed by epic id + seam timestamp instead of a merge SHA) carrying the coupling rationale — the truth the label caches. Every mode *flip* lands a new register entry; the janitor (reconcile-tickets) gains a row flagging label-vs-latest-MODE-entry mismatch.
 
-No `mode-hotfix` label exists on epics: hotfix is a per-ticket filing-time declaration, not an epic scheduling policy (see below).
+**Register-entry kinds and the coherence audit.** This spec introduces register entries that are not coherence verdicts (`Kind: MODE` here; `Kind: CAPACITY_PARK` and `Kind: FABLE_MAKEUP` in C3). Two consequences, both explicit change items:
+
+1. **Set-difference filter:** the boot coherence audit ("every merged child PR holds a register entry") and the `coherence-pending` clear predicate count only coherence-verdict entries (entries carrying a `Verdict:` field), never MODE/CAPACITY_PARK/FABLE_MAKEUP entries — otherwise a make-up entry keyed to a merge SHA could satisfy the audit for a child that never got its coherence review. The audit prose in drive-epic and the state tables states this filter.
+2. **Template/validator surface:** the register-entry comment template and `validate-ticket-comment-templates.sh` currently assume the `Merge SHA:` key; they gain the `Kind:` field with the per-kind key variants (MODE: epic id + seam timestamp; CAPACITY_PARK: gate + ticket; FABLE_MAKEUP: gate + merge SHA or ticket id pre-merge). Coherence-verdict entries are unchanged and need no `Kind:` field (absence ⇒ verdict — backward compatible with every entry already posted).
 
 ### assess-epic gains the scheduling-policy step
 
@@ -113,22 +116,26 @@ The priority table's top slots are identical in both modes: merge → coherence 
 
 ### Buckets and assignments
 
+The table covers **every** fable seat in the shipped tier table (AGENTS.md + the per-skill pins research-verified: review/SKILL.md pre-PR and child-PR finals, mature-ticket's spec drafter / spec & plan reviewers / plan writer, brainstorm and write-plan reviewer prompts, coherence-reviewer, Gate 1 package worker). A fable seat without a row is a spec bug.
+
 | Policy | Meaning | Gates |
 | --- | --- | --- |
-| **hard** | park-and-wait; no substitution ever | spec authoring; final spec-review round; coherence checks; capable-tier final pre-merge round (child-PR integration final on `needs-capable-delivery` tickets) — all four Mike-ruled 2026-07-07 |
-| **deferred** | opus substitutes now; fable make-up queued as a durable obligation, batched at the integrated-head round | standard-tier child-PR final round; plan-review final round ⚠ |
-| **soft** | opus substitutes; no make-up | post-clean-fable-pass confirmation sweeps (focused re-reviews); Gate 1 package drafting ⚠ (Mike reads the package at signoff — the human gate is the catch) |
+| **hard** | park-and-wait; no substitution ever | spec authoring (drafter); **final** spec-review round; coherence checks; capable-tier child-PR final round (`needs-capable-delivery` tickets) — all four Mike-ruled 2026-07-07 — plus the **fable make-up round** (hard by construction: the debt collector cannot itself be substituted, else deferred collapses to soft) |
+| **deferred** | opus substitutes now; fable make-up queued as a durable obligation, batched at the dedicated make-up round in submit-epic-pr | standard-tier child-PR final round; pre-PR final round (all tiers — the child-PR gate still guards the merge, hard on capable tier) ⚠; plan writing ⚠; **final** plan-review round ⚠ |
+| **soft** | opus substitutes; no make-up | **non-final** spec-review and plan-review rounds (the final round of each loop is the gate; a make-up of a superseded intermediate round has no value) ⚠; post-clean-fable-pass confirmation sweeps (focused re-reviews); Gate 1 package drafting ⚠ (Mike reads the package at signoff — the human gate is the catch) |
 
-⚠-marked assignments were proposed-not-ruled in the 2026-07-07 thread; Gate 1 signoff of this spec ratifies them.
+⚠-marked assignments were proposed-not-ruled in the 2026-07-07 thread (or are this spec's completions of the coverage requirement); Gate 1 signoff of this spec ratifies them. Note the deliberate asymmetry: spec-review final is hard while plan-review final is deferred — the spec is the canon everything downstream consumes, while plan defects still face the pre-PR/child-PR review chain, and the make-up round's scope covers their consequence surface.
 
 ### Mechanics
 
 1. **Detection:** fable unavailability is detected at dispatch time — dispatch failure matching a capacity/tier-unavailable signature, then bounded retry (2 retries, spaced), then the policy applies. Never detected by guessing in advance.
-2. **hard → `pending-capacity` park.** Same shape as pending-human: epic label `pending-capacity` + a register-style park entry (`# Decision Register Entry` variant recording gate, ticket, and the exact blocked dispatch), driver exits via the park protocol, reconcile-tickets surfaces it in the daily human-parked digest (age-tracked). **Unlike pending-human it has a wake edge:** the hourly guard, on seeing `pending-capacity`, runs a minimal one-shot fable probe dispatch (⚠ smallest possible prompt, e.g. "reply DONE"); probe success → clear the label, treat the epic as actionable, boot the driver, which retries the blocked dispatch first.
-3. **deferred → substitute + queue make-up.** Dispatch the same worker prompt pinned opus. Record a durable obligation: a register entry (`FABLE_MAKEUP` kind) keyed by the gate + merge SHA (or ticket id pre-merge) naming what fable must re-review. **Consumption seam:** the integrated-head round (submit-epic-pr step 3) — its fable round's scope explicitly enumerates and covers all open `FABLE_MAKEUP` obligations for the epic; each is marked consumed by SHA-keyed reference in the round's output. An epic PR is not opened with unconsumed make-ups unexamined.
+2. **hard → `pending-capacity` park.** Same shape as pending-human: epic label `pending-capacity` + a register entry (`Kind: CAPACITY_PARK`, recording gate, ticket, and the exact blocked dispatch), driver exits via the park protocol, reconcile-tickets gains a digest row surfacing it (age-tracked). **Unlike pending-human it has a wake edge:** the hourly guard, on seeing `pending-capacity`, runs a minimal one-shot fable probe dispatch (⚠ smallest possible prompt, e.g. "reply DONE"); probe success → clear the label, treat the epic as actionable, boot the driver, which retries the blocked dispatch first. **Manual sessions:** a manual lane session (thin-wrapper invocation) hitting a hard gate under scarcity does not park — it stops and reports to the operator, who is present by definition; the park machinery is driver-only.
+3. **deferred → substitute + queue make-up.** Dispatch the same worker prompt pinned opus. Record a durable obligation: a register entry (`Kind: FABLE_MAKEUP`) keyed by the gate + merge SHA (or ticket id pre-merge) naming what fable must re-review — for review gates the original scope; for plan writing / plan review, the consequence surface (the affected child's merged diff), since re-reviewing a consumed plan post-implementation has no value.
+   **Consumption seam — a dedicated fable make-up round in submit-epic-pr**, inserted before the epic PR opens: if any `FABLE_MAKEUP` obligations are open, dispatch **one batched fable round** using `epic-integration-reviewer-prompt.md` with a dispatcher-supplied obligations preamble enumerating them (no new prompt file); findings carry `caught-by: epic-integration/<round>/fable` per the existing grammar; each obligation is marked consumed by keyed reference in the round's output. This round's fable-policy is **hard** (see table) — fable still unavailable at epic-PR time ⇒ `pending-capacity` park, the epic PR does not open with unconsumed make-ups. The existing opus integrated-head round is unchanged (it is Capable-tier per AGENTS.md, not a fable seat — the make-up round is a distinct, conditional round beside it). Zero open obligations ⇒ the round is skipped entirely.
 4. **soft → substitute, record only.** No obligation queued.
 5. **Attribution (never silent):** every substitution extends the 0.15.0 catch-attribution line with a tier-degraded marker — format pinned as: `caught-by: <gate>/<round>/<tier> tier-degraded(fable→<tier>,<policy>)`. The dispatcher appends it exactly where it already appends `<round>/<tier>`; append-only, next-boundary rule unchanged. The marker feeds evidence-based reclassification of bucket assignments (the same attribution data 0.15.0 was built to collect).
-6. **Hook interplay:** `hook-require-model-pin.sh` is unchanged — a substitution still carries an explicit pin (`model: opus`); the policy check happens in skill prose immediately before the pin is written.
+6. **`review/SKILL.md` edits (explicit change items):** (a) the pinned catch-tag grammar (§ Catch Attribution) gains the optional `tier-degraded(...)` suffix exactly as formatted above; (b) the gate-clean invariants at the pre-PR and child-PR finals ("the gate is clean only when a `fable` round reports zero issues") become policy-aware: for **hard** gates the wording stands unchanged; for **deferred/soft** gates, clean = zero issues from the final round at the gate's *effective* tier (the pin the policy produced), with the obligation queued / marker recorded as applicable. No gate is ever clean by silence.
+7. **Hook interplay:** `hook-require-model-pin.sh` is unchanged — a substitution still carries an explicit pin (`model: opus`); the policy check happens in skill prose immediately before the pin is written.
 
 ## C4 — Planned Context Refresh
 
@@ -136,19 +143,25 @@ The priority table's top slots are identical in both modes: merge → coherence 
 - **Trigger point:** evaluated only at post-merge close-out (fence → release → evidence → reap all complete — everything durable, nothing in flight by construction). If merges-this-session ≥ budget → run the standard exit protocol (fence, continuation brief, claim release) with new exit state **`refresh-park`**.
 - **Guard behavior:** `refresh-park` releases the claim like `parked`; the next guard tick sees actionable work and boots a fresh driver, which cold-boots from durable state + the brief (the proven path).
 - **Emergency bloat-park:** unchanged, as backstop. Rationale: a degraded context is the worst judge of its own degradation — refresh is the rule, bloat the exception.
-- **Enum sync (folds the §45 rider):** the driver-claim release exit-state enum becomes `parked | bloat-handoff | refresh-park | taken-over | ruled`, synchronized across `driver-claim.sh`, drive-epic prose, and the resident-orchestrator spec erratum.
+- **Enum sync (folds the §45 rider):** the driver-claim release exit-state enum is the shipped six **plus** `refresh-park`: `parked | bloat-handoff | no-op | ruled | taken-over | error | refresh-park` (`no-op` and `error` are load-bearing for guard exits and must survive), synchronized across `driver-claim.sh:245`, drive-epic prose, and the resident-orchestrator spec's §45 line.
 
 ## C5 — Deletions, Riders, Release
 
-### pickup-next deletion
+### pickup-next deletion and the reference sweep
 
 - Delete `dodi-dev/skills/pickup-next/` and any scheduled-task definition for `dodi-pickup-next`.
-- Decouple the three referencing surfaces: `epic-orchestrator/SKILL.md` (rewritten in C1 anyway), `lane-dispatch-prompt.md` (deleted in C1), `reconcile-tickets/SKILL.md` (its pickup-next mentions replaced with drive-epic equivalents).
-- Migration prose in `drive-epic/SKILL.md` §Scheduling migration is compressed to a completed-history note (the 0.14.0/0.14.1 dance is done).
+- **Full reference sweep — six surfaces** (the epic's "three references" undercounted; these are the grep-verified set):
+  1. `epic-orchestrator/SKILL.md` body (rewritten in C1 anyway) **and its frontmatter description** (line 3 names the pickup-next tick);
+  2. `lane-dispatch-prompt.md` (deleted in C1);
+  3. `reconcile-tickets/SKILL.md` (pickup-next mentions replaced with drive-epic equivalents);
+  4. `drive-epic/SKILL.md:9` overview sentence (names pickup-next and the 0.14.1 contract — outside the step-3 rewrite, so called out separately);
+  5. `drive-epic/SKILL.md` §Scheduling migration — compressed to a completed-history note (the 0.14.0/0.14.1 dance is done);
+  6. `AGENTS.md:85` — carries both a literal `0.14.1 interim` marker and a pickup-next mention; not covered by the AGENTS.md:49 promise-string fix and swept here.
+- The C1 scope note "everything else in the loop is untouched" applies to the drive-*loop* steps only; the overview and migration prose above are explicitly in scope.
 
 ### Riders
 
-- **[C5-d] erratum:** the 0.15.0 spec Change 5 docs-only erratum — apply as specified in that spec's erratum note (docs surface only, no behavior change).
+- **[C5-d] erratum (docs-only, inlined here from epic #3's register):** in `docs/specs/2026-07-06-review-pipeline-consolidation-design.md` § Change 5, the phrase "verify/local-CI **failures** are tagged by the dispatcher in the `verifying` checkpoint evidence" contradicts the append-only tagging-surfaces rule pinned later in the same paragraph (tags land in the **next boundary's** evidence — verify-stage failures in the `ready-for-child-pr` checkpoint). Correct the phrase to "tagged by the dispatcher in the next boundary's checkpoint evidence (`ready-for-child-pr`)". No ship-surface change; the shipped `review/SKILL.md` already states the correct rule.
 - **§45 enum sync:** folded into C4 above.
 
 ### Release
@@ -161,10 +174,10 @@ Suggested child boundaries, dependency-ordered — final decomposition happens a
 
 1. **C1a** — `execution-model.md` + both lane playbooks (content move, single canon).
 2. **C1b** — drive-epic step-3 rewrite + lane-skill thin-wrapping + lane-dispatch-prompt deletion + epic-orchestrator:65 fix + promise-string resolution. Blocked by C1a.
-3. **C2** — mode state + assess-epic scheduling step + driver Select parameterization + hotfix declaration slot. Blocked by C1b (touches the same drive-epic Select prose).
-4. **C3** — fable-policy column + pending-capacity park + make-up queue + tier-degraded marker + guard probe. Blocked by C1b (execution-model.md hosts the dispatch-time policy check).
-5. **C4** — refresh budget + `refresh-park` exit state + enum sync. Blocked by C1b.
-6. **C5** — pickup-next deletion + [C5-d] erratum + release bump. Blocked by all above.
+3. **C2** — mode state (label + MODE register entries + template/validator `Kind:` field) + assess-epic scheduling step + driver Select parameterization + coherence-audit kind filter + hotfix declaration slot in file-ticket + `pickup`/driver hotfix-label routing + reconcile-tickets mode-mismatch row. Blocked by C1b (touches the same drive-epic Select prose).
+4. **C3** — fable-policy column (all seats) + pending-capacity park + guard probe + FABLE_MAKEUP queue + submit-epic-pr make-up round + `review/SKILL.md` grammar/gate-clean amendments + tier-degraded marker + reconcile-tickets pending-capacity digest row. Blocked by C1b (execution-model.md hosts the dispatch-time policy check) and C2 (shares the register-entry `Kind:` machinery).
+5. **C4** — refresh budget + `refresh-park` exit state + seven-state enum sync. Blocked by C1b.
+6. **C5** — pickup-next deletion + six-surface reference sweep + [C5-d] erratum + release bump. Blocked by all above.
 
 ## Verification Contract (epic-level)
 
