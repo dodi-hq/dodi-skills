@@ -136,9 +136,9 @@ Minimum schema:
 
 Renewable operational evidence lives separately at `${XDG_CONFIG_HOME:-$HOME/.config}/dodi-dev/runtime-health.json` (or beside an explicit `DODI_RUNTIME_PROFILE`, with `.health.json` suffix). It is also mode `0600` and atomically replaced. Its header carries `schema_version`, the profile's `setup_run_id`, and the SHA-256 of the exact static profile bytes. Minimum health fields are adapter/channel, last attempt/success timestamps, consecutive failures, and an escalation-obligation map keyed by durable event id. Each obligation records ticket/event identity, `pending | retrying | delivered`, attempts, last error, last-attempt timestamp, and the successful message id/link/time when delivered. The static profile defines the adapter and health policy; the health record reports changing delivery state.
 
-Profile and health replacement uses a generation-binding protocol. Setup disables scheduled starts, stages and validates both files, computes the final profile hash into the staged health header, flushes both, then atomically renames profile followed by health. A crash between renames leaves a detectable mismatch and cannot unlock a lane. Consumers require both `setup_run_id` and profile hash to match before reading health. Rollback restores and verifies the prior pair with the same protocol; if either pair cannot be proved, tasks remain disabled. Crash-point tests cover every stage and rename boundary.
+Profile and health replacement uses a generation-binding protocol. One stable lock file outside the replaceable pair (`runtime-state.lock` in the profile directory, or `<DODI_RUNTIME_PROFILE>.lock` for an explicit path) serializes setup, rollback, Slack, and janitor health writes. Setup disables new scheduled starts, waits for both running tasks and in-process health updaters to quiesce, acquires that lock, and snapshots the complete prior profile-health pair plus task configuration. While holding the lock, it stages and validates both files, computes the final profile hash into the staged health header, flushes both, then atomically renames profile followed by health. A crash between renames leaves a detectable mismatch and cannot unlock a lane. Consumers require both `setup_run_id` and profile hash to match before reading health. Rollback restores and verifies the complete prior pair under the same lock and protocol; if either pair cannot be proved, tasks remain disabled. Crash-point and concurrent-updater tests cover every stage, lock, and rename boundary.
 
-All mutable health updates go through one plugin-owned updater that holds an exclusive lock across read, binding validation, mutation, flush, and atomic replacement. Setup creates the initial record. The Slack adapter and janitor invoke that updater rather than replacing the file independently, preventing concurrent lost updates.
+All mutable health updates go through one plugin-owned updater that acquires the same stable external lock across read, binding validation, mutation, flush, and atomic replacement. Setup creates the initial record. The Slack adapter and janitor invoke that updater rather than replacing the file independently, preventing concurrent lost updates or writes across setup generations.
 
 Lookup precedence inside a run is: explicit `DODI_RUNTIME_PROFILE` path → default canonical path → no profile. There is no fallback from an invalid explicit profile to the default because that would hide operator error. No profile is acceptable for purely manual skills that need no adapted mechanic; any Codex tiered dispatch, deterministic plugin script, or scheduled action requires a valid profile.
 
@@ -239,7 +239,8 @@ Normalized transition and failure handling:
 | Event | Durable action | Allowed next action |
 | --- | --- | --- |
 | crash/takeover finds an unresolved `dispatch-intent` with no worker id | enumerate descendants by owning session + nonce, or prove runtime-owned parent termination | bind and reap a uniquely matched id; otherwise mark `writer-uncertain`, quarantine the worktree, and never redispatch there |
-| spawn fails before an id is returned | append `spawn-failed` with the tool error and close the intent | bounded retry/policy handling; no worker exists |
+| runtime returns a structured authoritative rejection before accepting spawn | append `spawn-rejected` with the rejection and close the intent | bounded retry/policy handling; no worker exists |
+| spawn call times out, loses transport, or otherwise fails without authoritative non-acceptance proof | append `spawn-acceptance-unknown`; keep the intent unresolved | use nonce/session enumeration or parent-termination proof; otherwise `writer-uncertain` quarantine + escalation, never retry in that worktree |
 | spawn returns an id, dispatch-record append succeeds | append `dispatched` linked to the intent before consuming any result | wait for that id only |
 | spawn returns an id, dispatch-record append fails | immediately call `close_agent`; retry the append with close evidence | continue only after terminal/closed proof; otherwise quarantine worktree + escalate |
 | wait transport/tool error | append `wait-error` if possible; re-query the same id | never redispatch; repeated inability to query routes to close, then quarantine if close is unproved |
@@ -312,7 +313,7 @@ After explicit confirmation, setup creates or updates:
 
 The setup record includes task identifiers and the tested `refresh-park` successor wake. Plugin installation alone never claims autonomous operation is active.
 
-Setup updates are quiescent. Before replacing an existing valid profile or active task configuration, setup disables new driver/janitor starts, verifies no live driver claim or in-flight worker remains, snapshots the prior profile/task configuration, applies and tests the new profile/tasks, then re-enables them. A failed update restores the prior profile/tasks and re-verifies them; if restoration cannot be proved, both tasks remain disabled and setup escalates rather than running mixed configuration.
+Setup updates are quiescent. Before replacing an existing valid profile or active task configuration, setup disables new driver/janitor starts, waits for any running driver and janitor execution to finish, verifies no live driver claim or in-flight/unresolved-intent worker remains, then acquires the stable runtime-state lock. Under that lock it snapshots the complete prior profile-health pair and task configuration, applies and tests the new pair/tasks, and only then re-enables them. A failed update restores the complete prior profile-health pair and tasks under the lock and re-verifies them; if restoration cannot be proved, both tasks remain disabled and setup escalates rather than running mixed configuration.
 
 #### Gate 2
 
@@ -366,7 +367,7 @@ Add `scripts/validate-codex-compatibility.sh` and focused unit/live tests.
 - Validate runtime-profile/health generation binding and Codex model-map schemas plus runtime-attested fresh-context/model-diversity rules.
 - Test bootstrap-without-profile, first generation-bound profile/health creation, every two-file crash point, setup rollback/quiescence, and every profile drift invalidation field/boundary.
 - Test mixed Claude/Codex manifest classification and reaping.
-- Test pre-spawn intent crashes, id binding/recovery, unresolvable-intent quarantine, worker attestation failure, and per-item escalation recovery without cross-item clearing.
+- Test authoritative spawn rejection versus ambiguous acceptance, pre-spawn intent crashes, id binding/recovery, unresolvable-intent quarantine, worker attestation failure, and per-item escalation recovery without cross-item clearing.
 - Test setup/preflight output redacts all key values.
 
 #### Isolated Codex install smoke
