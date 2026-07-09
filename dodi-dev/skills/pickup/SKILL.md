@@ -58,6 +58,7 @@ Either a ticket reference (e.g., `DOD-152`) or a description to search for.
 
 ## Notes
 
+- **Hotfix pickup:** a `hotfix`-labeled ticket (declared at filing time — see `file-ticket` § Hotfix) is a manual hotfix pickup — it runs here on the single-ticket path, **outside the epic machinery** (the resident driver never selects it). 0.16.0 ships the declaration slot and this route-around; the full minimal-gate hotfix path (verify + one review + human deploy word + mandatory debt ticket) is a follow-up standalone release.
 - Base new worktrees on the main branch (usually `master` or `main`)
 - If the branch already exists, offer to use it or suggest a different name
 - The ticket ID is the branch name for traceability
