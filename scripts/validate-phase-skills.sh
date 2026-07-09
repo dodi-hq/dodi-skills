@@ -43,7 +43,6 @@ prompt_files=(
   epic-orchestrator/lanes/mature-playbook.md
   epic-orchestrator/lanes/deliver-playbook.md
   epic-orchestrator/gate1-package-prompt.md
-  epic-orchestrator/lane-dispatch-prompt.md
   epic-orchestrator/coherence-reviewer-prompt.md
   mature-ticket/spec-drafter-prompt.md
   verify/test-runner-prompt.md

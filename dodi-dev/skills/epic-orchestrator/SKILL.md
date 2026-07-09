@@ -18,7 +18,7 @@ Routine human involvement is exactly two gates: **Gate 1** (epic intent approval
 
 | Trigger | Inputs | Outputs | Durable writes | Allowed delegation | Failure states |
 | --- | --- | --- | --- | --- | --- |
-| interactive epic intake, or a manual session pushing an epic along | epic id, repo path, PM system context | next state decision, inline lane playbooks and phase work, epic progress summary | epic comments, child ticket comments, labels, claim comments, artifact links | deliver-ticket / mature-ticket playbooks executed inline (0.14.1 leaf-worker contract — never nested lane subagents), phase skills, leaf workers, reviewers, test runners | awaiting epic signoff, human question, blocked dependency, tool/auth failure |
+| interactive epic intake, or a manual session pushing an epic along | epic id, repo path, PM system context | next state decision, inline lane playbooks and phase work, epic progress summary | epic comments, child ticket comments, labels, claim comments, artifact links | deliver-ticket / mature-ticket playbooks executed inline (per `execution-model.md` — never nested lane subagents), phase skills, leaf workers, reviewers, test runners | awaiting epic signoff, human question, blocked dependency, tool/auth failure |
 
 ## Inputs
 
@@ -29,7 +29,6 @@ Routine human involvement is exactly two gates: **Gate 1** (epic intent approval
 - optional `baseBranch`
 - optional `humanContact`
 - optional `runLedgerPath`
-- optional `maxParallelLanes` (default `2`)
 
 ## Hard Gates
 
@@ -62,18 +61,11 @@ Interactive intake (this skill's primary job):
 Post-Gate-1 (normally executed by the `pickup-next` tick; a manual session may perform them under the same claim discipline — claim the ticket first (minting a session run id), skip live claims from other **sessions** per the driver-claim-topped liveness hierarchy):
 
 - Run `mature-ticket` for a child lacking readiness (auto-delegated under Gate 1).
-- Dispatch a `deliver-ticket` lane for a ready child (up to `maxParallelLanes`; see Parallel Lanes) using `lane-dispatch-prompt.md` — exit contract, checkpoint mechanics, and worker-await rules are baked into the template, not re-spelled per dispatch.
+- Execute a `deliver-ticket` lane inline for a ready child — walk `lanes/deliver-playbook.md` natively per `execution-model.md` (one lane in flight; never a nested lane subagent). Exit contract, checkpoint mechanics, and worker-await rules live in the playbook and execution-model, not re-spelled per dispatch.
 - Merge a `ready-to-merge-child` lane result (strictly serial; see Merging).
 - Run `submit-epic-pr` when all children are done.
 
 Stop: awaiting Gate 1, human question, concrete blocker, or `epic-pr-open` (Gate 2 is human-owned).
-
-## Parallel Lanes
-
-- Dispatch up to `maxParallelLanes` (default 2) `deliver-ticket` lanes concurrently, each in its own child worktree.
-- Two children may run concurrently only if the assess-epic dependency map shows no edge between them **and** their plans' File Structure sections predict disjoint file surfaces — shared config, schema, or generated files count as overlap. When in doubt, serialize.
-- The spec lane (`mature-ticket`) may run concurrently with delivery lanes.
-- Lanes never touch the epic branch. Read-only workers fan out freely; PM state advances stay one at a time per ticket.
 
 ## Merging
 
