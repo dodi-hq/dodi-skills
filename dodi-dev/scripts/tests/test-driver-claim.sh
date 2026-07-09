@@ -105,4 +105,32 @@ set -e
 [[ "$acq_win_rc" -eq 0 ]] || { echo "FAIL acquire-wins: expected exit 0, got $acq_win_rc" >&2; exit 1; }
 grep -q 'acquired session_run_id=mine' <<<"$acq_win_out" || { echo "FAIL acquire-wins: expected 'acquired session_run_id=mine', got: $acq_win_out" >&2; exit 1; }
 
+# release enum guard: a bogus exit state is rejected by the case block before any
+# network write (network-free — the reject happens ahead of _close_claim).
+run release EPIC c1 not-a-state
+[[ "$rc" -eq 2 ]] || { echo "FAIL release-bad-state: expected exit 2 for a bogus exit state, got $rc" >&2; exit 1; }
+
+# release accepts refresh-park (the planned context-refresh exit state added in
+# 0.16.0) — stub the network boundary (_close_claim's comment query + commentUpdate)
+# exactly as the acquire cases do, and assert the release goes through.
+set +e
+rel_out="$(
+  bash -c '
+    set -euo pipefail
+    linear_gql() {
+      case "$1" in
+        *commentUpdate*) echo "{\"data\":{\"commentUpdate\":{\"success\":true}}}" ;;
+        *comment*body*) echo "{\"data\":{\"comment\":{\"id\":\"c1\",\"body\":\"# Driver Claim\n- Exit state: \`open\`\n- Released at: \`<pending>\`\"}}}" ;;
+        *) echo "{\"data\":{}}" ;;
+      esac
+    }
+    export -f linear_gql
+    bash "'"$DC"'" release EPIC c1 refresh-park
+  ' 2>/dev/null
+)"
+rel_rc=$?
+set -e
+[[ "$rel_rc" -eq 0 ]] || { echo "FAIL release-refresh-park: expected exit 0, got $rel_rc" >&2; exit 1; }
+grep -q 'exit=refresh-park' <<<"$rel_out" || { echo "FAIL release-refresh-park: expected 'exit=refresh-park', got: $rel_out" >&2; exit 1; }
+
 echo "driver-claim tests ok"

@@ -4,7 +4,7 @@ Authoritative transition tables for `epic-orchestrator`, `deliver-ticket` lanes,
 
 ## Child-Ticket Transitions (orchestrator-tracked)
 
-These are the states the orchestrator routes on. The delivery pipeline between `delivering` and `ready-to-merge-child` runs inside one `deliver-ticket` lane; its internal states are checkpoints (next table), not orchestrator transitions. The mature lane's four seam rows (`needs-spec`, `spec-reviewing`, `needs-plan`, `plan-reviewing`) carry the same resume durability the delivery checkpoints do: each is a `RESUMABLE` fallback point, its artifact pushed back to the epic branch before any park, re-dispatched from the last completed boundary. The state transition **is** the mature-lane marker (there is no separate `# Lane Checkpoint` token layer for it) — so both lanes are resumable, deliver by checkpoint and mature by state boundary.
+These are the states the orchestrator routes on. The delivery pipeline between `delivering` and `ready-to-merge-child` runs inside one `deliver-ticket` lane; its internal states are checkpoints (next table), not orchestrator transitions. The mature lane's four resumable rows (`needs-spec`, `spec-reviewing`, `needs-plan`, `plan-reviewing`) carry the same resume durability the delivery checkpoints do: each is a `RESUMABLE` fallback point, its artifact pushed back to the epic branch before any park, re-dispatched from the last completed boundary. (These are resume *sources*; the completion-anchored refresh-counting *seams* are the transitions the lane effects — see the mature playbook — which is why `needs-spec`, entered at assessment, is resumable but not a refresh seam.) The state transition **is** the mature-lane marker (there is no separate `# Lane Checkpoint` token layer for it) — so both lanes are resumable, deliver by checkpoint and mature by state boundary.
 
 | Source state | Trigger | Required evidence | Durable writes | Next state | Fallback or error transition |
 | --- | --- | --- | --- | --- | --- |
@@ -63,7 +63,7 @@ The driver Selects the next action each loop pass by this priority table — sin
 | Priority | Action | Eligibility |
 | --- | --- | --- |
 | 1 | Merge a `ready-to-merge-child` | serial merge slot; **no merge eligible while `coherence-pending`** |
-| 2 | Coherence review | a merged-but-unregistered SHA exists |
+| 2 | Coherence review | a merged SHA holds no coherence-verdict register entry (no `Kind:` field — a `Kind:`-tagged entry never counts) |
 | 3 | Epic PR (`submit-epic-pr`) | all children done |
 | 4 | Resume a `RESUMABLE` lane | a parked lane exists — **deliver or mature** (both carry `RESUMABLE`). A `RESUMABLE` **deliver** resume is eligible even while `coherence-pending` (its canon was consumed before it started); a `RESUMABLE` **mature** resume is **not** — its next action is a fresh canon-consuming dispatch, so it waits out `coherence-pending` |
 | 5 · sprint | `deliver-ticket`, then `mature-ticket` | interleave per child (today's order) |
