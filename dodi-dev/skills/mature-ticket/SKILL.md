@@ -20,7 +20,7 @@ The `model: fable` frontmatter pin covers this wrapper's main loop only — it n
 
 ## Claim discipline
 
-Manual invocation is a lane session under the same per-ticket claim discipline the driver applies: claim the ticket first (`${CLAUDE_PLUGIN_ROOT}/scripts/claim.sh <ticket> mature <session-run-id>`), skipping any live claim from another session per the liveness hierarchy; fence and release the claim with its exit state (`${CLAUDE_PLUGIN_ROOT}/scripts/release-claim.sh <ticket> <exit-state> --session <session-run-id>`) at close-out. Claims serialize tickets; worktrees serialize files; nothing serializes runs.
+Manual invocation is a lane session under the same per-ticket claim discipline the driver applies: claim the ticket first (`${CLAUDE_PLUGIN_ROOT}/scripts/claim.sh <ticket> mature-ticket <session-run-id>`), skipping any live claim from another session per the liveness hierarchy; fence and release the claim with its exit state (`${CLAUDE_PLUGIN_ROOT}/scripts/release-claim.sh <ticket> <exit-state> --session <session-run-id>`) at close-out. Claims serialize tickets; worktrees serialize files; nothing serializes runs.
 
 ## Exit states
 
@@ -29,4 +29,4 @@ Manual invocation is a lane session under the same per-ticket claim discipline t
 - **QUESTIONS_FOR_HUMAN** — the spec drafter returned open product questions; stop and ask regardless of delegation.
 - **blocked-dependency** — an unresolved dependency.
 - **demote-to-spec** — a product, architecture, scope, or spec/plan mismatch surprise: comment per the demotion rules in `epic-orchestrator/state-transitions.md` and exit.
-- **RESUMABLE** — a deliberate context exit (capacity-park, refresh-park, or emergency): push to the epic branch, write the continuation brief, and exit for re-dispatch.
+- **RESUMABLE** — a deliberate context exit (an emergency reset — capacity-park and refresh-park are driver-only exits, not reachable by a manual session, which stops and reports to the operator instead): push to the epic branch, write the continuation brief, and exit for re-dispatch.

@@ -14,7 +14,7 @@ Each phase is the named phase skill's process, executed inside this lane with th
 | `implement-ticket` | `implement/implementer-prompt.md` | Standard (`sonnet`), or Capable (`opus`) on `needs-capable-delivery` | `implementation-reviewing` (implementation commits complete) | implementation bug ⇒ back to implementing; judgment surprise ⇒ demote |
 | `review` (pre-PR) | `review/review-prompt.md` | Capable (`opus`) rounds + Frontier (`fable`) final; **final round deferred** | `testing` (pre-PR review clean, incl. fable final) | loop capped at 5 rounds + the Frontier final; findings ⇒ another round |
 | `create-tests` | — (Testing Contract) | Standard (`sonnet`) | `verifying` (Testing Contract tests exist) | test/harness work ⇒ back to testing |
-| `verify` | `verify/test-runner-prompt.md`, `submit-ticket-pr/local-ci-runner-prompt.md` | Fast (`haiku`) runners | `ready-for-child-pr` (verification green; **mandatory lane context reset here**) | a product-code fix here triggers the focused re-review before the seam |
+| `verify` | `verify/test-runner-prompt.md`, `submit-ticket-pr/local-ci-runner-prompt.md` | Fast (`haiku`) runners | `ready-for-child-pr` (verification green; **reset seam for a standalone lane, durable-brief anchor for the resident driver**) | a product-code fix here triggers the focused re-review before the seam |
 | `submit-ticket-pr` (Open only) | — | Standard (`sonnet`) | `child-pr-reviewing` (child PR open against epic branch) | — |
 | `review` (child-PR) | `review/child-pr-integration-prompt.md` | one Capable (`opus`) integration round + Frontier (`fable`) integration final; **final round deferred on standard-tier, hard on `needs-capable-delivery`** | (exit) `ready-to-merge-child` | child-PR review clean + local CI clean ⇒ report; **do not merge** |
 
@@ -27,7 +27,7 @@ fable-policy values are the per-gate policy the executing session looks up (per 
 3. `review` (pre-PR context) — loop capped at 5 rounds plus the Frontier final round.
 4. `create-tests` — satisfy the Testing Contract.
 5. `verify` — one test-runner worker per group plus the local-CI runner dispatch (repo-local gates + broader checks, discovery mandate intact); claim results only from digests; every runner digest records the head SHA it ran against; a product-code fix here triggers the focused re-review (`review` § Epic Lane Rules) before the seam.
-6. **Context reset seam (verify→PR)** — see § Context hygiene.
+6. **Verify→PR seam** (a context reset for a standalone lane; a durable-brief anchor for the resident driver walking inline) — see § Context hygiene.
 7. `submit-ticket-pr` (Open only) — push the child branch, open the PR against the epic branch, write the PR body.
 8. `review` (child-PR context) — the delta-scoped integration pair (one `opus` integration round + a `fable` integration final per `review/child-pr-integration-prompt.md`) ∥ conditional local CI (dispatched in parallel unless the skip predicate holds — per `review`, child-PR context).
 9. Report `ready-to-merge-child` with the evidence trail. Do not merge.
@@ -46,7 +46,7 @@ A re-dispatched lane reconstructs its position from durable state before doing a
 
 ## Context hygiene
 
-- **Mandatory reset at the verify→PR seam:** after `verify` is green (Contract groups + the local-CI runner scope; focused re-review clean if fixes occurred), write the continuation brief and exit `RESUMABLE`. The orchestrator re-dispatches a fresh lane that opens the PR and runs child-PR review. This is the lane's biggest natural boundary; a fresh context reviews the PR without implementation bias.
+- **Verify→PR seam:** after `verify` is green (Contract groups + the local-CI runner scope; focused re-review clean if fixes occurred), write/refresh the continuation brief keyed to the head SHA. **For a standalone/manual lane session this is a mandatory context reset** — exit `RESUMABLE`; the re-dispatched fresh lane opens the PR and runs child-PR review, so a fresh context reviews the PR without implementation bias. **For the resident driver walking inline it is a durable-brief anchor, not a reset** (per `AGENTS.md` § Context Hygiene — the driver's only resets are park, refresh-park, and bloat): keep the brief current and continue to `submit-ticket-pr` and child-PR review in the same session, unless the refresh-park seam budget trips at this seam. Either way it is the lane's biggest natural boundary.
 - **Emergency reset:** if the harness warns context is low mid-lane, finish the current step — never abandon a review round or a dispatched worker — write the continuation brief, and exit `RESUMABLE`. If a step cannot complete, post an explicit "interrupted at" comment so the resume does not double-execute.
 - **Continuation brief** (posted as a ticket comment): current state per the checkpoint contract with evidence links, the next action and one line of why, live concerns from notes, and anything in flight that must not be redone.
 - **Notes discipline:** append soft observations to the ticket's notes as they occur — flaky tests, retried workers, fragile modules. When unsure whether an observation is worth persisting: write it.

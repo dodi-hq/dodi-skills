@@ -18,11 +18,11 @@ The lane's sequence, checkpoints, and context-hygiene seams live in **`epic-orch
 
 ## Claim discipline
 
-Manual invocation is a lane session under the same per-ticket claim discipline the driver applies: claim the ticket first (`${CLAUDE_PLUGIN_ROOT}/scripts/claim.sh <ticket> deliver <session-run-id>`), skipping any live claim from another session per the liveness hierarchy; fence and release the claim with its exit state (`${CLAUDE_PLUGIN_ROOT}/scripts/release-claim.sh <ticket> <exit-state> --session <session-run-id>`) at close-out. Claims serialize tickets; worktrees serialize files; nothing serializes runs.
+Manual invocation is a lane session under the same per-ticket claim discipline the driver applies: claim the ticket first (`${CLAUDE_PLUGIN_ROOT}/scripts/claim.sh <ticket> deliver-ticket <session-run-id>`), skipping any live claim from another session per the liveness hierarchy; fence and release the claim with its exit state (`${CLAUDE_PLUGIN_ROOT}/scripts/release-claim.sh <ticket> <exit-state> --session <session-run-id>`) at close-out. Claims serialize tickets; worktrees serialize files; nothing serializes runs.
 
 ## Exit states
 
 - **ready-to-merge-child** — success; the orchestrator owns the merge.
 - **demote-to-spec** — any product, architecture, scope, or spec/plan mismatch surprise: comment per the demotion rules in `epic-orchestrator/state-transitions.md` and exit. Never redesign mid-flight.
 - **blocked** — concrete blocker (auth, tooling, a harness that cannot be set up): comment the blocker and exit.
-- **RESUMABLE** — deliberate context exit (the verify→PR seam, an emergency reset, a capacity-park, or a refresh-park): commit on the child branch, write the continuation brief, and exit for re-dispatch.
+- **RESUMABLE** — deliberate context exit (the verify→PR seam, or an emergency reset — capacity-park and refresh-park are driver-only exits, not reachable by a manual session, which stops and reports to the operator instead): commit on the child branch, write the continuation brief, and exit for re-dispatch.
