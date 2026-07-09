@@ -19,7 +19,7 @@ The architectural rule is one semantic workflow with small runtime adapters at t
 - ⚠ **Native tier map:** semantic tiers remain Frontier / Capable / Standard / Fast. Codex uses the proposed versioned model-and-reasoning defaults in §4, but dispatch evidence is accepted only when the runtime attests the effective pair and context identity.
 - ⚠ **Worker adapter:** Codex uses native spawn/wait/close/status results plus a durable pre-spawn intent. Scheduled delivery remains blocked until the release gate proves cross-session addressability, parent-termination evidence, or fail-closed quarantine for every unresolved intent/worker.
 - ⚠ **Setup is a product surface:** `setup-dodi-dev` verifies the runtime, plugin, auth, hooks, marketplace, Slack route, and scheduled tasks. Static profile and renewable health are generation-bound; Slack is the sole 0.17 escalation adapter and autonomous operation stays disabled until its dedicated channel is proven.
-- ⚠ **Gate 2 is server-enforced:** scheduled tasks use a dedicated GitHub automation identity that cannot update or bypass `main`/`master`; the operator's human GitHub credential is never injected into those tasks.
+- ⚠ **Gate 2 is server-enforced:** scheduled tasks use a dedicated GitHub automation identity that cannot update or bypass `main`/`master` or administer its protection/rulesets; the operator's human GitHub credential is never injected into those tasks.
 - **Direct Linear API remains canonical:** no Linear connector dependency is introduced. Setup makes the `LINEAR_DODI_API_KEY` → `LINEAR_API_KEY` bridge explicit for this environment and verifies scheduled sessions receive the resolved key without printing it.
 - ⚠ **Waterfall rollout:** the recommended epic mode is waterfall because the children share execution canon and validation contracts: mature every child against the complete design, then deliver in dependency order.
 - **Out of scope:** changing v0.16 lane semantics, enabling parallel lanes, implementing the full hotfix path, machine-off/cloud operation, or supporting the legacy Homebrew Codex CLI 0.38.
@@ -127,7 +127,7 @@ Minimum schema:
   "hooks": {"gate2": {"key": "...", "hash": "...", "trusted": true}, "model_pin": {"key": "...", "hash": "...", "trusted": true}},
   "auth": {"linear_source": "env:LINEAR_API_KEY", "github_host": "github.com"},
   "escalation": {"adapter": "slack", "channel_id": "...", "retry_policy": {"delays_sec": [0, 30, 120]}, "health_policy": {"stale_after_sec": 86400, "re_escalate_after_sec": 86400}},
-  "repositories": {"owner/name": {"path": "...", "base_branch": "main", "branch_protection": {"rules_sha256": "...", "required_checks_sha256": "...", "automation_actor": "...", "actor_bypass": false, "actor_can_update_base": false, "verified_at": "..."}, "tasks": {"driver": {"id": "...", "config_sha256": "...", "wake_test_id": "...", "wake_tested_at": "..."}, "janitor": {"id": "...", "config_sha256": "..."}}}},
+  "repositories": {"owner/name": {"path": "...", "base_branch": "main", "branch_protection": {"rules_sha256": "...", "required_checks_sha256": "...", "automation_actor": "...", "actor_bypass": false, "actor_can_update_base": false, "actor_can_admin_rules": false, "verified_at": "..."}, "tasks": {"driver": {"id": "...", "config_sha256": "...", "wake_test_id": "...", "wake_tested_at": "..."}, "janitor": {"id": "...", "config_sha256": "..."}}}},
   "validated_at": "..."
 }
 ```
@@ -138,7 +138,7 @@ Renewable operational evidence lives separately at `${XDG_CONFIG_HOME:-$HOME/.co
 
 Profile and health replacement uses a generation-binding protocol. One stable lock file outside the replaceable pair (`runtime-state.lock` in the profile directory, or `<DODI_RUNTIME_PROFILE>.lock` for an explicit path) serializes setup, rollback, Slack, and janitor health writes. Setup disables new scheduled starts, waits for both running tasks and in-process health updaters to quiesce, acquires that lock, and writes the complete prior profile-health pair plus task configuration to a mode-`0700` transaction directory beside the lock; the snapshot and directory are flushed before any live rename. While holding the lock, setup stages and validates both new files, carries every unresolved obligation forward unchanged under the new generation, computes the final profile hash into the staged health header, flushes both, then atomically renames profile followed by health. A crash between renames leaves a detectable mismatch and cannot unlock a lane. Consumers require both `setup_run_id` and profile hash to match before reading health. Rollback restores and verifies the complete prior pair under the same lock and protocol; if either pair cannot be proved, tasks remain disabled. Crash-point, obligation-preservation, and concurrent-updater tests cover every snapshot, lock, and rename boundary.
 
-Only a first install with neither profile nor health may create an empty obligation map. If an existing profile's health is missing, malformed, or generation-mismatched, runtime paths return `SETUP_REQUIRED`; the janitor cannot synthesize a replacement. Setup may recover only from its durable matching transaction snapshot or from a parseable prior health record whose unresolved obligations are all carried forward. Without either authoritative source, tasks remain disabled until the operator restores the record or explicitly reconciles and acknowledges every potentially lost obligation. Empty recreation is forbidden.
+Only a first install with neither profile nor health may create an empty obligation map. If an existing profile's health is missing, malformed, or generation-mismatched, runtime paths return `SETUP_REQUIRED`; the janitor cannot synthesize a replacement. Setup may recover only from its durable matching transaction snapshot or from a parseable prior health record whose unresolved obligations are all carried forward. Without either authoritative source, tasks remain disabled until the exact health record or matching transaction snapshot is restored from backup. There is no manual-empty or acknowledgement override because the set of potentially lost obligations is not provable. Empty recreation is forbidden.
 
 All mutable health updates go through one plugin-owned updater that acquires the same stable external lock across read, binding validation, mutation, flush, and atomic replacement. Setup creates the initial record. The Slack adapter and janitor invoke that updater rather than replacing the file independently, preventing concurrent lost updates or writes across setup generations.
 
@@ -146,7 +146,7 @@ Lookup precedence inside a run is: explicit `DODI_RUNTIME_PROFILE` path → defa
 
 One narrow bootstrap exception breaks the clean-install cycle: `runtime-preflight.sh bootstrap <candidate-plugin-root>` may run without a profile. Bootstrap mode is read-only, accepts no workflow/ticket id, performs no PM/Git/repository writes, and can only report plugin provenance, runtime capabilities, dependencies, candidate model pairs, hook discovery/trust, and profile-path readiness. `setup-dodi-dev` uses that report to build the first profile. No other script or mode accepts profile absence. The isolated install test covers clean install → root derivation → bootstrap report → first atomic profile creation → normal profile verification.
 
-The profile is invalidated when any of these differ from live state: schema version, installed plugin id/version/root, marketplace root, Codex runtime version, model-catalog fingerprint, resolved hook hash/trust, repository remote/base branch, normalized branch-protection/rules/check fingerprints, automation actor/bypass/update-base posture, scheduled-task identity/configuration fingerprints, successful wake-test identity, or configured Slack adapter/channel/policy. Invalidation returns `SETUP_REQUIRED` and performs no workflow write; only `setup-dodi-dev` repairs the profile. Slack delivery age does **not** invalidate the static profile.
+The profile is invalidated when any of these differ from live state: schema version, installed plugin id/version/root, marketplace root, Codex runtime version, model-catalog fingerprint, resolved hook hash/trust, repository remote/base branch, normalized branch-protection/rules/check fingerprints, automation actor/bypass/update-base/rules-administration posture, scheduled-task identity/configuration fingerprints, successful wake-test identity, or configured Slack adapter/channel/policy. Invalidation returns `SETUP_REQUIRED` and performs no workflow write; only `setup-dodi-dev` repairs the profile. Slack delivery age does **not** invalidate the static profile.
 
 `runtime-preflight.sh verify-profile --repo <owner/name>` is the deterministic verifier. On Codex, every adapted entry-point skill reads and schema-validates the profile before using an adapted mechanic; scheduled tasks run the verifier at boot. Claude Code retains its v0.16 entry behavior and does not require this Codex profile. A resident Codex driver rechecks the local profile/plugin/model/hook fingerprints every loop pass, rechecks external branch protection immediately before any child merge, and rechecks scheduler/wake configuration at the daily-heartbeat boundary. Any static mismatch fences workflow writes and exits `SETUP_REQUIRED`; a long-lived driver never carries a stale proof past its stated boundary.
 
@@ -234,7 +234,7 @@ Use native agent primitives:
 4. `wait_agent` with a bounded timeout is the foreground fallback. A timeout means `WAITING`, never success and never automatically `STALLED`.
 5. A terminal wait result is normalized into `completed`, `errored`, `interrupted`, or `shutdown`; its complete normalized digest/error and runtime-attested model/reasoning/context id are persisted atomically before the manifest receives the terminal record.
 6. `close_agent` is the stop primitive. Append the pre-close status and the close result.
-7. Completed agents are closed after their digest is consumed so they do not exhaust the concurrency limit.
+7. Completed agents are closed and reaped after terminal evidence is persisted and before the digest is either accepted or rejected, so attestation failures and valid results both release the concurrency slot safely.
 
 Normalized transition and failure handling:
 
@@ -249,6 +249,7 @@ Normalized transition and failure handling:
 | wait timeout with status `running` | append/update `waiting` bookkeeping without a terminal verdict | wait again; timeout is neither success nor `STALLED` |
 | notification and wait both report terminal | first terminal record wins by worker id; later equivalent events are duplicate bookkeeping | consume one digest exactly once |
 | notification and wait report conflicting terminal state or result hash | append `evidence-conflict` with both source records/hashes; consume neither | bounded re-query of the same id, then close; resolve only when two subsequent authoritative reads and close status agree byte-for-byte with one candidate, otherwise `writer-uncertain` quarantine + escalation |
+| terminal digest is present but effective model/reasoning/context attestation is absent or violates gate policy | persist the complete result as `attestation-invalid` with requested and observed fields, then close and reap the terminal worker | never consume the digest or advance PM/git state; exit the lane `TIER_UNVERIFIED`, require setup/runtime remediation, and quarantine only if close/reap proof fails |
 | terminal result has no digest or has an error | append normalized terminal state and error/missing-digest marker | no state advance; retry through the lane policy with a new worker only after reap |
 | terminal result exists but terminal-record append fails | retain the tool result in current context and retry durable append | no PM/git state advance; persistent failure quarantines the worktree + escalates |
 | close succeeds with terminal status | append close + terminal + reap records | retry or exit per lane policy |
@@ -319,13 +320,13 @@ Setup updates are quiescent. Before replacing an existing valid profile or activ
 
 #### Gate 2
 
-Gate 2 remains structural, not advisory. Codex scheduled tasks authenticate as a dedicated automation GitHub App/user, never the operator's human `gh` identity. For every repository enabled for lights-out operation, setup identifies the actual `main`/`master` base and verifies through `gh api` that branch rules require a pull request/checks and exclude that automation actor from bypass and every actor/team allowed to update the protected base. Missing/unreadable rules, a shared human credential, or any automation path to update the protected base is a hard setup blocker; the driver and janitor tasks are not created or enabled.
+Gate 2 remains structural, not advisory. Codex scheduled tasks authenticate as a dedicated automation GitHub App/user, never the operator's human `gh` identity. For every repository enabled for lights-out operation, setup identifies the actual `main`/`master` base and verifies through `gh api` that branch rules require a pull request/checks and exclude that automation actor from bypass and every actor/team allowed to update the protected base. It also verifies the App installation/repository role lacks administration or any custom permission capable of creating, editing, disabling, or deleting branch protection/rulesets. Missing/unreadable rules or permission evidence, a shared human credential, rules-administration capability, or any automation path to update the protected base is a hard setup blocker; the driver and janitor tasks are not created or enabled.
 
 Scheduled-task capability profiles expose no native GitHub merge, auto-merge, ref-update, or raw HTTP mutation tools. Child merges route only through a plugin-owned wrapper that resolves the PR base and refuses `main`/`master`; direct merge commands are not allow-listed. General shell receives only the dedicated restricted automation credential, so even opaque or indirect mutation attempts are denied by server-side branch rules. The Gate 2 hook still guards recognized bypass shapes as immediate feedback and defense-in-depth.
 
 The Gate 2 hook receives the same Codex compatibility treatment as the model-pin hook. Its existing `Bash` matcher and Claude-shaped payload are live-fired. If either does not match current Codex, use a broad PreToolUse matcher and normalize runtime tool name, cwd, command/tool input inside `hook-gate2-guard.sh`. The guard denies every recognized protected-base mutation route: `gh pr merge`, merge/auto-merge via `gh api` REST or GraphQL, native GitHub merge/enable-auto-merge/ref-update tools if present, direct `git push` to the protected base, and equivalent raw API calls. A tool classified as merge-capable whose payload or target base cannot be parsed fails closed. It allows read-only GitHub calls, child-PR creation, child merge into an epic branch, and ordinary non-protected pushes.
 
-The live-fire matrix includes deny cases for protected-base merge, auto-merge enablement, ref update/direct push, raw API merge, and an opaque/indirect shell mutation against a temporary branch carrying equivalent actor restrictions, plus allow cases for child PR open/merge and read-only inspection. Hook absence, untrusted state, payload ambiguity, failed matrix item, missing capability restriction, a shared human credential, or an automation actor able to update/bypass the protected base is a hard lights-out and release blocker; server-side actor restriction is the authoritative second layer.
+The live-fire matrix includes deny cases for protected-base merge, auto-merge enablement, ref update/direct push, raw API merge, an opaque/indirect shell mutation against a temporary branch carrying equivalent actor restrictions, and an attempted ruleset/branch-protection mutation with the scheduled credential. Allow cases cover child PR open/merge and read-only inspection. Hook absence, untrusted state, payload ambiguity, failed matrix item, missing capability restriction, a shared human credential, or an automation actor able to update/bypass the protected base or administer its rules is a hard lights-out and release blocker; server-side actor restriction is the authoritative second layer.
 
 #### Escalation
 
@@ -402,6 +403,19 @@ Run before release on the supported Codex Desktop runtime:
 
 Every listed live item is required and blocks the release on failure. Gate 2 protection/hook failures, worker takeover uncertainty, tier-map failures, missing auth, scheduler wake failures, and missing escalation delivery may not be converted into a narrower prose support claim.
 
+#### Claude Code non-regression smoke
+
+Run from an unrelated temporary target repository with no Codex runtime profile present:
+
+1. invoke a shared entry-point skill and resolve plugin scripts through `${CLAUDE_PLUGIN_ROOT}` with no Codex preflight requirement;
+2. live-fire both hooks with one representative allow and deny payload each, including Claude `Bash` and `Task|Agent` shapes;
+3. dispatch one pinned leaf worker and verify the requested Claude alias, native completion wake, and terminal manifest record;
+4. exercise `await-worker.sh` against a transcript-backed completion fallback;
+5. classify a mixed Claude/Codex manifest without requiring a Codex result artifact for the Claude record; and
+6. reap the completed Claude worker and prove the existing claim/worktree state transition is unchanged.
+
+Every scenario is required release evidence. A shared-canon, hook, script-resolution, manifest, completion, or reaping regression blocks 0.17.0.
+
 ## Decomposition Sketch
 
 Children are filed only after Gate 1 approval.
@@ -470,6 +484,6 @@ Recommended workflow mode: `waterfall`. C2 and C3 implement C1's shared contract
 - ⚠ `setup-dodi-dev` may create/update the two Codex scheduled tasks only after an explicit operator confirmation; plugin installation remains side-effect free.
 - ⚠ Direct Linear GraphQL remains canonical, with an explicit `LINEAR_DODI_API_KEY` bridge allowed for this environment.
 - ⚠ Slack is the sole 0.17 escalation adapter; lights-out operation requires the Slack plugin and a tested dedicated channel.
-- ⚠ Codex scheduled tasks use a dedicated GitHub automation identity that is server-side forbidden from updating or bypassing `main`/`master`; the operator's human GitHub credential is never injected into those tasks.
+- ⚠ Codex scheduled tasks use a dedicated GitHub automation identity that is server-side forbidden from updating or bypassing `main`/`master` or administering its protection/rulesets; the operator's human GitHub credential is never injected into those tasks.
 - ⚠ Scheduled Codex delivery is blocked until the cross-session worker-addressability test selects and proves a safe takeover path.
 - ⚠ Legacy Codex CLI 0.38.0 is unsupported; current Codex Desktop/plugin tooling is the release target.
