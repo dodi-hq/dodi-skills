@@ -1,0 +1,371 @@
+# dodi-dev 0.17.0 — First-Class Codex Runtime Compatibility
+
+**Date:** 2026-07-09
+**Epic:** DOD-810
+**Type:** Compatibility / runtime architecture
+**Target repo:** dodi-hq/dodi-skills
+**Release:** dodi-dev 0.17.0
+
+## TL;DR
+
+Ship `dodi-dev 0.17.0` as a first-class Codex-compatible release without changing the v0.16 workflow model or reintroducing a second skill tree. Codex already installs the plugin and discovers all 20 skills plus both hooks; this epic closes the runtime gap by packaging the missing policy canon, resolving plugin scripts without an ambient Claude-only variable, mapping semantic model tiers to Codex-native models, adapting worker lifecycle bookkeeping to Codex agent primitives, and adding an explicit setup and validation path for auth, hooks, automations, and upgrades.
+
+The architectural rule is one semantic workflow with small runtime adapters at the mechanics boundary. Claude Code keeps its current behavior; Codex receives explicit equivalents. A compatibility check that cannot establish a required invariant fails closed with a concrete setup blocker — it never silently drops a tier, skips a deterministic script, treats silence as worker success, or starts lights-out operation without a tested wake path.
+
+## Key Points
+
+- **One canonical tree:** preserve `dodi-dev/skills/` as the only skill tree. Runtime differences live in a shipped runtime contract and small adapters, not copied Claude/Codex skill variants.
+- **Self-contained policy:** move the model-tier, Fable availability, dispatch, deterministic-skeleton, scheduled-operation, and context-hygiene runtime canon out of repository-only `AGENTS.md` into the installed plugin. `AGENTS.md` becomes maintainer guidance that points to that shipped canon.
+- **Root bootstrap:** every skill invocation resolves one concrete `<plugin-root>` from runtime context before calling scripts. Claude Code may use `${CLAUDE_PLUGIN_ROOT}`; Codex derives the root from the absolute installed `SKILL.md` locator. Ordinary shell calls never depend on either variable being globally exported.
+- **Native tier map:** semantic tiers remain Frontier / Capable / Standard / Fast. Claude aliases remain `fable` / `opus` / `sonnet` / `haiku`; Codex uses an explicit versioned model-and-reasoning map and records the effective model on every dispatch.
+- **Worker adapter:** the execution model remains top-level dispatcher + leaf workers. Claude keeps transcript-backed dual-wake; Codex uses native spawn/wait/close/status results and writes equivalent terminal records into the shared dispatch manifest.
+- **Setup is a product surface:** a new `setup-dodi-dev` skill and deterministic preflight script verify runtime version, plugin root, model map, Linear/GitHub auth, hook discovery/trust, escalation delivery, marketplace provenance, and the two required scheduled tasks before autonomous operation is enabled.
+- **Direct Linear API remains canonical:** no Linear connector dependency is introduced. Setup makes the `LINEAR_DODI_API_KEY` → `LINEAR_API_KEY` bridge explicit for this environment and verifies scheduled sessions receive the resolved key without printing it.
+- **Waterfall rollout:** the children are tightly coupled through shared execution canon and validation surfaces, so the recommended epic mode is waterfall: mature every child against the complete compatibility design, then deliver in dependency order.
+- **Out of scope:** changing v0.16 lane semantics, enabling parallel lanes, implementing the full hotfix path, machine-off/cloud operation, or supporting the legacy Homebrew Codex CLI 0.38.
+
+---
+
+*Everything below is written for agents planning and implementing the change.*
+
+## Problem
+
+DOD-796 made the top-level session the permanent owner of every dispatch and flattened the mature and deliver lanes into shared playbooks. That architecture is sound for Codex: Codex has top-level agent spawning, completion notifications, explicit waits, and explicit close operations. The released mechanics around it are still Claude-shaped.
+
+The audit established two different truths:
+
+1. **Packaging works.** In an isolated home, current Codex Desktop tooling added the repository as a marketplace, installed `dodi-dev 0.16.0`, discovered all 20 skills under the `dodi-dev:` namespace, and discovered both plugin hooks.
+2. **End-to-end execution does not.** Required runtime policy is outside the installed directory; ordinary skill shell calls see neither `CLAUDE_PLUGIN_ROOT` nor `CODEX_PLUGIN_ROOT`; Codex ignores `model:` skill frontmatter and has no Claude alias models; worker scripts require Claude transcript files; and direct installation creates neither scheduled tasks nor authenticated escalation delivery.
+
+The existing validators prove JSON parity, file presence, shell syntax, and selected script behavior. They do not install the plugin into an isolated Codex home or exercise the runtime contract.
+
+## Goals
+
+1. Make every released skill executable from a clean Codex plugin installation, subject only to documented external credentials and repository permissions.
+2. Preserve behavior and durable state semantics across Claude Code and Codex.
+3. Keep runtime-specific mechanics explicit, testable, and narrowly scoped.
+4. Make autonomous operation impossible to enable until preflight proves its scheduler, wake, auth, hook, and escalation prerequisites.
+5. Add release gates that detect future Claude-first drift before merge.
+
+## Non-Goals
+
+- No copied `plugins/dodi-dev/skills` tree.
+- No behavioral redesign of sprint/waterfall selection, Fable policy, Gate 1, Gate 2, claim discipline, coherence review, or refresh seams.
+- No attempt to make Codex frontmatter switch the current session model; Codex does not provide that contract.
+- No replacement of direct Linear GraphQL with MCP or a bundled app.
+- No automatic trust grant for hooks. Trust remains an explicit operator action verified by setup.
+- No automatic creation of scheduled tasks during plugin installation. Setup performs that mutation only when explicitly invoked and confirmed.
+- No support promise for `/opt/homebrew/bin/codex` 0.38.0; the target is the current Codex Desktop/plugin runtime with `codex plugin`, `skills/list`, `hooks/list`, and native multi-agent support.
+
+## Compatibility Baseline
+
+| Surface | Claude Code 0.16 behavior | Codex audit result | 0.17 contract |
+| --- | --- | --- | --- |
+| Marketplace install | released path | clean install succeeds | retain shared `./dodi-dev` source |
+| Skill discovery | canonical tree | 20/20 discovered | install smoke asserts names and count |
+| Hook discovery | `hooks/hooks.json` | 2/2 discovered, initially untrusted | setup verifies discovery + trust; live-fire tests verify matchers |
+| Plugin root | `${CLAUDE_PLUGIN_ROOT}` | unset in ordinary shell calls | bootstrap concrete `<plugin-root>` per invocation |
+| Main-loop model pin | SKILL frontmatter alias | extra field ignored | invocation preflight verifies required session tier where one exists |
+| Worker model pin | Agent `model:` alias | aliases absent | resolve semantic tier through Codex model map |
+| Worker completion | native wake + transcript backstop | native agent result, no transcript path | runtime adapter produces common manifest terminal records |
+| Scheduling | harness-native tasks | plugin installs no tasks | explicit setup creates/verifies guard + janitor |
+| Linear auth | `LINEAR_API_KEY` | local secret uses `LINEAR_DODI_API_KEY` | preflight resolves bridge without logging secret |
+| Escalation | configured human channel | no packaged route | setup requires and tests one adapter before lights-out |
+
+## Design
+
+### 1. Shipped Runtime Canon
+
+Create `dodi-dev/skills/epic-orchestrator/runtime-policy.md` as the installed single source for behavior needed while a skill runs:
+
+- semantic model tiers and per-runtime mapping rules;
+- Fable availability policy and gate table;
+- dispatch discipline and leaf-worker contract;
+- deterministic-script doctrine;
+- decision-register rules;
+- lights-out invariants;
+- scheduled-operation contract;
+- context-hygiene and refresh rules.
+
+`execution-model.md`, lane playbooks, `review`, `submit-epic-pr`, and other consumers reference this shipped file by a path relative to their own `SKILL.md`. Repository-root `AGENTS.md` retains editing rules and points maintainers to the shipped canon instead of carrying a second operative copy.
+
+Add a validator that fails when an installed skill references repository-root `AGENTS.md` for runtime policy, or references a repository-only document. Project-specific `AGENTS.md` / `CLAUDE.md` references remain valid only when they mean the target repository's coding conventions, not dodi-dev's own runtime policy.
+
+### 2. Runtime Context Bootstrap and Script Resolution
+
+Every entry-point skill that calls plugin scripts begins with a shared bootstrap instruction:
+
+1. Read the absolute locator of the invoked `SKILL.md` supplied by the harness.
+2. If `${CLAUDE_PLUGIN_ROOT}` is set, verify it contains the invoked skill and use it.
+3. Otherwise strip `/skills/<skill-name>/SKILL.md` from the absolute locator and verify the result contains `.codex-plugin/plugin.json` plus `scripts/`.
+4. Record that verified absolute path as `<plugin-root>` for the current session.
+5. Invoke scripts with the concrete absolute path, for example `"<plugin-root>/scripts/claim.sh"`; never emit an unresolved environment-variable expression into an ordinary shell call.
+
+The bootstrap prose lives once in `runtime-policy.md`; entry points point to it. A new `scripts/runtime-preflight.sh` accepts a candidate root and performs the mechanical verification. The skill derives the candidate because no helper can be called before its own location is known; the script validates rather than discovers it.
+
+Hooks are a separate surface. Codex already resolves `${CLAUDE_PLUGIN_ROOT}` inside discovered plugin-hook commands, while Claude Code exports it. Keep the hook command form unless live-fire compatibility testing disproves it.
+
+### 3. Model Tier Adapter
+
+Semantic tiers remain the durable policy language. Runtime aliases are adapter data.
+
+#### Claude Code
+
+Unchanged:
+
+| Tier | Effective pin |
+| --- | --- |
+| Frontier | `fable` |
+| Capable | `opus` |
+| Standard | `sonnet` |
+| Fast | `haiku` |
+
+#### Codex
+
+Ship a versioned `dodi-dev/runtime/codex-model-tiers.json` with ordered candidates and reasoning effort. The first candidate present in `codex debug models` is selected at setup and recorded in a local runtime profile; absence of a required tier is a blocker.
+
+Initial candidate map for the audited runtime:
+
+| Tier | Preferred model | Reasoning | Required distinction |
+| --- | --- | --- | --- |
+| Frontier | `gpt-5.6-sol` | `xhigh` | must differ from the writer at final gates |
+| Capable | `gpt-5.5` | `xhigh` | review / invariant-dense delivery |
+| Standard | `gpt-5.6-terra` | `medium` | ordinary implementation and routing |
+| Fast | `gpt-5.6-luna` | `low` | mechanics and read-only classification |
+
+⚠ **Gate 1 assumption:** these are release defaults, not eternal aliases. Candidate ordering may change in later releases without changing semantic tier policy. Setup stores the resolved map with the Codex runtime version and model-catalog fingerprint; a changed catalog invalidates preflight and requires re-resolution.
+
+Every Codex worker manifest entry records semantic tier, effective model id, and reasoning effort. Fable-policy capacity handling applies to the mapped Frontier model. A missing or rejected mapped Frontier dispatch follows the existing hard/deferred/soft table; an arbitrary substitute is forbidden.
+
+Codex ignores `model:` in SKILL frontmatter. Therefore:
+
+- frontmatter aliases remain for Claude Code compatibility but are explicitly documented as non-operative on Codex;
+- scheduled tasks are configured with the required main-loop Codex model by setup;
+- an interactive skill with a required main-loop tier checks the current session tier when the harness exposes it, otherwise tells the operator the required tier before judgment work begins;
+- worker pins remain mechanical through the runtime adapter.
+
+Update `hook-require-model-pin.sh` to validate the runtime-native pin shape. Its matcher must live-fire against Codex agent spawning; if `Task|Agent` does not match, use a broad PreToolUse matcher and make the script no-op for non-dispatch tools based on the normalized payload.
+
+### 4. Worker Lifecycle Adapter
+
+Keep `execution-model.md` semantic and split mechanics into two shipped adapter documents:
+
+- `epic-orchestrator/runtime/claude-worker-adapter.md`
+- `epic-orchestrator/runtime/codex-worker-adapter.md`
+
+The shared contract remains:
+
+- only the top-level session dispatches;
+- every worker is a leaf;
+- every dispatch receives a unique worker id and explicit tier;
+- silence is never success;
+- terminal evidence is written durably before state advances;
+- planned park/reset occurs only at a seam with no worker in flight;
+- takeover never redispatches beside a worker that may still write.
+
+#### Claude adapter
+
+Retain native completion + `await-worker.sh` transcript backstop, `stop_reason:end_turn`, transcript mtime checks, and current reap behavior.
+
+#### Codex adapter
+
+Use native agent primitives:
+
+1. Spawn returns `agent_id`; append a dispatch record immediately.
+2. Native completion notification is primary.
+3. `wait_agent` with a bounded timeout is the foreground fallback. A timeout means `WAITING`, never success and never automatically `STALLED`.
+4. A terminal wait result is normalized into `completed`, `errored`, `interrupted`, or `shutdown` and appended to the manifest with the returned digest/error.
+5. `close_agent` is the stop primitive. Append the pre-close status and the close result.
+6. Completed agents are closed after their digest is consumed so they do not exhaust the concurrency limit.
+
+Extend the manifest schema:
+
+```json
+{"runtime":"codex","session_id":"...","worker_id":"<agent_id>","purpose":"...","tier":"capable","model":"gpt-5.5","reasoning":"xhigh","state":"dispatched","ts":"..."}
+{"runtime":"codex","worker_id":"<agent_id>","state":"completed","digest_sha256":"...","ts":"..."}
+{"runtime":"codex","worker_id":"<agent_id>","reaped":true,"verdict":"terminal","ts":"..."}
+```
+
+`output_file` becomes Claude-adapter data, not a universal required field. `reap-workers.sh` classifies normalized manifest records first; it reads transcript files only for Claude records lacking a normalized terminal record.
+
+⚠ **Compatibility gate:** before Codex scheduled delivery is enabled, a live test must determine whether an `agent_id` remains queryable/closable after top-level context refresh, task resume, and crashed-session takeover. If it does, takeover uses the native id. If it does not, the Codex adapter must prove one of these fail-closed alternatives before release:
+
+- the runtime terminates descendants with the parent, confirmed by a durable stop event; or
+- the predecessor worktree is quarantined until no writer can remain, with explicit human escalation rather than speculative redispatch.
+
+There is no accepted path where an unaddressable worker may still write while a successor starts another worker in the same worktree.
+
+### 5. Setup, Auth, Scheduling, and Escalation
+
+Add `dodi-dev/skills/setup-dodi-dev/SKILL.md` plus `scripts/runtime-preflight.sh`. This is an explicit operator-run setup path, not an implicit install hook.
+
+Preflight reports, without secrets:
+
+- active runtime and version;
+- marketplace name, source root, installed plugin id/version, and cache path;
+- stale marketplace-name collisions or legacy plugin paths;
+- discovered skill names/count and hook names/trust;
+- resolved plugin root and executable scripts;
+- resolved tier map and model-catalog fingerprint;
+- `git`, `gh`, `curl`, `python3`, and required shell capabilities;
+- GitHub authentication and repository access;
+- Linear key availability and a read-only `viewer`/team query;
+- configured escalation target and a test-delivery result;
+- required scheduled tasks, cadence, model, repository/worktree scope, no-overlap setting, and environment.
+
+#### Linear
+
+Direct GraphQL remains the only plugin-owned PM API. Resolution order is:
+
+1. `LINEAR_API_KEY` already present;
+2. an explicitly configured environment file loaded by the scheduled task;
+3. `LINEAR_DODI_API_KEY` bridged to `LINEAR_API_KEY` by setup/session bootstrap.
+
+The key is never printed, persisted in a ticket, or copied into plugin files. Missing auth is a concrete blocker.
+
+#### Scheduled tasks
+
+After explicit confirmation, setup creates or updates:
+
+- `dodi-drive-epic`: hourly liveness guard/resident driver, no overlap, Standard main-loop tier, epic PR merge excluded from allowed actions;
+- `dodi-reconcile-tickets`: daily after the deployment window, no overlap, Standard main-loop tier.
+
+The setup record includes task identifiers and the tested `refresh-park` successor wake. Plugin installation alone never claims autonomous operation is active.
+
+#### Escalation
+
+The runtime profile must name one supported escalation adapter. For this release it may be a configured Slack plugin/channel or another harness-native notification route, but the adapter must support a low-risk test and return a durable link/id. No configured/tested adapter means manual workflows remain available and lights-out operation stays disabled.
+
+### 6. Marketplace Upgrade and Local Migration
+
+The audited machine auto-discovers `~/.agents/plugins/marketplace.json` with marketplace name `dodi-skills`, pointing to the obsolete `~/plugins/dodi-dev` layout and resolving version 0.8.2. The repository marketplace has the same name and correctly points to `./dodi-dev`.
+
+Setup detects same-name/different-root collisions before install or upgrade. It reports the exact roots and requires an explicit choice to remove/rename the stale source or use the canonical repository source. It never silently upgrades the wrong package.
+
+Document both current install paths:
+
+```bash
+codex plugin marketplace add dodi-hq/dodi-skills --ref main
+codex plugin add dodi-dev@dodi-skills
+```
+
+and local development:
+
+```bash
+codex plugin marketplace add /absolute/path/to/dodi-skills
+codex plugin add dodi-dev@dodi-skills
+```
+
+The install guide must explain that the audited Homebrew `codex` 0.38.0 lacks plugin commands and that operators should use a supported current Codex runtime rather than treating the old binary's failure as a plugin defect.
+
+### 7. Validation and Release Gates
+
+Add `scripts/validate-codex-compatibility.sh` and focused unit/live tests.
+
+#### Deterministic CI checks
+
+- Parse marketplace and plugin manifests with the current schema.
+- Assert canonical source `./dodi-dev` and metadata version `0.17.0` in all version-bearing files.
+- Assert exactly one skill tree and no symlinks.
+- Assert every runtime-policy reference resolves inside `dodi-dev/`.
+- Reject operative references to repository-root `AGENTS.md` and unresolved ambient plugin-root variables in ordinary skill commands.
+- Validate the Codex model-map schema and distinct writer/final-gate candidates.
+- Test mixed Claude/Codex manifest classification and reaping.
+- Test setup/preflight output redacts all key values.
+
+#### Isolated Codex install smoke
+
+Using temporary `HOME` and `CODEX_HOME`:
+
+1. add the repository marketplace;
+2. install `dodi-dev@dodi-skills`;
+3. assert installed version and source root;
+4. call app-server `skills/list` and assert every released skill is enabled with no errors;
+5. call `hooks/list` and assert both hooks are discovered from the installed plugin;
+6. derive `<plugin-root>` from one installed skill locator and execute a read-only script preflight;
+7. assert the installed package contains the shipped runtime canon and both worker adapters.
+
+#### Live Codex compatibility gate
+
+Run before release on the supported Codex Desktop runtime:
+
+- hook trust + Gate 2 hook live-fire against a harmless fixture command;
+- model-pin hook live-fire against a disposable agent dispatch;
+- one worker completion and one explicit close path;
+- one simulated context refresh/resume with manifest reconstruction;
+- the cross-session worker-addressability test from §4;
+- one read-only Linear query through the resolved environment;
+- one scheduled guard no-op and one `refresh-park` successor wake;
+- one escalation test message to the configured test target.
+
+Any failed required live item blocks the release or narrows the published support claim. It is not converted into prose-only confidence.
+
+## Decomposition Sketch
+
+Children are filed only after Gate 1 approval.
+
+| Child | Intent | Hard dependencies | Predicted tier |
+| --- | --- | --- | --- |
+| C1 — shipped runtime canon + root bootstrap | Package operative policy, remove repo-only dependencies, implement verified concrete plugin-root resolution | none | standard |
+| C2 — Codex tier map + hook enforcement | Versioned model map, main-loop preflight, native worker pins, capacity mapping, hook live-fire compatibility | C1 | capable |
+| C3 — Codex worker lifecycle adapter | Native spawn/wait/close normalization, manifest schema, reaping, takeover safety, cross-session live gate | C1 | capable |
+| C4 — setup/preflight + auth/scheduling/escalation migration | Operator setup skill, Linear/GitHub auth checks, hook trust, automations, escalation adapter, stale marketplace detection | C1 | capable |
+| C5 — Codex install/runtime validation + docs + 0.17.0 release | CI validator, isolated install smoke, live gate, install guide, metadata bump and reference sweep | C2, C3, C4 | standard |
+
+Recommended native blocked-by graph:
+
+```text
+C1 → C2 ┐
+   → C3 ├→ C5
+   → C4 ┘
+```
+
+Recommended workflow mode: `waterfall`. C2–C4 all consume C1's runtime contract and C5 integrates all three; maturing the full set before implementation reduces the chance that one adapter silently invents a competing contract.
+
+## Acceptance Criteria
+
+1. A clean supported Codex installation discovers every released skill and hook with no load errors.
+2. Invoking any skill from an unrelated target repository can locate and execute required plugin scripts without a globally exported Claude variable.
+3. Every runtime policy dependency consumed by an installed skill exists inside the installed plugin.
+4. Codex dispatches carry a recorded semantic tier, model id, and reasoning effort; missing mappings fail closed.
+5. Final-gate model diversity remains enforceable on Codex.
+6. Codex worker completion, error, close, reap, and takeover paths produce durable manifest evidence without requiring Claude transcripts.
+7. No planned reset or takeover can orphan a possibly-writing Codex worker beside a successor writer.
+8. Setup can prove or clearly block Linear, GitHub, hooks, model map, escalation, and both scheduled tasks without exposing secrets.
+9. A scheduled `refresh-park` test boots a successor that reconstructs durable state and resumes at the recorded seam.
+10. The existing Claude validators and script tests remain green, and a Claude smoke run shows no behavioral regression.
+11. The Codex compatibility validator fails on reintroduced repo-only policy, unresolved script-root expressions, missing skills/hooks, invalid tier maps, or Claude-only worker assumptions in shared canon.
+12. Metadata ships as `0.17.0` in all required envelopes, with an install/upgrade guide and the DOD-810 release evidence linked.
+
+## Risks and Mitigations
+
+| Risk | Mitigation |
+| --- | --- |
+| Codex model ids change faster than plugin releases | ordered candidate map + runtime catalog fingerprint + setup invalidation |
+| Main-loop tier cannot switch on skill invocation | configure scheduled tasks explicitly; interactive preflight blocks judgment work at the wrong tier |
+| Agent ids are not durable across task boundaries | mandatory live test; fail-closed quarantine/escalation if addressability is absent |
+| Hook discovery succeeds but hooks remain untrusted | setup verifies trust and live-fires both guards before lights-out |
+| Runtime adapters drift semantically | one shared execution canon, adapter contract tests, no duplicated lane prose |
+| Stale marketplace masks the canonical release | provenance check and explicit same-name collision migration |
+| Secret bridge works interactively but not in automation | scheduled-task environment test through a read-only Linear query |
+| Compatibility scope turns into workflow redesign | acceptance tests pin v0.16 state transitions and out-of-scope list |
+
+## Rollout
+
+1. Gate 1 approves this spec, the five-child decomposition, `waterfall` mode, and the flagged assumptions.
+2. File children with the native blocked-by graph.
+3. Mature all five children before delivery.
+4. Deliver C1, then C2–C4 in dependency-safe order, then C5.
+5. Run the isolated Codex install smoke and live compatibility gate on the audited Desktop runtime.
+6. Run the existing Claude validation suite and a focused Claude smoke test.
+7. Open the epic PR as Gate 2; no automation merges it.
+8. After human merge, update the canonical marketplace and run setup against the real user installation, including stale-marketplace migration and scheduled-task verification.
+
+## Gate 1 Delegated Assumptions
+
+- ⚠ The initial Codex model candidates in §3 are approved as release defaults, with catalog-fingerprint invalidation rather than permanent aliases.
+- ⚠ `waterfall` is the initial workflow mode because all implementation children share the runtime canon and final compatibility gate.
+- ⚠ `setup-dodi-dev` may create/update the two Codex scheduled tasks only after an explicit operator confirmation; plugin installation remains side-effect free.
+- ⚠ Direct Linear GraphQL remains canonical, with an explicit `LINEAR_DODI_API_KEY` bridge allowed for this environment.
+- ⚠ Scheduled Codex delivery is blocked until the cross-session worker-addressability test selects and proves a safe takeover path.
+- ⚠ Legacy Codex CLI 0.38.0 is unsupported; current Codex Desktop/plugin tooling is the release target.
