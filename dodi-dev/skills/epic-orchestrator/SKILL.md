@@ -1,6 +1,6 @@
 ---
 name: epic-orchestrator
-description: Interactive epic intake through Gate 1 signoff, and the shared routing contract (state tables, worker prompts) consumed by the pickup-next tick
+description: Interactive epic intake through Gate 1 signoff, and the shared routing contract (state tables, worker prompts) the resident driver and manual sessions route on
 model: sonnet
 ---
 
@@ -58,7 +58,7 @@ Interactive intake (this skill's primary job):
 - Run `assess-epic`.
 - Request Gate 1 signoff (package → notify → hold).
 
-Post-Gate-1 (normally executed by the `pickup-next` tick; a manual session may perform them under the same claim discipline — claim the ticket first (minting a session run id), skip live claims from other **sessions** per the driver-claim-topped liveness hierarchy):
+Post-Gate-1 (normally executed by the resident driver (`drive-epic`); a manual session may perform them under the same claim discipline — claim the ticket first (minting a session run id), skip live claims from other **sessions** per the driver-claim-topped liveness hierarchy):
 
 - Run `mature-ticket` for a child lacking readiness (auto-delegated under Gate 1).
 - Execute a `deliver-ticket` lane inline for a ready child — walk `lanes/deliver-playbook.md` natively per `execution-model.md` (one lane in flight; never a nested lane subagent). Exit contract, checkpoint mechanics, and worker-await rules live in the playbook and execution-model, not re-spelled per dispatch.

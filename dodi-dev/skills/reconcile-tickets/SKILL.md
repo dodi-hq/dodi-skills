@@ -8,7 +8,7 @@ model: sonnet
 
 The convergence janitor. One sweep per run: compare PM ticket state against GitHub/git reality and repair drift with evidence-cited writes. Event-side automation (the PM system's GitHub integration moving tickets on PR merge) is the fast path; this skill is the guaranteed backstop that makes state eventually consistent no matter what the event side missed.
 
-The janitor **repairs state; it never advances work**. It does not dispatch lanes, write specs, or open PRs — that is the resident driver's job (`drive-epic`; the `pickup-next` tick is the paused 0.14.0 fallback). And it never guesses: when evidence conflicts or is missing, it posts an escalation comment describing the conflict instead of writing a state.
+The janitor **repairs state; it never advances work**. It does not dispatch lanes, write specs, or open PRs — that is the resident driver's job (`drive-epic`). And it never guesses: when evidence conflicts or is missing, it posts an escalation comment describing the conflict instead of writing a state.
 
 ## Contract
 

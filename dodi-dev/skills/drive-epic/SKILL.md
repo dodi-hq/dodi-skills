@@ -6,9 +6,9 @@ model: sonnet
 
 # Drive Epic
 
-The resident driver. One long-lived session per active epic. It absorbs `pickup-next`'s machinery and replaces its trigger model: instead of a fresh session per clock tick, one session boots from durable PM/git state, holds the dependency graph and decision-register canon in context, executes lane playbooks **inline and serially** (one in flight at a time; never as nested lane subagents — 0.14.1 leaf-worker contract), and advances on **completion events** — until **park** (no automated action possible), **refresh-park** (planned, count-based context refresh), or **bloat** (context degraded). Cron survives only as a slow liveness guard (this skill's step 0) and the daily janitor (`reconcile-tickets`).
+The resident driver. One long-lived session per active epic. It replaces the earlier scheduled-tick trigger model: one session boots from durable PM/git state, holds the dependency graph and decision-register canon in context, executes lane playbooks **inline and serially** (one in flight at a time; never as nested lane subagents — the leaf-worker contract per `epic-orchestrator/execution-model.md`), and advances on **completion events** — until **park** (no automated action possible), **refresh-park** (planned, count-based context refresh), or **bloat** (context degraded). Cron survives only as a slow liveness guard (this skill's step 0) and the daily janitor (`reconcile-tickets`).
 
-**Detect by content and event, never by clock or silence** — the principle that retires the tick and the same one `await-worker.sh` v2 enforces one level down.
+**Detect by content and event, never by clock or silence** — the resident driver's founding principle, and the same one `await-worker.sh` v2 enforces one level down.
 
 ## Contract
 
@@ -124,8 +124,7 @@ Reached via Step 0a when this skill was invoked with the instruction `rule-coher
 
 ## Scheduling migration and prerequisites
 
-- **0.14.0:** create `dodi-drive-epic` (hourly, off-peak minute, permission mode Auto; epic-PR merge in no allow-list). Pause `dodi-pickup-next` (task disabled; manual invocation stays safe — the fence line makes it a no-op beside a live driver). Gate-fail revert order: pause `dodi-drive-epic` **before** resuming `dodi-pickup-next`. `dodi-reconcile-tickets` unchanged in schedule.
-- **0.14.1** (gate passed): delete `pickup-next` + its task.
+- **Scheduling (settled):** the resident driver runs as `dodi-drive-epic` (hourly, off-peak minute, permission mode Auto; epic-PR merge in no allow-list); `dodi-reconcile-tickets` is the daily janitor (unchanged schedule). The earlier interim scheduled-tick fallback is retired — the resident driver is now the sole scheduling path.
 - **Prerequisites** (carried, plus one new term): branch protection on main/master; escalation channel tested end-to-end; `LINEAR_API_KEY` in the session environment; and **coherence rulings are delivered by invoking the `drive-epic` skill with the instruction `rule-coherence <sha> approve|reject|redirect` — a session run, not a chat reply and not a separate command.** (Step 0a parses that instruction and branches to ruling mode.) The operator learns this before the first park.
 - Machine-off operation (cloud routines) remains the upgrade path.
 
