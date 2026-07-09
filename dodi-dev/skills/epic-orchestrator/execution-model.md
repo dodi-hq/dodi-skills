@@ -12,7 +12,7 @@ This is permanent architecture, not an interim workaround. It follows a verified
 
 Every dispatch carries an explicit model-tier pin per the AGENTS.md tier table (Frontier `fable` / Capable `opus` / Standard `sonnet` / Fast `haiku` on Claude Code); `hook-require-model-pin.sh` enforces the explicit pin. A dispatch that omits the pin silently inherits the session model — a defect, never a default.
 
-Immediately before the pin is written, the executing session performs the **fable-policy lookup** for that gate (the AGENTS.md gate-policy table): a fable-seated gate whose policy is `deferred` or `soft` may substitute a lower tier under the recorded scarcity rules, and one whose policy is `hard` parks rather than substitutes. The policy is pre-declared per gate, never improvised mid-lane; see the gate-policy table and § Fable Availability mechanics for the substitution/park machinery. The pin the policy produces is the one the hook checks.
+Immediately before the pin is written, the executing session performs the **fable-policy lookup** for that gate (the AGENTS.md gate-policy table): a fable-seated gate whose policy is `deferred` or `soft` may substitute a lower tier under the recorded scarcity rules, and one whose policy is `hard` parks rather than substitutes. The policy is pre-declared per gate, never improvised mid-lane; see AGENTS.md § Fable Availability Policy (the gate-policy table + the substitution/park machinery). The pin the policy produces is the one the hook checks.
 
 ## 3. Dual-wake await
 
