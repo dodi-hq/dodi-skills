@@ -30,7 +30,7 @@ The deliver lane posts these as **Lane Checkpoint** comments (pinned `# Lane Che
 | implementation-reviewing | implementation commits complete | commit ids, worker evidence |
 | testing | pre-PR review clean (incl. fable final round) | review evidence, reviewed diff range |
 | verifying | Testing Contract tests exist | test files, harness evidence |
-| ready-for-child-pr | verification green (Contract groups + local-CI runner scope; focused re-review clean if fixes occurred) — mandatory lane context reset here | verification evidence, including each runner digest's recorded head SHA with the local-CI runner's named explicitly; continuation brief |
+| ready-for-child-pr | verification green (Contract groups + local-CI runner scope; focused re-review clean if fixes occurred) — reset seam for a standalone/manual lane, a durable-brief anchor for the resident driver walking inline (per `deliver-playbook.md` § Context hygiene / `AGENTS.md` § Context Hygiene) | verification evidence, including each runner digest's recorded head SHA with the local-CI runner's named explicitly; continuation brief |
 | child-pr-reviewing | child PR open against epic branch | PR link, PR body |
 | (exit) ready-to-merge-child | child-PR review clean + local CI clean *or* verify-stage local-CI digest under the conditional-CI predicate (per `submit-ticket-pr` § Merge) | reviewer status, CI digests |
 

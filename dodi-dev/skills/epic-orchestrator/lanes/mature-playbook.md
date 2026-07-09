@@ -62,7 +62,7 @@ The `model: fable` frontmatter pin on the manual wrapper covers its main loop on
 - **QUESTIONS_FOR_HUMAN** — the spec drafter returned open product questions; stop and ask.
 - **blocked-dependency** — an unresolved dependency.
 - **demote-to-spec** — a product, architecture, scope, or spec/plan mismatch surprise; comment per the demotion rules in `state-transitions.md` and exit. Never redesign mid-flight.
-- **RESUMABLE** — a deliberate context exit (capacity-park, refresh-park, or emergency): push to the epic branch, write the continuation brief keyed to that SHA + last seam, and exit for re-dispatch.
+- **RESUMABLE** — a deliberate context exit (an emergency reset for either executor, or — driver-only — a capacity-park or refresh-park; a manual `mature-ticket` session stops and reports rather than parking): push to the epic branch, write the continuation brief keyed to that SHA + last seam, and exit for re-dispatch.
 
 ## Stop conditions
 

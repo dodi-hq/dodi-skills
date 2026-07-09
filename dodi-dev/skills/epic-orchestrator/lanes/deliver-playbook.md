@@ -56,7 +56,7 @@ A re-dispatched lane reconstructs its position from durable state before doing a
 - **ready-to-merge-child** — success; the orchestrator owns the merge.
 - **demote-to-spec** — any product, architecture, scope, or spec/plan mismatch surprise at any step: comment per the demotion rules in `state-transitions.md` and exit. Never redesign mid-flight.
 - **blocked** — concrete blocker (auth, tooling, a harness that cannot be set up): comment the blocker and exit.
-- **RESUMABLE** — a deliberate context exit (the verify→PR seam, an emergency reset, a capacity-park, or a refresh-park): commit on the child branch, write the continuation brief, and exit for re-dispatch.
+- **RESUMABLE** — a deliberate context exit (the verify→PR seam for a standalone/manual lane only, an emergency reset for either executor, or — driver-only — a capacity-park or refresh-park; see § Context hygiene for the executor split): commit on the child branch, write the continuation brief, and exit for re-dispatch.
 
 ## Rules
 
