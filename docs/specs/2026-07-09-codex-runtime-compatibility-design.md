@@ -126,21 +126,25 @@ Minimum schema:
   "models": {"frontier": {"id": "...", "reasoning": "..."}, "capable": {}, "standard": {}, "fast": {}},
   "hooks": {"gate2": {"key": "...", "hash": "...", "trusted": true}, "model_pin": {"key": "...", "hash": "...", "trusted": true}},
   "auth": {"linear_source": "env:LINEAR_API_KEY", "github_host": "github.com"},
-  "escalation": {"adapter": "slack", "channel_id": "...", "retry_policy": {"delays_sec": [0, 30, 120]}, "stale_after_sec": 86400, "test_message_id": "...", "tested_at": "..."},
-  "repositories": {"owner/name": {"path": "...", "base_branch": "main", "branch_protection": {"rules_sha256": "...", "required_checks_sha256": "...", "actor": "...", "actor_bypass": false, "verified_at": "..."}, "tasks": {"driver": {"id": "...", "config_sha256": "...", "wake_test_id": "...", "wake_tested_at": "..."}, "janitor": {"id": "...", "config_sha256": "..."}}}},
+  "escalation": {"adapter": "slack", "channel_id": "...", "retry_policy": {"delays_sec": [0, 30, 120]}, "health_policy": {"stale_after_sec": 86400, "re_escalate_after_sec": 86400}},
+  "repositories": {"owner/name": {"path": "...", "base_branch": "main", "branch_protection": {"rules_sha256": "...", "required_checks_sha256": "...", "automation_actor": "...", "actor_bypass": false, "actor_can_update_base": false, "verified_at": "..."}, "tasks": {"driver": {"id": "...", "config_sha256": "...", "wake_test_id": "...", "wake_tested_at": "..."}, "janitor": {"id": "...", "config_sha256": "..."}}}},
   "validated_at": "..."
 }
 ```
 
 `setup-dodi-dev` builds the complete next document in memory, writes a same-directory temporary file, applies mode `0600`, parses and validates it, flushes it, then atomically renames it over the profile. A failed write leaves the prior valid profile untouched. Runtime skills are read-only consumers and reject malformed, partially populated, wrong-permission, or unknown-schema profiles.
 
+Renewable operational evidence lives separately at `${XDG_CONFIG_HOME:-$HOME/.config}/dodi-dev/runtime-health.json` (or beside an explicit `DODI_RUNTIME_PROFILE`, with `.health.json` suffix). It is also mode `0600` and atomically replaced. Setup creates the initial record; the Slack adapter and janitor may update only their named health fields. Minimum health fields are adapter/channel, last attempt/success timestamps, last message id/link, consecutive failures, `notification-degraded`, and per-item last-escalated timestamps. The static profile defines the adapter and health policy; the health record reports changing delivery state.
+
 Lookup precedence inside a run is: explicit `DODI_RUNTIME_PROFILE` path → default canonical path → no profile. There is no fallback from an invalid explicit profile to the default because that would hide operator error. No profile is acceptable for purely manual skills that need no adapted mechanic; any Codex tiered dispatch, deterministic plugin script, or scheduled action requires a valid profile.
 
 One narrow bootstrap exception breaks the clean-install cycle: `runtime-preflight.sh bootstrap <candidate-plugin-root>` may run without a profile. Bootstrap mode is read-only, accepts no workflow/ticket id, performs no PM/Git/repository writes, and can only report plugin provenance, runtime capabilities, dependencies, candidate model pairs, hook discovery/trust, and profile-path readiness. `setup-dodi-dev` uses that report to build the first profile. No other script or mode accepts profile absence. The isolated install test covers clean install → root derivation → bootstrap report → first atomic profile creation → normal profile verification.
 
-The profile is invalidated when any of these differ from live state: schema version, installed plugin id/version/root, marketplace root, Codex runtime version, model-catalog fingerprint, resolved hook hash/trust, repository remote/base branch, normalized branch-protection/rules/check fingerprints, automation actor/bypass posture, scheduled-task identity/configuration fingerprints, successful wake-test identity, or Slack test evidence beyond `stale_after_sec`. Invalidation returns `SETUP_REQUIRED` and performs no workflow write; only `setup-dodi-dev` repairs the profile.
+The profile is invalidated when any of these differ from live state: schema version, installed plugin id/version/root, marketplace root, Codex runtime version, model-catalog fingerprint, resolved hook hash/trust, repository remote/base branch, normalized branch-protection/rules/check fingerprints, automation actor/bypass/update-base posture, scheduled-task identity/configuration fingerprints, successful wake-test identity, or configured Slack adapter/channel/policy. Invalidation returns `SETUP_REQUIRED` and performs no workflow write; only `setup-dodi-dev` repairs the profile. Slack delivery age does **not** invalidate the static profile.
 
-`runtime-preflight.sh verify-profile --repo <owner/name>` is the deterministic verifier. Every skill reads and schema-validates the profile at entry. Scheduled tasks run the verifier at boot. A resident driver rechecks the local profile/plugin/model/hook fingerprints every loop pass, rechecks external branch protection immediately before any child merge, and rechecks scheduler/wake/escalation freshness at the daily-heartbeat boundary. Any mismatch fences workflow writes and exits `SETUP_REQUIRED`; a long-lived driver never carries a stale proof past its stated boundary.
+`runtime-preflight.sh verify-profile --repo <owner/name>` is the deterministic verifier. Every skill reads and schema-validates the profile at entry. Scheduled tasks run the verifier at boot. A resident driver rechecks the local profile/plugin/model/hook fingerprints every loop pass, rechecks external branch protection immediately before any child merge, and rechecks scheduler/wake configuration at the daily-heartbeat boundary. Any static mismatch fences workflow writes and exits `SETUP_REQUIRED`; a long-lived driver never carries a stale proof past its stated boundary.
+
+Health is routed rather than treated as static invalidation. A missing/stale/degraded Slack health record blocks the driver from starting a new lane and queues an adapter test/escalation repair. The janitor remains eligible to perform that repair and its read-only waiting-on-you sweep, but performs no destructive cleanup or unrelated PM transition until Slack health succeeds. Successful delivery atomically renews health and clears `notification-degraded`, allowing normal selection to resume without rerunning setup.
 
 ### 4. Model Tier Adapter
 
@@ -159,13 +163,13 @@ Unchanged:
 
 #### Codex
 
-Ship a versioned `dodi-dev/runtime/codex-model-tiers.json` with ordered candidates and reasoning effort. Catalog presence is only candidate discovery: setup probes every resolved model/reasoning pair with a minimal disposable dispatch and records only successful pairs in the runtime profile. Absence or probe failure of a required tier is a blocker unless the failure is a recognized Frontier-capacity condition handled below.
+Ship a versioned `dodi-dev/runtime/codex-model-tiers.json` with ordered candidates and reasoning effort. Catalog presence is only candidate discovery: setup probes every resolved model/reasoning pair with a minimal disposable dispatch and records only successful pairs in the runtime profile. Absence or probe failure of a required tier is a blocker. A recognized Frontier-capacity failure during setup returns `SETUP_CAPACITY_WAIT` after the bounded retry, writes no enabled profile, and never substitutes or selects an alternate candidate; per-gate hard/deferred/soft policy begins only on later workflow dispatches with a fully proven profile.
 
 Initial candidate map for the audited runtime:
 
 | Tier | Preferred model | Reasoning | Required distinction |
 | --- | --- | --- | --- |
-| Frontier | `gpt-5.6-sol` | `xhigh` | must differ from the writer at hard-policy final gates |
+| Frontier | `gpt-5.6-sol` | `xhigh` | fresh-context independence for spec gates; distinct from non-Frontier delivery writers at hard delivery finals |
 | Capable | `gpt-5.5` | `xhigh` | review / invariant-dense delivery |
 | Standard | `gpt-5.6-terra` | `medium` | ordinary implementation and routing |
 | Fast | `gpt-5.6-luna` | `low` | mechanics and read-only classification |
@@ -179,7 +183,9 @@ Tier success has two proofs:
 1. **Dispatch tier:** setup's live probe proves the exact model/reasoning pair is accepted, and each spawn result records that requested pair.
 2. **Main-loop tier:** the active runtime supplies an effective model id/reasoning value in session/thread metadata, and the skill compares it to the profile before judgment work. A configured launch profile alone is not evidence of the effective model.
 
-The adapter owns a tested failure classifier. Only structured/runtime-documented capacity or tier-temporarily-unavailable failures for the already-proven Frontier pair enter hard/deferred/soft Fable handling. Unknown rejection text, invalid model/reasoning, auth, permission, malformed request, or missing attestation returns `SETUP_REQUIRED`/`TIER_UNVERIFIED`; it never substitutes. Tests cover matching, wrong-tier, absent attestation, successful probes, recognized capacity failure, and arbitrary rejection.
+The adapter owns a tested failure classifier. During setup, recognized Frontier capacity produces only `SETUP_CAPACITY_WAIT`. During workflow execution, only structured/runtime-documented capacity or tier-temporarily-unavailable failures for the already-proven Frontier pair enter that gate's hard/deferred/soft Fable handling. Unknown rejection text, invalid model/reasoning, auth, permission, malformed request, or missing attestation returns `SETUP_REQUIRED`/`TIER_UNVERIFIED`; it never substitutes. Tests cover matching, wrong-tier, absent attestation, successful probes, setup capacity wait, per-gate recognized capacity failure, and arbitrary rejection.
+
+Model independence is gate-specific. Spec drafting and final spec review are both intentionally Frontier seats; their independence comes from a fresh-context reviewer, not a different model id. Delivery writers are Standard or Capable, so a hard-policy Frontier delivery final must use a different effective model. Deferred/soft substitution may equal the writer only under the existing degradation attribution and make-up rules.
 
 Codex ignores `model:` in SKILL frontmatter. Therefore:
 
@@ -233,6 +239,7 @@ Normalized transition and failure handling:
 | wait transport/tool error | append `wait-error` if possible; re-query the same id | never redispatch; repeated inability to query routes to close, then quarantine if close is unproved |
 | wait timeout with status `running` | append/update `waiting` bookkeeping without a terminal verdict | wait again; timeout is neither success nor `STALLED` |
 | notification and wait both report terminal | first terminal record wins by worker id; later equivalent events are duplicate bookkeeping | consume one digest exactly once |
+| notification and wait report conflicting terminal state or result hash | append `evidence-conflict` with both source records/hashes; consume neither | bounded re-query of the same id, then close; resolve only when two subsequent authoritative reads and close status agree byte-for-byte with one candidate, otherwise `writer-uncertain` quarantine + escalation |
 | terminal result has no digest or has an error | append normalized terminal state and error/missing-digest marker | no state advance; retry through the lane policy with a new worker only after reap |
 | terminal result exists but terminal-record append fails | retain the tool result in current context and retry durable append | no PM/git state advance; persistent failure quarantines the worktree + escalates |
 | close succeeds with terminal status | append close + terminal + reap records | retry or exit per lane policy |
@@ -302,17 +309,17 @@ Setup updates are quiescent. Before replacing an existing valid profile or activ
 
 #### Gate 2
 
-Gate 2 remains structural, not advisory. For every repository enabled for lights-out operation, setup identifies the actual `main`/`master` base and verifies through `gh api` that branch protection requires a pull request and the repository's required checks. Missing/unreadable protection is a hard setup blocker; the driver and janitor tasks are not created or enabled.
+Gate 2 remains structural, not advisory. Codex scheduled tasks authenticate as a dedicated automation GitHub App/user, never the operator's human `gh` identity. For every repository enabled for lights-out operation, setup identifies the actual `main`/`master` base and verifies through `gh api` that branch rules require a pull request/checks and exclude that automation actor from bypass and every actor/team allowed to update the protected base. Missing/unreadable rules, a shared human credential, or any automation path to update the protected base is a hard setup blocker; the driver and janitor tasks are not created or enabled.
 
-Scheduled-task capability profiles expose no native GitHub merge, auto-merge, ref-update, or raw HTTP mutation tools. Child merges route only through a plugin-owned wrapper that resolves the PR base and refuses `main`/`master`; direct merge commands are not allow-listed. Shell remains available for approved mechanics, so the Gate 2 hook also guards bypass shapes.
+Scheduled-task capability profiles expose no native GitHub merge, auto-merge, ref-update, or raw HTTP mutation tools. Child merges route only through a plugin-owned wrapper that resolves the PR base and refuses `main`/`master`; direct merge commands are not allow-listed. General shell receives only the dedicated restricted automation credential, so even opaque or indirect mutation attempts are denied by server-side branch rules. The Gate 2 hook still guards recognized bypass shapes as immediate feedback and defense-in-depth.
 
 The Gate 2 hook receives the same Codex compatibility treatment as the model-pin hook. Its existing `Bash` matcher and Claude-shaped payload are live-fired. If either does not match current Codex, use a broad PreToolUse matcher and normalize runtime tool name, cwd, command/tool input inside `hook-gate2-guard.sh`. The guard denies every recognized protected-base mutation route: `gh pr merge`, merge/auto-merge via `gh api` REST or GraphQL, native GitHub merge/enable-auto-merge/ref-update tools if present, direct `git push` to the protected base, and equivalent raw API calls. A tool classified as merge-capable whose payload or target base cannot be parsed fails closed. It allows read-only GitHub calls, child-PR creation, child merge into an epic branch, and ordinary non-protected pushes.
 
-The live-fire matrix includes deny cases for protected-base merge, auto-merge enablement, ref update/direct push, and raw API merge, plus allow cases for child PR open/merge and read-only inspection. Hook absence, untrusted state, payload ambiguity, failed matrix item, missing capability restriction, or an automation actor with branch-protection bypass is a hard lights-out and release blocker; server-side protection remains the authoritative second layer.
+The live-fire matrix includes deny cases for protected-base merge, auto-merge enablement, ref update/direct push, raw API merge, and an opaque/indirect shell mutation against a temporary branch carrying equivalent actor restrictions, plus allow cases for child PR open/merge and read-only inspection. Hook absence, untrusted state, payload ambiguity, failed matrix item, missing capability restriction, a shared human credential, or an automation actor able to update/bypass the protected base is a hard lights-out and release blocker; server-side actor restriction is the authoritative second layer.
 
 #### Escalation
 
-The sole 0.17 escalation adapter is the installed Slack plugin targeting one configured dedicated channel. Setup verifies the Slack plugin is enabled for the scheduled-task runtime, sends a low-risk test, and records channel id, message id/link, tested time, retry policy, and stale threshold in the runtime profile. No configured/tested Slack route means manual workflows remain available and lights-out operation stays disabled.
+The sole 0.17 escalation adapter is the installed Slack plugin targeting one configured dedicated channel. Setup verifies the Slack plugin is enabled for the scheduled-task runtime, sends a low-risk test, records static channel/policy in the profile, and writes the successful message evidence to the operational health record. No configured/tested Slack route means manual workflows remain available and lights-out operation stays disabled.
 
 An escalation attempt sends the artifact's TL;DR + Key Points + links and succeeds only when Slack returns a durable message id/link. Delivery retries at 0, 30, and 120 seconds. Exhaustion writes a `notification-degraded` Linear comment, causes the scheduled task to exit failed so the harness-native task-failure notification fires, and leaves the item queued for the next janitor run. Open human-wait items are re-posted to Slack when their last successful escalation is older than 24 hours; the new message references the prior message id and current age. The janitor clears `notification-degraded` only after a later Slack delivery succeeds. These retry, fallback, evidence, and stale re-escalation semantics are deterministic and adapter-owned.
 
@@ -349,7 +356,7 @@ Add `scripts/validate-codex-compatibility.sh` and focused unit/live tests.
 - Assert exactly one skill tree and no symlinks.
 - Assert every runtime-policy reference resolves inside `dodi-dev/`.
 - Reject operative references to repository-root `AGENTS.md` and unresolved ambient plugin-root variables in ordinary skill commands.
-- Validate the runtime-profile and Codex model-map schemas plus policy-aware writer/final-gate distinctions.
+- Validate runtime-profile/health and Codex model-map schemas plus gate-specific fresh-context/model-diversity rules.
 - Test bootstrap-without-profile, first atomic profile creation, setup rollback/quiescence, and every profile drift invalidation field/boundary.
 - Test mixed Claude/Codex manifest classification and reaping.
 - Test setup/preflight output redacts all key values.
@@ -373,8 +380,9 @@ Run before release on the supported Codex Desktop runtime:
 
 - hook trust + the complete Gate 2 deny/allow live-fire matrix;
 - model-pin hook live-fire against a disposable agent dispatch;
-- effective-main-model attestation and all four model/reasoning probes, including wrong/unverifiable/error classification paths;
+- effective-main-model attestation and all four model/reasoning probes, including wrong/unverifiable/setup-capacity/error classification paths;
 - one worker completion and one explicit close path;
+- duplicate-equivalent and conflicting-terminal evidence fixtures;
 - one simulated context refresh/resume with manifest reconstruction;
 - the cross-session worker-addressability test from §5;
 - one read-only Linear query through the resolved environment;
@@ -411,10 +419,10 @@ Recommended workflow mode: `waterfall`. C2 and C3 implement C1's shared contract
 2. Invoking any skill from an unrelated target repository can locate and execute required plugin scripts without a globally exported Claude variable.
 3. Every runtime policy dependency consumed by an installed skill exists inside the installed plugin.
 4. Codex dispatches carry a recorded semantic tier, model id, and reasoning effort; missing mappings fail closed.
-5. Final-gate diversity is policy-aware on Codex: hard-policy final seats require a model distinct from the writer; deferred/soft substitution may equal the writer only with the existing `tier-degraded` attribution and any required `FABLE_MAKEUP` obligation.
+5. Final-gate independence is gate-specific on Codex: spec drafting/final review use fresh Frontier contexts; hard delivery finals require a model distinct from the Standard/Capable writer; deferred/soft substitution may equal the writer only with the existing `tier-degraded` attribution and any required `FABLE_MAKEUP` obligation.
 6. Codex worker completion, error, close, reap, and takeover paths produce durable manifest evidence without requiring Claude transcripts.
 7. No planned reset or takeover can orphan a possibly-writing Codex worker beside a successor writer.
-8. Setup bootstraps from no profile, atomically writes one canonical non-secret runtime profile, detects every specified drift field at its revalidation boundary, and can prove or clearly block Linear, GitHub, base-branch protection, both hooks, effective-model attestation, Slack escalation, and both scheduled tasks without exposing secrets.
+8. Setup bootstraps from no profile, atomically writes one canonical non-secret runtime profile plus renewable health record, detects every specified drift field at its revalidation boundary, and can prove or clearly block Linear, the dedicated restricted GitHub automation actor, base-branch rules, both hooks, effective-model attestation, Slack escalation, and both scheduled tasks without exposing secrets.
 9. A scheduled `refresh-park` test boots a successor that reconstructs durable state and resumes at the recorded seam.
 10. The existing Claude validators and script tests remain green, and a Claude smoke run shows no behavioral regression.
 11. The Codex compatibility validator fails on reintroduced repo-only policy, unresolved script-root expressions, missing skills/hooks, invalid tier maps, or Claude-only worker assumptions in shared canon.
@@ -451,5 +459,6 @@ Recommended workflow mode: `waterfall`. C2 and C3 implement C1's shared contract
 - ⚠ `setup-dodi-dev` may create/update the two Codex scheduled tasks only after an explicit operator confirmation; plugin installation remains side-effect free.
 - ⚠ Direct Linear GraphQL remains canonical, with an explicit `LINEAR_DODI_API_KEY` bridge allowed for this environment.
 - ⚠ Slack is the sole 0.17 escalation adapter; lights-out operation requires the Slack plugin and a tested dedicated channel.
+- ⚠ Codex scheduled tasks use a dedicated GitHub automation identity that is server-side forbidden from updating or bypassing `main`/`master`; the operator's human GitHub credential is never injected into those tasks.
 - ⚠ Scheduled Codex delivery is blocked until the cross-session worker-addressability test selects and proves a safe takeover path.
 - ⚠ Legacy Codex CLI 0.38.0 is unsupported; current Codex Desktop/plugin tooling is the release target.
