@@ -8,7 +8,7 @@ model: sonnet
 
 The convergence janitor. One sweep per run: compare PM ticket state against GitHub/git reality and repair drift with evidence-cited writes. Event-side automation (the PM system's GitHub integration moving tickets on PR merge) is the fast path; this skill is the guaranteed backstop that makes state eventually consistent no matter what the event side missed.
 
-The janitor **repairs state; it never advances work**. It does not dispatch lanes, write specs, or open PRs — that is the resident driver's job (`drive-epic`; the `pickup-next` tick is the paused 0.14.0 fallback). And it never guesses: when evidence conflicts or is missing, it posts an escalation comment describing the conflict instead of writing a state.
+The janitor **repairs state; it never advances work**. It does not dispatch lanes, write specs, or open PRs — that is the resident driver's job (`drive-epic`). And it never guesses: when evidence conflicts or is missing, it posts an escalation comment describing the conflict instead of writing a state.
 
 ## Contract
 
@@ -29,6 +29,7 @@ The janitor **repairs state; it never advances work**. It does not dispatch lane
 | Fresh driver claim + no progress-species writes > 8h (wedged driver) | the wedged-driver backstop — a driver claim staying fresh via its refresher while posting no progress-species work | escalate; this probe lives HERE in the daily sweep (honest latency ~a day), not the hourly guard, which under same-task no-overlap cannot fire against the live driver it would probe |
 | Ticket `blocked` from the retry ceiling | the referenced blocker demonstrably resolved (e.g. the blocking dependency merged) | clear `blocked`, reset the attempt counter, comment the evidence |
 | Child parked as dependency-blocked | all its blocking relations are terminal (per the relation graph) | advance per the transition tables, citing the relation state |
+| Epic `mode-sprint`/`mode-waterfall` label | disagrees with the epic's latest `Kind: MODE` register entry | correct the label to match the latest `MODE` entry (the register is truth, the label caches it), citing the entry — a label repair, not a work advance |
 | Open epic PR | conflicted against its base, or failing required checks | escalate — Gate 2 notifications fire at PR-open; a later red X has no other watcher |
 | Production deployment | latest deployment reports failure/error (`${CLAUDE_PLUGIN_ROOT}/scripts/check-deploy.sh` exit 4) | escalate immediately; affected epics stay Merged with a deploy-failed note. Detection only — triage is the future devops leg |
 | Any active epic | no durable progress (checkpoint, merge, label transition, register entry) within the watchdog window (default 3 days) and not parked on an explicit human-wait state | escalate with a diagnosis from `${CLAUDE_PLUGIN_ROOT}/scripts/watchdog-scan.sh`: dispatchable children or why none (including relation cycles), live claims, `coherence-pending` age, open PR state |
@@ -36,7 +37,7 @@ The janitor **repairs state; it never advances work**. It does not dispatch lane
 
 ## Waiting-On-You Digest
 
-Every run produces the daily digest of human-parked items across all epics: each Gate 1 request, `QUESTIONS_FOR_HUMAN`, `needs-human-spec` wait, demotion awaiting a ruling, unresolved pending-human coherence-ruling register entry (a `coherence-pending` epic with a GATE1_AMENDMENT/GATE1_REFRESH entry and no later `RULING` for its SHA — awaited via `rule-coherence`; the reminder loop the park depends on, since the 3-day watchdog exempts explicit human-wait states), `blocked` ticket, and open Gate 2 PR — with age, the one-line ask, and the link. Deliver it to the escalation channel. **Re-escalation:** any item older than the staleness window (default 3 days) is flagged with its age — escalations are not fire-and-forget. An empty digest is one line: "nothing waiting on you."
+Every run produces the daily digest of human-parked items across all epics: each Gate 1 request, `QUESTIONS_FOR_HUMAN`, `needs-human-spec` wait, demotion awaiting a ruling, unresolved pending-human coherence-ruling register entry (a `coherence-pending` epic with a GATE1_AMENDMENT/GATE1_REFRESH entry and no later `RULING` for its SHA — awaited via `rule-coherence`; the reminder loop the park depends on, since the 3-day watchdog exempts explicit human-wait states), each `pending-capacity` park (age-tracked; the guard auto-probes for capacity return, so this row is informational unless the park persists — a flapping park hits the retry ceiling and escalates to `blocked`), `blocked` ticket, and open Gate 2 PR — with age, the one-line ask, and the link. Deliver it to the escalation channel. **Re-escalation:** any item older than the staleness window (default 3 days) is flagged with its age — escalations are not fire-and-forget. An empty digest is one line: "nothing waiting on you."
 
 ## Deploy Signal
 

@@ -12,5 +12,5 @@ Epic: `<epic-ticket-id>`
 
 ## Exit
 
-- Exit state: `<open | parked | bloat-handoff | no-op | ruled | taken-over | error>`
+- Exit state: `<open | parked | bloat-handoff | refresh-park | no-op | ruled | taken-over | error>`
 - Released at: `<pending>`

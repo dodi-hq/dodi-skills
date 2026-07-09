@@ -1,6 +1,6 @@
 ---
 name: epic-orchestrator
-description: Interactive epic intake through Gate 1 signoff, and the shared routing contract (state tables, worker prompts) consumed by the pickup-next tick
+description: Interactive epic intake through Gate 1 signoff, and the shared routing contract (state tables, worker prompts) the resident driver and manual sessions route on
 model: sonnet
 ---
 
@@ -18,7 +18,7 @@ Routine human involvement is exactly two gates: **Gate 1** (epic intent approval
 
 | Trigger | Inputs | Outputs | Durable writes | Allowed delegation | Failure states |
 | --- | --- | --- | --- | --- | --- |
-| interactive epic intake, or a manual session pushing an epic along | epic id, repo path, PM system context | next state decision, inline lane playbooks and phase work, epic progress summary | epic comments, child ticket comments, labels, claim comments, artifact links | deliver-ticket / mature-ticket playbooks executed inline (0.14.1 leaf-worker contract — never nested lane subagents), phase skills, leaf workers, reviewers, test runners | awaiting epic signoff, human question, blocked dependency, tool/auth failure |
+| interactive epic intake, or a manual session pushing an epic along | epic id, repo path, PM system context | next state decision, inline lane playbooks and phase work, epic progress summary | epic comments, child ticket comments, labels, claim comments, artifact links | deliver-ticket / mature-ticket playbooks executed inline (per `execution-model.md` — never nested lane subagents), phase skills, leaf workers, reviewers, test runners | awaiting epic signoff, human question, blocked dependency, tool/auth failure |
 
 ## Inputs
 
@@ -29,7 +29,6 @@ Routine human involvement is exactly two gates: **Gate 1** (epic intent approval
 - optional `baseBranch`
 - optional `humanContact`
 - optional `runLedgerPath`
-- optional `maxParallelLanes` (default `2`)
 
 ## Hard Gates
 
@@ -59,21 +58,14 @@ Interactive intake (this skill's primary job):
 - Run `assess-epic`.
 - Request Gate 1 signoff (package → notify → hold).
 
-Post-Gate-1 (normally executed by the `pickup-next` tick; a manual session may perform them under the same claim discipline — claim the ticket first (minting a session run id), skip live claims from other **sessions** per the driver-claim-topped liveness hierarchy):
+Post-Gate-1 (normally executed by the resident driver (`drive-epic`); a manual session may perform them under the same claim discipline — claim the ticket first (minting a session run id), skip live claims from other **sessions** per the driver-claim-topped liveness hierarchy):
 
 - Run `mature-ticket` for a child lacking readiness (auto-delegated under Gate 1).
-- Dispatch a `deliver-ticket` lane for a ready child (up to `maxParallelLanes`; see Parallel Lanes) using `lane-dispatch-prompt.md` — exit contract, checkpoint mechanics, and worker-await rules are baked into the template, not re-spelled per dispatch.
+- Execute a `deliver-ticket` lane inline for a ready child — walk `lanes/deliver-playbook.md` natively per `execution-model.md` (one lane in flight; never a nested lane subagent). Exit contract, checkpoint mechanics, and worker-await rules live in the playbook and execution-model, not re-spelled per dispatch.
 - Merge a `ready-to-merge-child` lane result (strictly serial; see Merging).
 - Run `submit-epic-pr` when all children are done.
 
 Stop: awaiting Gate 1, human question, concrete blocker, or `epic-pr-open` (Gate 2 is human-owned).
-
-## Parallel Lanes
-
-- Dispatch up to `maxParallelLanes` (default 2) `deliver-ticket` lanes concurrently, each in its own child worktree.
-- Two children may run concurrently only if the assess-epic dependency map shows no edge between them **and** their plans' File Structure sections predict disjoint file surfaces — shared config, schema, or generated files count as overlap. When in doubt, serialize.
-- The spec lane (`mature-ticket`) may run concurrently with delivery lanes.
-- Lanes never touch the epic branch. Read-only workers fan out freely; PM state advances stay one at a time per ticket.
 
 ## Merging
 
@@ -84,7 +76,7 @@ Merges into the epic branch are orchestrator-owned and strictly serial:
 3. Check the child branch is current with the epic head; if the epic moved, have the lane (re-dispatched if needed) sync and rerun relevant checks per `submit-ticket-pr` merge rules.
 4. **Merge-eligibility guard: no merge is eligible while the epic holds `coherence-pending`** (reviews stay serial, the register append-ordered). **Apply `coherence-pending` to the epic _before_ the merge command** (fail-closed label-before-merge): the irreversible write is the inlined `submit-ticket-pr` Merge (`gh pr merge`) — the sequence contains no push — so a crash between merge and label under the old merge-then-label order left a merged child with no coherence review and no detector.
 5. Squash merge via `submit-ticket-pr` (Merge); verify the postcondition with `${CLAUDE_PLUGIN_ROOT}/scripts/verify-merge.sh`, then clean up with `${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-branch.sh`, **passing the merge SHA verify-merge.sh printed as the final argument** — squash merges rewrite the SHA, so the cleanup proof requires it; post the done comment.
-6. **Run the coherence review — full set-difference protocol.** The **target set** is every merged-but-unregistered SHA: fetch all merged child PRs targeting the epic branch (`mergeCommit` oids) and all register-entry `Merge SHA:` keys (a **paged** register read), review the difference **oldest `mergedAt` first, serially**, each dispatch noting that register entries newer than the SHA under review are **not precedent**. For each SHA, the loop-side idempotence check first (an entry keyed to this SHA ⇒ resume missing routing writes, do not re-dispatch); otherwise dispatch the coherence reviewer (`coherence-reviewer-prompt.md`, `model: fable`) and perform its verdict-routing writes (register entry comment on the epic ticket + the `## Decision Register — Canon` section of the epic description, label changes on affected children, corrective ticket on MATERIAL_DRIFT — all idempotent, keyed to the SHA). **Halt after the first pending-human verdict** (GATE1_AMENDMENT/GATE1_REFRESH) completes its own routing — review no further SHAs while it stands. The label clears **iff the set-difference is empty ∧ no register entry over the epic's merged SHAs is unresolved** (register-wide, never batch-scoped); zero merged child PRs clears vacuously. On a GATE1_AMENDMENT/GATE1_REFRESH, escalate and leave the label in place: the human **resolves by invoking the `drive-epic` skill with the instruction `rule-coherence <sha> approve|reject|redirect`** (a session run, parsed by drive-epic's Step 0a — not a separate command), and the ruling session performs the routing directly. New lane dispatches, maturation, and the merge slot for this epic stay blocked while `coherence-pending`.
+6. **Run the coherence review — full set-difference protocol.** The **target set** is every merged-but-unregistered SHA: fetch all merged child PRs targeting the epic branch (`mergeCommit` oids) and all **coherence-verdict** register-entry `Merge SHA:` keys — verdict entries only, those with **no `Kind:` field** (a `MODE`/`CAPACITY_PARK`/`FABLE_MAKEUP` entry is not a verdict) — (a **paged** register read), review the difference **oldest `mergedAt` first, serially**, each dispatch noting that register entries newer than the SHA under review are **not precedent**. For each SHA, the loop-side idempotence check first (an entry keyed to this SHA ⇒ resume missing routing writes, do not re-dispatch); otherwise dispatch the coherence reviewer (`coherence-reviewer-prompt.md`, `model: fable`) and perform its verdict-routing writes (register entry comment on the epic ticket + the `## Decision Register — Canon` section of the epic description, label changes on affected children, corrective ticket on MATERIAL_DRIFT — all idempotent, keyed to the SHA). **Halt after the first pending-human verdict** (GATE1_AMENDMENT/GATE1_REFRESH) completes its own routing — review no further SHAs while it stands. The label clears **iff the set-difference (over coherence-verdict entries only — no `Kind:` field) is empty ∧ no register entry over the epic's merged SHAs is unresolved** (register-wide, never batch-scoped); zero merged child PRs clears vacuously. On a GATE1_AMENDMENT/GATE1_REFRESH, escalate and leave the label in place: the human **resolves by invoking the `drive-epic` skill with the instruction `rule-coherence <sha> approve|reject|redirect`** (a session run, parsed by drive-epic's Step 0a — not a separate command), and the ruling session performs the routing directly. New lane dispatches, maturation, and the merge slot for this epic stay blocked while `coherence-pending`.
 
 ## State Transitions
 
@@ -94,7 +86,7 @@ Use the lane-boundary and epic-level tables and the demotion rules in `state-tra
 
 Compact deliberately — a deliberate compaction is a voluntary crash + resume; never drift into harness-forced compaction mid-thought.
 
-- **Mandatory reset anchors:** after Gate 1 approval is recorded. In the resident driver, the child-merge close-out is a **durable-brief anchor point** (register + continuation brief kept current), not a session reset — an actual context reset happens only at park or bloat (a mandatory reset per merge would recreate the one-action tick the resident model replaces). At a reset anchor: write the continuation brief (epic comment and ledger), end the session, resume fresh from durable state.
+- **Mandatory reset anchors:** after Gate 1 approval is recorded. In the resident driver, every durable lane-progress seam (each child-merge close-out, and each completion-anchored deliver checkpoint / mature state boundary) is a **durable-brief anchor point** (register + continuation brief kept current), not an *unplanned* session reset — an actual context reset happens only at park, the *planned* refresh-park (a planned `RESUMABLE` exit at a durable seam — the one exception), or bloat (a mandatory unplanned reset per merge would recreate the one-action tick the resident model replaces). At a reset anchor: write the continuation brief (epic comment and ledger), end the session, resume fresh from durable state.
 - **Emergency valve:** if the harness warns context is low between anchors, finish the current step — never abandon a dispatch or merge mid-flight — write the brief, and reset. If a step cannot complete, post an explicit "interrupted at" comment so the resume does not double-execute.
 - **Continuation brief:** current state map reference with evidence links, chosen next action and one line of why, live concerns from notes, and anything in flight that must not be redone (open PRs, running lanes).
 - **Notes discipline:** append soft observations (flaky tests, retried workers, fragile modules) to the epic notes as they occur. When unsure whether to persist an observation: write it.

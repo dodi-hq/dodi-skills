@@ -15,11 +15,11 @@ Create a ticket in the project tracker with context from the brainstorm/design s
    - **Description** — what needs to be built and why
    - **Spec reference** — path to the design spec (if written)
    - **Priority** — infer from context (default: normal)
-   - **Type** — feature, bugfix, refactor
+   - **Type** — feature, bugfix, refactor, or **hotfix** (declared only at filing time — never inferred; see § Hotfix)
 
 2. Create the ticket using available tools (Linear MCP, GitHub Issues, etc.)
 
-3. **Epic decomposition:** when filing an epic's children, register the hard sequencing edges implied by the decomposition as native blocked-by relations at creation time (Linear issue relations, or the tracker's equivalent). The relation graph — not comment prose — is what dispatch eligibility queries; Gate 1 approval canonizes it. Relations carry hard sequencing only; soft parallelism signals (predicted file overlap) belong in the assessment, not the graph.
+3. **Epic decomposition:** when filing an epic's children, register the hard sequencing edges implied by the decomposition as native blocked-by relations at creation time (Linear issue relations, or the tracker's equivalent). The relation graph — not comment prose — is what dispatch eligibility queries; Gate 1 approval canonizes it. Relations carry hard sequencing only; soft coupling signals (predicted file overlap) belong in the assessment — they feed the sprint/waterfall mode decision — not the graph.
 
 4. Confirm with the user — show ticket ID and title
 
@@ -30,6 +30,12 @@ The ticket description should include:
 - Link/path to the design spec
 - Key constraints or decisions worth highlighting
 - NOT the full spec (that lives in the spec file)
+
+## Hotfix (declared, never derived)
+
+`hotfix` is a Type declared **only at filing time** — nothing ever infers it. A ticket filed as `hotfix` carries a `hotfix` label. The label routes the ticket **outside the epic machinery**: the resident driver (`drive-epic`) never selects a `hotfix`-labeled ticket, and a `hotfix` label on an epic child is an escalation. Hotfix work runs on the manual single-ticket path (`pickup`), following the operator-run point-release precedent.
+
+The full minimal-gate hotfix path — entry criteria (prod-broken / time-critical), minimal gates (verify + one review + the human deploy word, the Gate-2 equivalent), and the mandatory auto-filed debt ticket carrying hotfix context for the proper fix — is a follow-up standalone release; 0.16.0 ships only the declaration slot and the route-around.
 
 ## Notes
 

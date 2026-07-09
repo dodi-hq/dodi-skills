@@ -151,4 +151,9 @@ check_heading templates/ticket-comments/decision-register-entry.md "Per-Decision
 check_heading templates/ticket-comments/decision-register-entry.md "Ruling (RULING variant only — the durable resolution record for a pending-human entry)"
 check_contains templates/ticket-comments/decision-register-entry.md "RULING"
 
+# decision-register-entry.md Kind: field (non-verdict entries) — absence ⇒ coherence verdict
+check_contains templates/ticket-comments/decision-register-entry.md "Kind: MODE"
+check_contains templates/ticket-comments/decision-register-entry.md "Kind: CAPACITY_PARK"
+check_contains templates/ticket-comments/decision-register-entry.md "Kind: FABLE_MAKEUP"
+
 echo "ticket comment templates ok"

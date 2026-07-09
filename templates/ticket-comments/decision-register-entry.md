@@ -2,6 +2,14 @@
 
 Child: `<child-ticket-id>` · Merge SHA: `<merge-sha>`
 
+**Entry kind.** A **coherence-verdict** entry carries **no `Kind:` field** — its key is the `Merge SHA:` above, and **only these entries count toward the coherence audit and the `coherence-pending` clear predicate** (absence of `Kind:` ⇒ verdict; backward compatible with every entry already posted). A **non-verdict** entry carries an explicit `Kind:` on the header line, with the kind's own key (below): `MODE` and `CAPACITY_PARK` replace the verdict entry's bare `Merge SHA:` key, while `FABLE_MAKEUP` is itself keyed by a merge SHA (or a pre-merge ticket id):
+
+- `Kind: MODE` · Epic: `<epic-id>` · Seam: `<seam-timestamp>` — a workflow-mode (`sprint`/`waterfall`) decision or mid-epic flip, carrying the coupling rationale.
+- `Kind: CAPACITY_PARK` · Gate: `<gate>` · Child: `<ticket-id>` — a fable capacity park, recording the exact blocked dispatch.
+- `Kind: FABLE_MAKEUP` · Gate: `<gate>` · Merge SHA: `<merge-sha or ticket-id pre-merge>` — a deferred-fable make-up obligation naming what fable must re-review.
+
+A non-verdict entry uses only the Session section below plus its kind-specific body; the Verdict / Decisions / Affected Children / Supersedes / Canon Summary sections are the verdict-entry structure.
+
 ## Session
 
 - Run id: `<session-run-id>`
