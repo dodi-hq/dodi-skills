@@ -242,7 +242,7 @@ case "$cmd" in
   release)
     # Close OWN claim by id, with exit state. No attempt counters.
     epic="${1:?release <epic-id> <claim-comment-id> <exit-state>}"; cid="${2:?claim-comment-id}"; state="${3:?exit-state}"
-    case "$state" in parked|bloat-handoff|no-op|ruled|taken-over|error) ;; *) echo "bad exit state: $state" >&2; exit 2 ;; esac
+    case "$state" in parked|bloat-handoff|refresh-park|no-op|ruled|taken-over|error) ;; *) echo "bad exit state: $state" >&2; exit 2 ;; esac
     _close_claim "$cid" "$state"
     echo "released driver claim=$cid exit=$state"
     exit 0

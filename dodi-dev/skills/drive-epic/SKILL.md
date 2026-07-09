@@ -1,12 +1,12 @@
 ---
 name: drive-epic
-description: Use as the resident driver — one long-lived orchestrator session per active epic that boots from durable state, holds the dependency graph and decision-register canon in context, dispatches lanes, and advances on completion events until park or bloat. Also the session-delivered coherence-ruling mode.
+description: Use as the resident driver — one long-lived orchestrator session per active epic that boots from durable state, holds the dependency graph and decision-register canon in context, dispatches lanes, and advances on completion events until park, refresh-park, or bloat. Also the session-delivered coherence-ruling mode.
 model: sonnet
 ---
 
 # Drive Epic
 
-The resident driver. One long-lived session per active epic. It absorbs `pickup-next`'s machinery and replaces its trigger model: instead of a fresh session per clock tick, one session boots from durable PM/git state, holds the dependency graph and decision-register canon in context, executes lane playbooks **inline and serially** (one in flight at a time; never as nested lane subagents — 0.14.1 leaf-worker contract), and advances on **completion events** — until **park** (no automated action possible) or **bloat** (context degraded). Cron survives only as a slow liveness guard (this skill's step 0) and the daily janitor (`reconcile-tickets`).
+The resident driver. One long-lived session per active epic. It absorbs `pickup-next`'s machinery and replaces its trigger model: instead of a fresh session per clock tick, one session boots from durable PM/git state, holds the dependency graph and decision-register canon in context, executes lane playbooks **inline and serially** (one in flight at a time; never as nested lane subagents — 0.14.1 leaf-worker contract), and advances on **completion events** — until **park** (no automated action possible), **refresh-park** (planned, count-based context refresh), or **bloat** (context degraded). Cron survives only as a slow liveness guard (this skill's step 0) and the daily janitor (`reconcile-tickets`).
 
 **Detect by content and event, never by clock or silence** — the principle that retires the tick and the same one `await-worker.sh` v2 enforces one level down.
 
@@ -14,7 +14,7 @@ The resident driver. One long-lived session per active epic. It absorbs `pickup-
 
 | Trigger | Inputs | Outputs | Durable writes | Allowed delegation | Failure states |
 | --- | --- | --- | --- | --- | --- |
-| hourly liveness cron, or manual invocation | PM scope, repo path(s), heartbeat location, retry ceiling (default 3), optional humanContact | epic advanced through as many actions as fit before park/bloat, or a clean no-op | driver claim + refreshes, continuation brief, daily heartbeat, everything the lane playbooks write | lane playbooks (`mature-ticket`, `deliver-ticket`) executed **inline** with their phase workers dispatched as this session's own leaves; `submit-ticket-pr` Merge and `submit-epic-pr` inline; state-reader / evidence-checker leaf workers (checker conditional per the `epic-orchestrator` Evidence Rule — the driver's inline-walked lanes are the primary skip case) | PM unreachable, claim yield, retry ceiling, fence trip, tool/auth failure |
+| hourly liveness cron, or manual invocation | PM scope, repo path(s), heartbeat location, retry ceiling (default 3), optional humanContact | epic advanced through as many actions as fit before park, refresh-park, or bloat, or a clean no-op | driver claim + refreshes, continuation brief, daily heartbeat, everything the lane playbooks write | lane playbooks (`mature-ticket`, `deliver-ticket`) executed **inline** with their phase workers dispatched as this session's own leaves; `submit-ticket-pr` Merge and `submit-epic-pr` inline; state-reader / evidence-checker leaf workers (checker conditional per the `epic-orchestrator` Evidence Rule — the driver's inline-walked lanes are the primary skip case) | PM unreachable, claim yield, retry ceiling, fence trip, tool/auth failure |
 
 ## Step 0a — parse the invocation (first step, before anything else)
 
@@ -67,7 +67,7 @@ Once this session is the driver:
 
 ## Drive loop
 
-Repeat until park or bloat:
+Repeat until park, refresh-park, or bloat:
 
 1. **Select** by the mode-parameterized priority table in `epic-orchestrator/state-transitions.md` (§ Workflow Mode and Driver Priority Table — single canon; do not restate the ordering here). Read the epic's `mode-sprint`/`mode-waterfall` label each loop pass (piggybacking the re-scan — the register's latest `Kind: MODE` entry is truth if the label is ever stale) to pick the lane-slot order: sprint interleaves deliver→mature, waterfall runs mature-all-then-deliver-all (deliver ineligible until every unblocked child carries `ready-to-implement`); the top four slots (merge → coherence review → epic PR → resume RESUMABLE) are mode-independent. Same demotion rules and `coherence-pending` blocking scope from that table — **which includes the merge slot: no merge action is eligible while `coherence-pending` is set** (only a `RESUMABLE` deliver-lane resume is exempt, per the table). This keeps reviews serial and the register append-ordered; the set-difference audit is the producer-independent backstop.
    - **Merge action** is fail-closed: **apply `coherence-pending` before the merge command** (the irreversible write is the inlined `submit-ticket-pr` merge — `gh pr merge`, not a git push), with the fence verified immediately before it.
@@ -79,14 +79,28 @@ Repeat until park or bloat:
 
 Per-ticket retry ceilings carry over (stagnation-counting, progress-reset) — the driver owns the counter, not `claim.sh`.
 
-## Park and bloat — the only two exits
+## Park, refresh-park, and bloat — the three exits
 
-**No third exit trigger** — a time-based succession rule would recreate the conflicting-rule-set problem.
+**No time- or silence-based exit or succession trigger** — a clock rule would recreate the conflicting-rule-set problem. Refresh-park is count-based at a durable boundary, not a clock rule.
 
-- **Park:** no automated action possible (human-parked on a pending-human entry, blocked, or empty queue).
-- **Bloat:** context degraded — await the in-flight lane's own exit (the driver cannot command a mid-flight checkpoint), then exit; crash recovery is the floor if the exit protocol degrades. At any park evaluation no lane is in flight by construction (awaiting an in-flight lane is itself an available action, reached before park).
+- **Park:** no action the *parked* session itself takes (human-parked on a pending-human entry, blocked, or empty queue). A `pending-capacity` park is still a park in this sense — its guard probe later boots a *fresh* driver, a different session's action, not this one's.
+- **Refresh-park:** planned, count-based — the driver takes a `RESUMABLE` exit at the current seam once the seam budget (below) is reached (**may be mid-lane**). The successor resumes the parked lane: the guard sees the `RESUMABLE` lane as actionable and cold-boots a fresh driver, the proven path.
+- **Bloat:** emergency — context degraded — await the in-flight lane's own exit (the driver cannot command a mid-flight checkpoint), then exit; crash recovery is the floor if the exit protocol degrades. A degraded context is the worst judge of its own degradation — refresh is the rule, bloat the exception. At any park evaluation no lane is in flight by construction (awaiting an in-flight lane is itself an available action, reached before park).
 
-Exit protocol, both: **fence**, post the **continuation brief** (format below; repo mirror `continuation-brief.md` for validation), `driver-claim.sh release <epic-id> <claim-id> <parked|bloat-handoff>`, exit. Brief-post failure: retry once, then exit anyway — durable state alone is the proven cold-boot path.
+### Planned context refresh (the refresh-park budget)
+
+- **Budget:** N **completion-anchored lane-progress seams crossed** per driver session (default ~12, invocation-overridable — ≈ 3 full mature lanes, ~2.5 deliver lanes, or ~1.3 full sprint children). A **countable seam is a completion-anchored durable point** — the moment a phase's worker has returned and its durable artifact is recorded, before the next dispatch. For **mature** these are its four state-transition boundaries (all completion-anchored — a phase label is applied only on clean phase output). For **deliver** these are its completion-anchored internal checkpoints **excluding the dispatch-anchored `implementing`** (posted when workers are dispatched, before any commit exists — it never counts and never trips the budget).
+- **Counter / trigger:** increment the seam counter as each completion-anchored seam is recorded; evaluate **only at those seams** — durable, and with nothing in flight by construction (the prior worker returned, the next is not yet dispatched, so there is no live leaf worker to orphan). When seams-this-session ≥ budget, take a `RESUMABLE` exit at the current seam via the mid-lane exit sequence below and release with exit state `refresh-park`. The seam counter resets in the fresh successor (a resumed lane does not re-count seams it crossed before the park — resume re-enters *at* the recorded seam without re-posting it).
+- **Mid-lane exit sequence (pinned, fence-first):**
+  1. **Fence** (`driver-claim.sh verify` + refresher-alive check) — ownership lost ⇒ abort with **no** durable writes.
+  2. Push in-progress work to the lane's declared durable surface + write the continuation brief keyed to that SHA + last seam (`epic-orchestrator/execution-model.md` § 5(b)).
+  3. Release the lane's *ticket* claim with exit state `RESUMABLE`.
+  4. Reap the dispatch manifest (`reap-workers.sh`; append reap records — a no-op for in-flight workers by construction, but it flushes completed entries).
+  5. **Re-verify the fence** (steps 2–3 mutated the shared epic branch and PM state, matching the merge-slot "verified immediately before the irreversible write" precedent), then `driver-claim.sh release <epic-id> <claim-id> refresh-park`.
+
+  This is fence-first — refresh-park's *expansion* of the exit protocol (fence → brief → release), not a competing ordering; the intervening ticket-claim release and manifest reap are the same close-out actions the between-lanes exit already performs, slotted after the fence.
+
+Exit protocol, all three: **fence**, post the **continuation brief** (format below; repo mirror `continuation-brief.md` for validation), `driver-claim.sh release <epic-id> <claim-id> <parked|bloat-handoff|refresh-park>`, exit. Brief-post failure: retry once, then exit anyway — durable state alone is the proven cold-boot path.
 
 **Continuation brief format** (self-contained, posted as an epic comment under the `# Continuation Brief` header): state map reference with evidence links; chosen next action + one line of why; live concerns from notes; anything in flight that must not be redone (open PRs, running lanes, partial close-outs with their resume keys).
 
@@ -125,7 +139,7 @@ Reached via Step 0a when this skill was invoked with the instruction `rule-coher
 
 ## Evidence
 
-- Record per session: run id, guard outcome, boot audit result, actions taken, exit (park/bloat/no-op/ruled), continuation-brief link, driver-claim release state.
+- Record per session: run id, guard outcome, boot audit result, actions taken, exit (park/refresh-park/bloat/no-op/ruled/taken-over/error), continuation-brief link, driver-claim release state.
 
 ## Stop Conditions
 
@@ -133,4 +147,4 @@ Reached via Step 0a when this skill was invoked with the instruction `rule-coher
 - Claim yield (lost the acquire race) — exit no-op.
 - Fence trip (ownership lost) — abort durable writes, exit.
 - Retry ceiling on a ticket — mark `blocked`, escalate.
-- Park or bloat — exit protocol above.
+- Park, refresh-park, or bloat — exit protocol above.

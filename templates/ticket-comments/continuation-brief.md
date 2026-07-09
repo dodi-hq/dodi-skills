@@ -1,6 +1,6 @@
 # Continuation Brief
 
-Epic: `<epic-ticket-id>` · Session run id: `<session-run-id>` · Exit: `<parked | bloat-handoff>`
+Epic: `<epic-ticket-id>` · Session run id: `<session-run-id>` · Exit: `<parked | bloat-handoff | refresh-park>`
 
 ## State Map Reference
 
