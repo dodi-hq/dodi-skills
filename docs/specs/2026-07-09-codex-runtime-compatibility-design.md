@@ -14,14 +14,14 @@ The architectural rule is one semantic workflow with small runtime adapters at t
 
 ## Key Points
 
-- **One canonical tree:** preserve `dodi-dev/skills/` as the only skill tree. Runtime differences live in a shipped runtime contract and small adapters, not copied Claude/Codex skill variants.
-- **Self-contained policy:** move the model-tier, Fable availability, dispatch, deterministic-skeleton, scheduled-operation, and context-hygiene runtime canon out of repository-only `AGENTS.md` into the installed plugin. `AGENTS.md` becomes maintainer guidance that points to that shipped canon.
+- **One canonical, self-contained tree:** preserve `dodi-dev/skills/` as the only skill tree and move operative runtime policy out of repository-only `AGENTS.md` into that installed tree. Runtime differences live in small mechanics adapters, not copied Claude/Codex skill variants.
 - **Root bootstrap:** every skill invocation resolves one concrete `<plugin-root>` from runtime context before calling scripts. Claude Code may use `${CLAUDE_PLUGIN_ROOT}`; Codex derives the root from the absolute installed `SKILL.md` locator. Ordinary shell calls never depend on either variable being globally exported.
-- **Native tier map:** semantic tiers remain Frontier / Capable / Standard / Fast. Claude aliases remain `fable` / `opus` / `sonnet` / `haiku`; Codex uses an explicit versioned model-and-reasoning map and records the effective model on every dispatch.
-- **Worker adapter:** the execution model remains top-level dispatcher + leaf workers. Claude keeps transcript-backed dual-wake; Codex uses native spawn/wait/close/status results and writes equivalent terminal records into the shared dispatch manifest.
-- **Setup is a product surface:** a new `setup-dodi-dev` skill and deterministic preflight script verify runtime version, plugin root, model map, Linear/GitHub auth, hook discovery/trust, Slack escalation delivery, marketplace provenance, and the two required scheduled tasks before autonomous operation is enabled.
+- ⚠ **Native tier map:** semantic tiers remain Frontier / Capable / Standard / Fast. Codex uses the proposed versioned model-and-reasoning defaults in §4, but dispatch evidence is accepted only when the runtime attests the effective pair and context identity.
+- ⚠ **Worker adapter:** Codex uses native spawn/wait/close/status results plus a durable pre-spawn intent. Scheduled delivery remains blocked until the release gate proves cross-session addressability, parent-termination evidence, or fail-closed quarantine for every unresolved intent/worker.
+- ⚠ **Setup is a product surface:** `setup-dodi-dev` verifies the runtime, plugin, auth, hooks, marketplace, Slack route, and scheduled tasks. Static profile and renewable health are generation-bound; Slack is the sole 0.17 escalation adapter and autonomous operation stays disabled until its dedicated channel is proven.
+- ⚠ **Gate 2 is server-enforced:** scheduled tasks use a dedicated GitHub automation identity that cannot update or bypass `main`/`master`; the operator's human GitHub credential is never injected into those tasks.
 - **Direct Linear API remains canonical:** no Linear connector dependency is introduced. Setup makes the `LINEAR_DODI_API_KEY` → `LINEAR_API_KEY` bridge explicit for this environment and verifies scheduled sessions receive the resolved key without printing it.
-- **Waterfall rollout:** the children are tightly coupled through shared execution canon and validation surfaces, so the recommended epic mode is waterfall: mature every child against the complete compatibility design, then deliver in dependency order.
+- ⚠ **Waterfall rollout:** the recommended epic mode is waterfall because the children share execution canon and validation contracts: mature every child against the complete design, then deliver in dependency order.
 - **Out of scope:** changing v0.16 lane semantics, enabling parallel lanes, implementing the full hotfix path, machine-off/cloud operation, or supporting the legacy Homebrew Codex CLI 0.38.
 
 ---
@@ -132,9 +132,13 @@ Minimum schema:
 }
 ```
 
-`setup-dodi-dev` builds the complete next document in memory, writes a same-directory temporary file, applies mode `0600`, parses and validates it, flushes it, then atomically renames it over the profile. A failed write leaves the prior valid profile untouched. Runtime skills are read-only consumers and reject malformed, partially populated, wrong-permission, or unknown-schema profiles.
+`setup-dodi-dev` builds the complete next static document in memory. Runtime skills are read-only profile consumers and reject malformed, partially populated, wrong-permission, or unknown-schema profiles. The paired profile/health write protocol below owns persistence and rollback.
 
-Renewable operational evidence lives separately at `${XDG_CONFIG_HOME:-$HOME/.config}/dodi-dev/runtime-health.json` (or beside an explicit `DODI_RUNTIME_PROFILE`, with `.health.json` suffix). It is also mode `0600` and atomically replaced. Setup creates the initial record; the Slack adapter and janitor may update only their named health fields. Minimum health fields are adapter/channel, last attempt/success timestamps, last message id/link, consecutive failures, `notification-degraded`, and per-item last-escalated timestamps. The static profile defines the adapter and health policy; the health record reports changing delivery state.
+Renewable operational evidence lives separately at `${XDG_CONFIG_HOME:-$HOME/.config}/dodi-dev/runtime-health.json` (or beside an explicit `DODI_RUNTIME_PROFILE`, with `.health.json` suffix). It is also mode `0600` and atomically replaced. Its header carries `schema_version`, the profile's `setup_run_id`, and the SHA-256 of the exact static profile bytes. Minimum health fields are adapter/channel, last attempt/success timestamps, consecutive failures, and an escalation-obligation map keyed by durable event id. Each obligation records ticket/event identity, `pending | retrying | delivered`, attempts, last error, last-attempt timestamp, and the successful message id/link/time when delivered. The static profile defines the adapter and health policy; the health record reports changing delivery state.
+
+Profile and health replacement uses a generation-binding protocol. Setup disables scheduled starts, stages and validates both files, computes the final profile hash into the staged health header, flushes both, then atomically renames profile followed by health. A crash between renames leaves a detectable mismatch and cannot unlock a lane. Consumers require both `setup_run_id` and profile hash to match before reading health. Rollback restores and verifies the prior pair with the same protocol; if either pair cannot be proved, tasks remain disabled. Crash-point tests cover every stage and rename boundary.
+
+All mutable health updates go through one plugin-owned updater that holds an exclusive lock across read, binding validation, mutation, flush, and atomic replacement. Setup creates the initial record. The Slack adapter and janitor invoke that updater rather than replacing the file independently, preventing concurrent lost updates.
 
 Lookup precedence inside a run is: explicit `DODI_RUNTIME_PROFILE` path → default canonical path → no profile. There is no fallback from an invalid explicit profile to the default because that would hide operator error. No profile is acceptable for purely manual skills that need no adapted mechanic; any Codex tiered dispatch, deterministic plugin script, or scheduled action requires a valid profile.
 
@@ -144,7 +148,7 @@ The profile is invalidated when any of these differ from live state: schema vers
 
 `runtime-preflight.sh verify-profile --repo <owner/name>` is the deterministic verifier. Every skill reads and schema-validates the profile at entry. Scheduled tasks run the verifier at boot. A resident driver rechecks the local profile/plugin/model/hook fingerprints every loop pass, rechecks external branch protection immediately before any child merge, and rechecks scheduler/wake configuration at the daily-heartbeat boundary. Any static mismatch fences workflow writes and exits `SETUP_REQUIRED`; a long-lived driver never carries a stale proof past its stated boundary.
 
-Health is routed rather than treated as static invalidation. A missing/stale/degraded Slack health record blocks the driver from starting a new lane and queues an adapter test/escalation repair. The janitor remains eligible to perform that repair and its read-only waiting-on-you sweep, but performs no destructive cleanup or unrelated PM transition until Slack health succeeds. Successful delivery atomically renews health and clears `notification-degraded`, allowing normal selection to resume without rerunning setup.
+Health is routed rather than treated as static invalidation. A missing, generation-mismatched, stale, or degraded Slack health record blocks the driver from starting a new lane and queues an adapter test/escalation repair. `notification-degraded` is derived from unresolved obligations after their retry window, not stored as an independently mutable global flag. The janitor remains eligible to repair each pending obligation and perform its read-only waiting-on-you sweep, but performs no destructive cleanup or unrelated PM transition until the adapter is current and no degraded obligation remains. Successful delivery marks only its own obligation delivered; it cannot clear another item's failure. Normal selection resumes without rerunning setup only after all obligations are resolved and the adapter health is current.
 
 ### 4. Model Tier Adapter
 
@@ -176,16 +180,16 @@ Initial candidate map for the audited runtime:
 
 ⚠ **Gate 1 assumption:** these are release defaults, not eternal aliases. Candidate ordering may change in later releases without changing semantic tier policy. Setup stores the resolved map with the Codex runtime version and model-catalog fingerprint; a changed catalog invalidates preflight and requires re-resolution.
 
-Every Codex worker manifest entry records semantic tier, effective model id, and reasoning effort. Fable-policy capacity handling applies to the mapped Frontier model. A missing or rejected mapped Frontier dispatch follows the existing hard/deferred/soft table; an arbitrary substitute is forbidden.
+Every Codex dispatch intent records semantic tier and requested model/reasoning; its terminal evidence separately records the runtime-attested effective model/reasoning/context identity. Fable-policy capacity handling applies to the mapped Frontier model. A missing or rejected mapped Frontier dispatch follows the existing hard/deferred/soft table; an arbitrary substitute is forbidden.
 
 Tier success has two proofs:
 
-1. **Dispatch tier:** setup's live probe proves the exact model/reasoning pair is accepted, and each spawn result records that requested pair.
+1. **Dispatch tier:** setup's live probe proves the exact model/reasoning pair is accepted. Each dispatch records the requested pair, but acceptance requires runtime-supplied worker/session metadata or terminal status to attest the effective model id, reasoning value, and fresh context id. Requested values are never labeled effective evidence. Missing or mismatched worker attestation returns `TIER_UNVERIFIED` before its result is consumed.
 2. **Main-loop tier:** the active runtime supplies an effective model id/reasoning value in session/thread metadata, and the skill compares it to the profile before judgment work. A configured launch profile alone is not evidence of the effective model.
 
 The adapter owns a tested failure classifier. During setup, recognized Frontier capacity produces only `SETUP_CAPACITY_WAIT`. During workflow execution, only structured/runtime-documented capacity or tier-temporarily-unavailable failures for the already-proven Frontier pair enter that gate's hard/deferred/soft Fable handling. Unknown rejection text, invalid model/reasoning, auth, permission, malformed request, or missing attestation returns `SETUP_REQUIRED`/`TIER_UNVERIFIED`; it never substitutes. Tests cover matching, wrong-tier, absent attestation, successful probes, setup capacity wait, per-gate recognized capacity failure, and arbitrary rejection.
 
-Model independence is gate-specific. Spec drafting and final spec review are both intentionally Frontier seats; their independence comes from a fresh-context reviewer, not a different model id. Delivery writers are Standard or Capable, so a hard-policy Frontier delivery final must use a different effective model. Deferred/soft substitution may equal the writer only under the existing degradation attribution and make-up rules.
+Model independence is gate-specific. Spec drafting and final spec review are both intentionally Frontier seats; their independence requires different runtime-attested context ids and a reviewer launched without inherited conversation context, not merely a different worker id. Delivery writers are Standard or Capable, so a hard-policy Frontier delivery final must have a runtime-attested model id different from the writer's. Deferred/soft substitution may equal the writer only under the existing degradation attribution and make-up rules.
 
 Codex ignores `model:` in SKILL frontmatter. Therefore:
 
@@ -208,7 +212,7 @@ The shared contract remains:
 
 - only the top-level session dispatches;
 - every worker is a leaf;
-- every dispatch receives a unique worker id and explicit tier;
+- every spawn is preceded by a durable unique dispatch intent and explicit tier; the returned worker id is then bound to that intent;
 - silence is never success;
 - terminal evidence is written durably before state advances;
 - planned park/reset occurs only at a seam with no worker in flight;
@@ -222,19 +226,21 @@ Retain native completion + `await-worker.sh` transcript backstop, `stop_reason:e
 
 Use native agent primitives:
 
-1. Spawn returns `agent_id`; append a dispatch record immediately.
-2. Native completion notification is primary.
-3. `wait_agent` with a bounded timeout is the foreground fallback. A timeout means `WAITING`, never success and never automatically `STALLED`.
-4. A terminal wait result is normalized into `completed`, `errored`, `interrupted`, or `shutdown`; its complete normalized digest/error is persisted atomically before the manifest receives the terminal record.
-5. `close_agent` is the stop primitive. Append the pre-close status and the close result.
-6. Completed agents are closed after their digest is consumed so they do not exhaust the concurrency limit.
+1. Before spawn, append a `dispatch-intent` containing a unique nonce, owning session/context id, worktree, purpose, semantic tier, requested model/reasoning, and timestamp; flush it before invoking the runtime.
+2. Include the nonce in the spawn metadata/prompt. When spawn returns `agent_id`, append a `dispatched` record that binds the id to the intent.
+3. Native completion notification is primary.
+4. `wait_agent` with a bounded timeout is the foreground fallback. A timeout means `WAITING`, never success and never automatically `STALLED`.
+5. A terminal wait result is normalized into `completed`, `errored`, `interrupted`, or `shutdown`; its complete normalized digest/error and runtime-attested model/reasoning/context id are persisted atomically before the manifest receives the terminal record.
+6. `close_agent` is the stop primitive. Append the pre-close status and the close result.
+7. Completed agents are closed after their digest is consumed so they do not exhaust the concurrency limit.
 
 Normalized transition and failure handling:
 
 | Event | Durable action | Allowed next action |
 | --- | --- | --- |
-| spawn fails before an id is returned | append `spawn-failed` with the tool error | bounded retry/policy handling; no worker exists |
-| spawn returns an id, dispatch-record append succeeds | append `dispatched` before consuming any result | wait for that id only |
+| crash/takeover finds an unresolved `dispatch-intent` with no worker id | enumerate descendants by owning session + nonce, or prove runtime-owned parent termination | bind and reap a uniquely matched id; otherwise mark `writer-uncertain`, quarantine the worktree, and never redispatch there |
+| spawn fails before an id is returned | append `spawn-failed` with the tool error and close the intent | bounded retry/policy handling; no worker exists |
+| spawn returns an id, dispatch-record append succeeds | append `dispatched` linked to the intent before consuming any result | wait for that id only |
 | spawn returns an id, dispatch-record append fails | immediately call `close_agent`; retry the append with close evidence | continue only after terminal/closed proof; otherwise quarantine worktree + escalate |
 | wait transport/tool error | append `wait-error` if possible; re-query the same id | never redispatch; repeated inability to query routes to close, then quarantine if close is unproved |
 | wait timeout with status `running` | append/update `waiting` bookkeeping without a terminal verdict | wait again; timeout is neither success nor `STALLED` |
@@ -251,16 +257,17 @@ Normalized transition and failure handling:
 Extend the manifest schema:
 
 ```json
-{"runtime":"codex","session_id":"...","worker_id":"<agent_id>","purpose":"...","tier":"capable","model":"gpt-5.5","reasoning":"xhigh","state":"dispatched","ts":"..."}
-{"runtime":"codex","worker_id":"<agent_id>","state":"completed","result_artifact":"<epic-worktree>/.dodi/workers/<session>/<agent_id>.json","result_sha256":"...","ts":"..."}
+{"runtime":"codex","session_id":"...","context_id":"...","dispatch_nonce":"...","worktree":"...","purpose":"...","tier":"capable","requested_model":"gpt-5.5","requested_reasoning":"xhigh","state":"dispatch-intent","ts":"..."}
+{"runtime":"codex","session_id":"...","dispatch_nonce":"...","worker_id":"<agent_id>","state":"dispatched","ts":"..."}
+{"runtime":"codex","worker_id":"<agent_id>","state":"completed","effective_model":"gpt-5.5","effective_reasoning":"xhigh","context_id":"...","result_artifact":"<epic-worktree>/.dodi/workers/<session>/<agent_id>.json","result_sha256":"...","ts":"..."}
 {"runtime":"codex","worker_id":"<agent_id>","reaped":true,"verdict":"terminal","ts":"..."}
 ```
 
-For Codex, the complete normalized result artifact stores worker id, terminal state, effective tier/model/reasoning, returned digest or full error, and completion timestamp. It is written as a mode-`0600` same-directory temporary file, parsed, flushed, and atomically renamed before its path/hash are appended to the manifest. Worker digests remain capped by the existing return contract, so this is a compact durable record rather than a transcript. Consumption and PM/git state advance are forbidden until artifact and terminal manifest record both exist and hash-match.
+For Codex, the complete normalized result artifact stores worker id, terminal state, requested tier/model/reasoning, runtime-attested effective model/reasoning/context id, returned digest or full error, and completion timestamp. It is written as a mode-`0600` same-directory temporary file, parsed, flushed, and atomically renamed before its path/hash are appended to the manifest. Worker digests remain capped by the existing return contract, so this is a compact durable record rather than a transcript. Consumption and PM/git state advance are forbidden until artifact and terminal manifest record both exist, hash-match, and satisfy the gate's tier/context-independence policy.
 
 `output_file` becomes Claude-adapter data, not a universal required field. `reap-workers.sh` classifies normalized manifest records first; it reads Codex result artifacts by path/hash and reads transcript files only for Claude records lacking a normalized terminal record.
 
-⚠ **Compatibility gate:** before Codex scheduled delivery is enabled, a live test must determine whether an `agent_id` remains queryable/closable after top-level context refresh, task resume, and crashed-session takeover. If it does, takeover uses the native id. If it does not, the Codex adapter must prove one of these fail-closed alternatives before release:
+⚠ **Compatibility gate:** before Codex scheduled delivery is enabled, a live test must determine whether the runtime attests worker model/reasoning/context identity and whether an `agent_id` remains enumerable/queryable/closable after top-level context refresh, task resume, and crashed-session takeover. Tests include a crash after durable intent but before id binding. If the id is recoverable, takeover binds it by owning session + nonce and uses the native id. If it is not, the Codex adapter must prove one of these fail-closed alternatives before release:
 
 - the runtime terminates descendants with the parent, confirmed by a durable stop event; or
 - the predecessor worktree is quarantined until no writer can remain, with explicit human escalation rather than speculative redispatch.
@@ -321,7 +328,7 @@ The live-fire matrix includes deny cases for protected-base merge, auto-merge en
 
 The sole 0.17 escalation adapter is the installed Slack plugin targeting one configured dedicated channel. Setup verifies the Slack plugin is enabled for the scheduled-task runtime, sends a low-risk test, records static channel/policy in the profile, and writes the successful message evidence to the operational health record. No configured/tested Slack route means manual workflows remain available and lights-out operation stays disabled.
 
-An escalation attempt sends the artifact's TL;DR + Key Points + links and succeeds only when Slack returns a durable message id/link. Delivery retries at 0, 30, and 120 seconds. Exhaustion writes a `notification-degraded` Linear comment, causes the scheduled task to exit failed so the harness-native task-failure notification fires, and leaves the item queued for the next janitor run. Open human-wait items are re-posted to Slack when their last successful escalation is older than 24 hours; the new message references the prior message id and current age. The janitor clears `notification-degraded` only after a later Slack delivery succeeds. These retry, fallback, evidence, and stale re-escalation semantics are deterministic and adapter-owned.
+Before sending, the adapter durably creates or reopens that event's escalation obligation. It sends the artifact's TL;DR + Key Points + links and marks the obligation delivered only when Slack returns a durable message id/link. Delivery retries at 0, 30, and 120 seconds. Exhaustion leaves that obligation unresolved, writes a `notification-degraded` Linear comment naming its event id, causes the scheduled task to exit failed so the harness-native task-failure notification fires, and leaves the item queued for the next janitor run. Open human-wait items are re-posted when their own last successful escalation is older than 24 hours; the new obligation references the prior message id and current age. A later success resolves only its matching obligation. These per-item retry, fallback, evidence, stale re-escalation, and derived-global-health semantics are deterministic and adapter-owned.
 
 ### 7. Marketplace Upgrade and Local Migration
 
@@ -356,9 +363,10 @@ Add `scripts/validate-codex-compatibility.sh` and focused unit/live tests.
 - Assert exactly one skill tree and no symlinks.
 - Assert every runtime-policy reference resolves inside `dodi-dev/`.
 - Reject operative references to repository-root `AGENTS.md` and unresolved ambient plugin-root variables in ordinary skill commands.
-- Validate runtime-profile/health and Codex model-map schemas plus gate-specific fresh-context/model-diversity rules.
-- Test bootstrap-without-profile, first atomic profile creation, setup rollback/quiescence, and every profile drift invalidation field/boundary.
+- Validate runtime-profile/health generation binding and Codex model-map schemas plus runtime-attested fresh-context/model-diversity rules.
+- Test bootstrap-without-profile, first generation-bound profile/health creation, every two-file crash point, setup rollback/quiescence, and every profile drift invalidation field/boundary.
 - Test mixed Claude/Codex manifest classification and reaping.
+- Test pre-spawn intent crashes, id binding/recovery, unresolvable-intent quarantine, worker attestation failure, and per-item escalation recovery without cross-item clearing.
 - Test setup/preflight output redacts all key values.
 
 #### Isolated Codex install smoke
@@ -380,7 +388,7 @@ Run before release on the supported Codex Desktop runtime:
 
 - hook trust + the complete Gate 2 deny/allow live-fire matrix;
 - model-pin hook live-fire against a disposable agent dispatch;
-- effective-main-model attestation and all four model/reasoning probes, including wrong/unverifiable/setup-capacity/error classification paths;
+- effective-main/worker model and context attestation plus all four model/reasoning probes, including wrong/unverifiable/setup-capacity/error classification paths;
 - one worker completion and one explicit close path;
 - duplicate-equivalent and conflicting-terminal evidence fixtures;
 - one simulated context refresh/resume with manifest reconstruction;
@@ -397,7 +405,7 @@ Children are filed only after Gate 1 approval.
 
 | Child | Intent | Hard dependencies | Predicted tier |
 | --- | --- | --- | --- |
-| C1 — runtime canon, profile contract, root bootstrap + adapter interfaces | Package operative policy, define the canonical runtime profile and common dispatch/manifest interfaces, remove repo-only dependencies, implement verified concrete plugin-root resolution | none | standard |
+| C1 — runtime canon, profile contract, root bootstrap + adapter interfaces | Package operative policy, define generation-bound profile/health and pre-spawn intent/common manifest interfaces, remove repo-only dependencies, implement verified concrete plugin-root resolution | none | capable |
 | C2 — Codex tier map + hook enforcement | Versioned model map, main-loop preflight, native worker pins, capacity mapping, hook live-fire compatibility | C1 | capable |
 | C3 — Codex worker lifecycle adapter | Native spawn/wait/close normalization, manifest schema, reaping, takeover safety, cross-session live gate | C1 | capable |
 | C4 — setup/preflight + auth/scheduling/Gate 2/escalation migration | Operator setup skill, atomic runtime-profile writer, Linear/GitHub auth and branch-protection checks, hook trust/live-fire, automations, escalation adapter, stale marketplace detection | C2, C3 | capable |
@@ -418,11 +426,11 @@ Recommended workflow mode: `waterfall`. C2 and C3 implement C1's shared contract
 1. A clean supported Codex installation discovers every released skill and hook with no load errors.
 2. Invoking any skill from an unrelated target repository can locate and execute required plugin scripts without a globally exported Claude variable.
 3. Every runtime policy dependency consumed by an installed skill exists inside the installed plugin.
-4. Codex dispatches carry a recorded semantic tier, model id, and reasoning effort; missing mappings fail closed.
-5. Final-gate independence is gate-specific on Codex: spec drafting/final review use fresh Frontier contexts; hard delivery finals require a model distinct from the Standard/Capable writer; deferred/soft substitution may equal the writer only with the existing `tier-degraded` attribution and any required `FABLE_MAKEUP` obligation.
-6. Codex worker completion, error, close, reap, and takeover paths produce durable manifest evidence without requiring Claude transcripts.
-7. No planned reset or takeover can orphan a possibly-writing Codex worker beside a successor writer.
-8. Setup bootstraps from no profile, atomically writes one canonical non-secret runtime profile plus renewable health record, detects every specified drift field at its revalidation boundary, and can prove or clearly block Linear, the dedicated restricted GitHub automation actor, base-branch rules, both hooks, effective-model attestation, Slack escalation, and both scheduled tasks without exposing secrets.
+4. Codex dispatches carry requested semantic tier/model/reasoning plus runtime-attested effective model/reasoning/context identity; missing mappings or attestation fail closed.
+5. Final-gate independence is gate-specific on Codex: spec drafting/final review use distinct attested Frontier contexts without inherited conversation; hard delivery finals require an attested model distinct from the Standard/Capable writer; deferred/soft substitution may equal the writer only with the existing `tier-degraded` attribution and any required `FABLE_MAKEUP` obligation.
+6. Every Codex spawn has a durable pre-spawn intent; completion, error, close, reap, conflict, and takeover paths produce durable manifest evidence without requiring Claude transcripts.
+7. No crash, planned reset, or takeover can orphan a possibly-writing Codex worker beside a successor writer; unresolved intents quarantine their worktree.
+8. Setup bootstraps from no profile, writes one generation-bound non-secret runtime profile/health pair, detects every specified drift field and pair mismatch at its revalidation boundary, and can prove or clearly block Linear, the dedicated restricted GitHub automation actor, base-branch rules, both hooks, effective-model attestation, per-item Slack escalation, and both scheduled tasks without exposing secrets.
 9. A scheduled `refresh-park` test boots a successor that reconstructs durable state and resumes at the recorded seam.
 10. The existing Claude validators and script tests remain green, and a Claude smoke run shows no behavioral regression.
 11. The Codex compatibility validator fails on reintroduced repo-only policy, unresolved script-root expressions, missing skills/hooks, invalid tier maps, or Claude-only worker assumptions in shared canon.
