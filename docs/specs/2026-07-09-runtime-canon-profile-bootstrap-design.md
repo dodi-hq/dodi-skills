@@ -8,17 +8,17 @@
 
 ## TL;DR
 
-DOD-811 establishes the runtime-neutral foundation for the DOD-810 Codex compatibility release: ship the operative workflow canon inside the installed plugin, resolve and verify one concrete plugin root before any ordinary script call, and publish versioned contracts for runtime profile, health, Linear register, tier attestation, and worker manifests. It preserves Claude Code behavior while deliberately leaving Codex model selection, native worker lifecycle execution, setup/auth/scheduling/escalation, and end-to-end release validation to C2-C5.
+DOD-811 establishes the runtime-neutral foundation for the DOD-810 Codex compatibility release: ship the operative workflow canon inside the installed plugin, resolve and verify one concrete plugin root before any ordinary script call, and publish versioned contracts for runtime profile, health, Linear register, tier attestation, and worker manifests. Candidate, locator, and returned-root values always remain data carried through shell variables or argv; quoted single-word invocation keeps legal shell-active path bytes from becoming executable source, while the manifest serializes `write_scope` exactly as `mutable|read-only` with scope-specific baseline semantics.
 
-Codex workflow execution is still blocked after C1 alone. C1 makes every dependent consume one shared, fail-closed interface instead of allowing each child to invent paths, profile semantics, or manifest states independently.
+Codex workflow execution is still blocked after C1 alone. C1 preserves Claude Code behavior and makes C2-C5 consume one shared, fail-closed interface without taking ownership of Codex model selection, native worker lifecycle execution, setup/auth/scheduling/escalation, or end-to-end release validation.
 
 ## Key Points
 
 - **One installed canon:** `dodi-dev/skills/epic-orchestrator/runtime-policy.md` becomes the only operative runtime-policy source. Repository-root `AGENTS.md` keeps maintainer/editing guidance and points to the shipped canon instead of duplicating it.
-- **Verified root, concrete calls:** an invoked skill derives a candidate root only from its absolute `SKILL.md` locator or a verified `${CLAUDE_PLUGIN_ROOT}`, validates it with `runtime-preflight.sh bootstrap`, records the canonical absolute result as `<plugin-root>`, and substitutes that concrete path into every ordinary script call. On Codex, bootstrap is not permission to run workflow scripts; non-bootstrap adapted mechanics remain fenced until C4's profile verifier exists.
+- **Verified root, argv-safe calls:** an invoked skill derives a candidate root only from its absolute `SKILL.md` locator or a verified `${CLAUDE_PLUGIN_ROOT}`, transports candidate and locator values as data into `runtime-preflight.sh bootstrap`, parses the returned JSON `plugin_root` into a value, and invokes every script through one quoted argv word such as `"$plugin_root/scripts/claim.sh"`. No root bytes are inserted into shell source, evaled, or reparsed. On Codex, bootstrap is not permission to run workflow scripts; non-bootstrap adapted mechanics remain fenced until C4's profile verifier exists.
 - **Hooks are a separate boundary:** C1 does not rewrite hook matchers, payload handling, or hook commands. `${CLAUDE_PLUGIN_ROOT}` remains allowed only in `dodi-dev/hooks/hooks.json`; C2/C4 own Codex hook live-fire behavior.
 - **Generation-bound state contract:** the static runtime profile, renewable health projection, stable lock, and Linear register cursor have one path rule, one schema version, and explicit cross-file/hash bindings. C1 defines and tests the contract but does not create a real operator profile or register.
-- **One worker-manifest vocabulary:** all runtimes share append-only intent, binding, terminal-evidence, close, reap, conflict, and uncertainty records. Runtime-specific data is namespaced; `output_file` remains Claude adapter data rather than a universal field.
+- **One worker-manifest vocabulary:** all runtimes share append-only intent, binding, terminal-evidence, close, reap, conflict, and uncertainty records. Serialized `write_scope` is exactly `mutable|read-only`: mutable intent proves a clean HEAD and exact porcelain/status hash; read-only intent requires `read_only_baseline: true` and may carry HEAD/status diagnostics that assert neither cleanliness nor mutable ownership. Runtime-specific data is namespaced; `output_file` remains Claude adapter data rather than a universal field.
 - **Fail closed at every unknown:** invalid root provenance, unknown schema versions, malformed binding data, absent required tier attestation, unresolved dispatch intent, or unknown manifest state cannot be interpreted as success or permission to advance state.
 - **C1 does not activate Codex:** C2 supplies model/tier resolution and attestation checks, C3 supplies Codex spawn/wait/close/recovery mechanics, C4 supplies profile/register/setup/auth/scheduling/escalation mutations, and C5 supplies isolated-install and live release evidence.
 - **Release metadata remains a release-sweep concern:** C1 notes that released skill changes require a synchronized `0.17.0` metadata bump, but the approved decomposition assigns that bump and release sweep to C5 unless DOD-810 records a parent decision-register amendment.
@@ -29,7 +29,7 @@ Codex workflow execution is still blocked after C1 alone. C1 makes every depende
 
 ## Decision Context
 
-The approved parent design is `docs/specs/2026-07-09-codex-runtime-compatibility-design.md`. At drafting time DOD-810 has no Decision Register Canon beyond the Gate 1 `Kind: MODE` entry selecting `waterfall`; no later entry supersedes the approved design. Therefore the approved parent design controls this child, and DOD-811 must not reinterpret the model candidates, worker takeover policy, setup topology, or release gates delegated to later children.
+The approved parent design is `docs/specs/2026-07-09-codex-runtime-compatibility-design.md`. The current DOD-810 Decision Register Canon keeps C1 authoritative for installed runtime canon, profile/health/register/manifest contracts, root bootstrap, and adapter interfaces, while C2-C5 consume those contracts within their delegated ownership. The signed DOD-813 design, `docs/specs/2026-07-09-codex-worker-lifecycle-adapter-design.md`, is the authoritative C3 consumer and confirms that serialized scope is `mutable|read-only`, with read-only HEAD/status fields allowed only as diagnostics. This amendment aligns C1 with those signed contracts; it does not amend either artifact or reinterpret model candidates, worker takeover policy, setup topology, or release gates delegated to later children.
 
 The parent dependency graph is:
 
@@ -54,10 +54,10 @@ The installed `dodi-dev/` directory is not currently self-sufficient:
 ## Goals
 
 1. Package every operative runtime rule consumed by installed skills inside `dodi-dev/`.
-2. Make script-root derivation deterministic, provenance-checked, runtime-neutral, and independent of the target repository cwd.
+2. Make script-root derivation and transport deterministic, provenance-checked, runtime-neutral, shell-safe for every legal printable absolute path, and independent of the target repository cwd.
 3. Define one versioned static runtime-profile contract and one generation-bound health-projection contract.
 4. Define the Linear runtime register only as an authority/cursor/hash-chain interface for C4.
-5. Define a runtime-neutral worker-adapter API and append-only manifest record grammar for C2/C3/C4.
+5. Define a runtime-neutral worker-adapter API and append-only manifest record grammar for C2/C3/C4, including the exact serialized `mutable|read-only` scope vocabulary and its baseline semantics.
 6. Preserve current Claude Code behavior and current v0.16 workflow semantics.
 7. Add focused deterministic validation for canon packaging, root bootstrap, schemas, reference boundaries, and contract fixtures.
 
@@ -115,26 +115,28 @@ The operative-reference sweep includes `execution-model.md`, both lane playbooks
 
 ### 2. Bootstrap and verify one concrete plugin root
 
-Every entry-point skill that can call a plugin script resolves `<plugin-root>` once before its first script invocation. The algorithm is exact:
+Every entry-point skill that can call a plugin script resolves one verified `plugin_root` value before its first script invocation. The algorithm is exact:
 
-1. Require the harness-provided absolute locator of the invoked `SKILL.md`.
-2. If `${CLAUDE_PLUGIN_ROOT}` is present, treat its expanded value as the candidate. An invalid present value is a blocker; do not silently fall back to another root.
+1. Require the harness-provided absolute locator of the invoked `SKILL.md` as a safely transported data value.
+2. If `${CLAUDE_PLUGIN_ROOT}` is present, treat its expanded value as the candidate data value. An invalid present value is a blocker; do not silently fall back to another root.
 3. Otherwise require the locator shape `<candidate>/skills/<skill-name>/SKILL.md` and strip that suffix. Do not search cwd, parents, `$PATH`, home directories, marketplace caches, or multiple candidates.
 4. Canonicalize the candidate and locator to physical absolute paths.
-5. Invoke the candidate's verifier as a concrete path:
+5. Invoke the candidate's verifier with the candidate and locator held in shell variables or equivalent argv values, each expanded only as a quoted single argv word:
 
    ```bash
-   "/absolute/candidate/dodi-dev/scripts/runtime-preflight.sh" bootstrap \
-     "/absolute/candidate/dodi-dev" \
-     --skill-locator "/absolute/candidate/dodi-dev/skills/<skill>/SKILL.md"
+   "$candidate_root/scripts/runtime-preflight.sh" bootstrap \
+     "$candidate_root" \
+     --skill-locator "$skill_locator"
    ```
 
 6. Accept only a successful report proving the locator is inside that root, both plugin envelopes identify `dodi-dev` at the same version, `skills/` and `scripts/` exist, and the invoked skill exists beneath `skills/`.
-7. Record the report's canonical `plugin_root` as `<plugin-root>` for the invocation. Every later ordinary call substitutes that literal absolute path, for example `"<plugin-root>/scripts/claim.sh"`; no unresolved environment expression reaches an ordinary shell call.
+7. Parse the report as JSON and assign its canonical `plugin_root` string to a shell variable or equivalent argv value without source generation, `eval`, or reparsing. Every later ordinary call invokes one quoted argv word, for example `"$plugin_root/scripts/claim.sh"`; a textual `<plugin-root>` token is never replaced with raw path bytes in shell source.
+
+Candidate, locator, and root strings are data, never source. Raw path bytes must not be inserted into a command string, passed through `eval` or an equivalent source parser, re-lexed through `sh -c`, or interpolated as raw text into `$()` or backtick command-substitution source. The bootstrap invocation follows the same rule as every post-bootstrap call: the executable path and each path argument arrive through safely transported variables or argv values and expand as one quoted word. Legal printable path metacharacters, including spaces, `$`, literal `$()`, backticks, single and double quotes, and backslashes, remain inert path data and cannot execute. Control characters, relative paths, containment failures, and provenance failures remain rejected.
 
 The script validates; it does not discover. This avoids the bootstrap cycle in which a helper would need the plugin root in order to find itself.
 
-Root readiness is not workflow readiness on Codex. C1's bootstrap verifier may run without a profile because setup needs it to locate the installed plugin, but every Codex adapted mechanic beyond bootstrap still fails closed after root verification with `SETUP_REQUIRED` or `UNSUPPORTED_RUNTIME` until C4 ships `runtime-preflight.sh verify-profile` and writes a valid profile/health/register binding. In C1, the concrete `<plugin-root>` substitution therefore preserves Claude behavior and creates the future Codex call shape; it must not let Codex invoke mutating ticket, GitHub, scheduler, Linear, worker, or claim scripts from a merely `ROOT_READY` report.
+Root readiness is not workflow readiness on Codex. C1's bootstrap verifier may run without a profile because setup needs it to locate the installed plugin, but every Codex adapted mechanic beyond bootstrap still fails closed after root verification with `SETUP_REQUIRED` or `UNSUPPORTED_RUNTIME` until C4 ships `runtime-preflight.sh verify-profile` and writes a valid profile/health/register binding. In C1, argv-safe transport of the verified `plugin_root` preserves Claude behavior and creates the future Codex call shape; it must not let Codex invoke mutating ticket, GitHub, scheduler, Linear, worker, or claim scripts from a merely `ROOT_READY` report.
 
 #### `runtime-preflight.sh bootstrap` contract
 
@@ -152,6 +154,8 @@ Bootstrap mode is read-only and profile-independent. It accepts no ticket, repos
   "profile_path": "/resolved/non-secret/path/runtime-profile.json"
 }
 ```
+
+`plugin_root` and `skill_locator` are ordinary JSON strings containing canonical path data. They are not shell-escaped fragments, command templates, or permission to evaluate their bytes as source; consumers must parse the JSON structure and preserve each value as one argv word.
 
 Exit classes are stable:
 
@@ -211,7 +215,7 @@ Unknown top-level fields are rejected for schema v1 so misspellings cannot becom
 The schema defines shape only. Cross-field validity is part of the contract:
 
 - `generated_by.plugin_version == plugin.version ==` installed metadata version;
-- `plugin.root` equals the current verified `<plugin-root>`;
+- `plugin.root` equals the current verified `plugin_root` value;
 - all four semantic model tiers are populated before a Codex tiered dispatch;
 - `auth.linear_source` is a source reference such as `env:LINEAR_API_KEY`, never a key;
 - every enabled repository has one actual base branch and complete protection/task evidence;
@@ -342,12 +346,21 @@ It is append-only. Every v1 line has a common envelope, with `worker_id` absent 
 
 Common required fields for every v1 record are `schema_version`, `runtime`, `session_id`, `context_id`, `dispatch_nonce`, `state`, `ts`, and `data`. `worker_id` is required only for states at or after `dispatched`; it is forbidden on `dispatch-intent` unless the runtime can prove a preallocated id before spawn. Records before id binding key on `(runtime, session_id, dispatch_nonce)`. Records after id binding also carry `worker_id` and key on `(runtime, worker_id)` for wake, close, and reap operations.
 
+#### Dispatch scope and baseline vocabulary
+
+The serialized `data.write_scope` vocabulary is exactly:
+
+- `mutable`: the worker may own mutable work in the declared worktree. Before spawn, the worktree must be clean at the recorded `baseline_head`, and `baseline_status_sha256` must be the SHA-256 of the exact bytes returned by `git status --porcelain=v1 -z --untracked-files=all` for that clean baseline. Both fields are required; the baseline establishes mutable ownership and later comparison evidence.
+- `read-only`: the worker declares no mutable ownership. `read_only_baseline: true` is required. `baseline_head` and `baseline_status_sha256` may be included when available as diagnostic observations, independently or together; when the status hash is present, it hashes the exact bytes from the same porcelain command and those bytes may describe a dirty worktree. The diagnostic fields do not assert a clean worktree, establish mutable ownership, or strengthen the read-only declaration.
+
+No other serialized scope token is valid. C2-C5 consumers must preserve these values and meanings rather than translate them into a child-local vocabulary. A read-only consumer that observes mutation routes that evidence through the lifecycle safety contract; it does not retroactively reinterpret the intent as mutable.
+
 Before a spawn attempt, the top-level dispatcher flushes a `dispatch-intent` record containing:
 
-- unique nonce, runtime, owning session/context, absolute worktree, purpose, and declared write scope;
+- unique nonce, runtime, owning session/context, absolute worktree, purpose, and exact `write_scope` value;
 - semantic tier plus requested model/reasoning supplied by the selected tier adapter (C2 for Codex, the existing alias mapping for Claude);
 - profile `setup_run_id` and profile hash for an adapted Codex dispatch;
-- clean baseline HEAD and porcelain/status hash for mutable work, or an explicit read-only baseline;
+- the scope-specific baseline fields defined above;
 - prompt/input digest sufficient to identify the intended work without storing secrets.
 
 State-specific records use the same envelope:
@@ -401,8 +414,8 @@ The Claude adapter continues to use native completion plus `await-worker.sh` and
 
 | Dependent | C1-owned inputs it must consume | It must not redefine |
 | --- | --- | --- |
-| C2 - tier map + hook enforcement | semantic tier names, profile `models`, intent requested fields, terminal effective-attestation fields, runtime-policy Fable table | profile paths, manifest states, tier names, generation binding |
-| C3 - Codex worker lifecycle | adapter operations, intent baseline, manifest envelope/states, result-artifact ordering, legacy-Claude classification fixtures | nonce identity, terminal vocabulary, uncertainty semantics, profile-generation fields |
+| C2 - tier map + hook enforcement | semantic tier names, profile `models`, intent requested fields including exact `write_scope`, terminal effective-attestation fields, runtime-policy Fable table | profile paths, scope vocabulary/baseline meaning, manifest states, tier names, generation binding |
+| C3 - Codex worker lifecycle | adapter operations, exact `mutable|read-only` vocabulary and baseline semantics, manifest envelope/states, result-artifact ordering, legacy-Claude classification fixtures | scope translation, nonce identity, terminal vocabulary, uncertainty semantics, profile-generation fields |
 | C4 - setup/auth/scheduling/escalation | profile/health schemas and paths, stable lock path, register schema/hash chain, adapter quiescence query, bootstrap report | alternate profile search, mutable global degraded flag, second register authority, secret persistence |
 | C5 - validation/release | C1 validators/fixtures and all installed contract paths | a second compatibility schema or release-only policy copy |
 
@@ -437,7 +450,7 @@ Contract fixtures may live under `dodi-dev/scripts/tests/fixtures/runtime-contra
 | `AGENTS.md` | retain maintainer rules, replace duplicated operative canon with installed-canon pointer, keep validation commands |
 | `dodi-dev/skills/epic-orchestrator/execution-model.md` | remove universal Claude transcript assumptions; reference policy and adapter contract |
 | both lane playbooks + `state-transitions.md` | replace operative `AGENTS.md` references with shipped-canon links |
-| the seven script-calling `SKILL.md` files listed in section 2 | add/reuse bootstrap and replace ambient-variable calls with concrete `<plugin-root>` calls |
+| the seven script-calling `SKILL.md` files listed in section 2 | add/reuse bootstrap and replace ambient-variable calls with parsed `plugin_root` values expanded as quoted single argv words |
 | `drive-epic/SKILL.md`, `review/SKILL.md`, `submit-epic-pr/SKILL.md` | replace runtime-policy references; preserve behavior |
 | `dodi-dev/scripts/reap-workers.sh` | unchanged unless existing behavior fails the C1 manifest-contract fixtures; no Codex recovery implementation in C1 |
 | `scripts/validate-phase-skills.sh` | require the new installed docs/script/schemas; keep script syntax/executable checks |
@@ -458,7 +471,7 @@ Contract fixtures may live under `dodi-dev/scripts/tests/fixtures/runtime-contra
 2. Add `runtime-policy.md` and adapter contract documents from the approved parent design.
 3. Refactor `execution-model.md` and operative skill references to consume the shipped canon.
 4. Implement and test `runtime-preflight.sh bootstrap` from unrelated cwd and copied/installed-root fixtures.
-5. Replace ordinary skill script commands with concrete `<plugin-root>` placeholders governed by the bootstrap.
+5. Replace ordinary skill script commands with bootstrap-parsed `plugin_root` values invoked only through quoted single-word argv transport; never replace a shell-source placeholder with raw path bytes.
 6. Add deterministic reference/schema/bootstrap validation.
 7. Run the complete existing validation suite and leave the `0.17.0` metadata bump to C5's release sweep unless a parent amendment moves it earlier.
 
@@ -469,18 +482,20 @@ No step may make a real Linear, GitHub, scheduler, Slack, or operator-profile mu
 1. Every operative policy dependency consumed by an installed skill resolves inside `dodi-dev/`; repository-root `AGENTS.md` is not required at runtime.
 2. `runtime-policy.md` contains the complete approved tier/Fable/dispatch/deterministic/decision-register/lights-out/scheduled/context canon without a competing operative copy in `AGENTS.md`.
 3. Target-repository `CLAUDE.md / AGENTS.md` convention references remain intact and are distinguishable from forbidden dodi runtime-policy references.
-4. From an unrelated cwd, a valid Claude candidate root and a valid Codex-style absolute skill locator both produce the same canonical `<plugin-root>` and verified plugin/skill identity.
-5. Present-but-invalid `${CLAUDE_PLUGIN_ROOT}`, relative locators, locator/root mismatch, path traversal, missing scripts/metadata, plugin-id mismatch, and metadata-version mismatch fail closed.
-6. Every ordinary script call in released skills uses the invocation's concrete `<plugin-root>`; `${CLAUDE_PLUGIN_ROOT}` appears only in hook metadata and bootstrap explanation/tests.
-7. Bootstrap mode succeeds without profile/auth/repository context, is read-only, emits parseable redacted JSON, and never searches for alternate roots.
-8. Profile, health, register-record, and manifest-record schemas parse; valid fixtures pass and fixtures with missing required fields, unknown versions/states, malformed hashes, or forbidden secret fields fail.
-9. A Codex invocation that reaches `ROOT_READY` still cannot run non-bootstrap deterministic scripts or adapted mechanics without C4's valid profile verification; C1 returns `SETUP_REQUIRED` or `UNSUPPORTED_RUNTIME` rather than mutating state.
-10. The health contract unambiguously verifies setup generation, exact profile bytes, profile/runtime/register identity, projection hash, and register cursor direction, with health and lock paths derived uniquely from the canonical selected profile path.
-11. The manifest contract requires durable pre-spawn intent, baseline, explicit tier request, generation binding, terminal artifact ordering, attestation before consumption, and close/reap proof before successor writes; `dispatch-intent` is representable before `worker_id` exists.
-12. Legacy unversioned v0.16 and v1 Claude manifest fixtures remain classifiable; v1 Codex fixtures fail with an explicit unsupported-runtime blocker until C3 lands, and no shared contract requires `output_file` for Codex.
-13. C1 documentation never claims Codex tier resolution, native worker lifecycle, setup, scheduling, escalation, or release validation is implemented; those dependent capabilities remain explicitly blocked.
-14. Existing Claude validators and focused worker-script tests remain green; C1 introduces no v0.16 workflow-state transition or PM behavior change.
-15. Version-bearing metadata is not bumped by C1 unless DOD-810 records an amendment; C5 owns the `0.17.0` release bump and verifies both marketplaces still resolve the same `./dodi-dev` directory with no second skill tree or symlink.
+4. From an unrelated cwd, a valid Claude candidate root and a valid Codex-style absolute skill locator both produce the same canonical JSON `plugin_root` value and verified plugin/skill identity.
+5. Present-but-invalid `${CLAUDE_PLUGIN_ROOT}`, relative or control-containing candidates/locators, locator/root mismatch, path traversal, missing scripts/metadata, plugin-id mismatch, and metadata-version mismatch fail closed.
+6. The bootstrap executable, candidate, locator, returned `plugin_root`, and every ordinary script path are transported as data and invoked through quoted single-word argv values. No raw path bytes enter shell source, `eval`, `sh -c`, or command-substitution source; `${CLAUDE_PLUGIN_ROOT}` appears only in hook metadata and bootstrap explanation/tests.
+7. An end-to-end bootstrap-to-script fixture uses a legal absolute plugin root with a path component containing spaces, literal `$`, literal `$()`, backticks, single and double quotes, and backslashes. It proves bootstrap resolves that exact root, the intended script receives the original path/arguments and runs successfully, and shell-active literals create no sentinel side effect.
+8. Bootstrap mode succeeds without profile/auth/repository context, is read-only, emits parseable redacted JSON, and never searches for alternate roots.
+9. Profile, health, register-record, and manifest-record schemas parse; valid fixtures pass and fixtures with missing required fields, unknown versions/states, malformed hashes, or forbidden secret fields fail.
+10. A Codex invocation that reaches `ROOT_READY` still cannot run non-bootstrap deterministic scripts or adapted mechanics without C4's valid profile verification; C1 returns `SETUP_REQUIRED` or `UNSUPPORTED_RUNTIME` rather than mutating state.
+11. The health contract unambiguously verifies setup generation, exact profile bytes, profile/runtime/register identity, projection hash, and register cursor direction, with health and lock paths derived uniquely from the canonical selected profile path.
+12. The manifest schema accepts exactly `write_scope: mutable|read-only`. Mutable intent requires a clean worktree at `baseline_head` plus the SHA-256 of exact porcelain/status bytes; read-only intent requires `read_only_baseline: true`, may include diagnostic HEAD/status fields when available, and never treats those diagnostics as cleanliness or mutable-ownership proof.
+13. The manifest contract requires durable pre-spawn intent, baseline, explicit tier request, generation binding, terminal artifact ordering, attestation before consumption, and close/reap proof before successor writes; `dispatch-intent` is representable before `worker_id` exists.
+14. Legacy unversioned v0.16 and v1 Claude manifest fixtures remain classifiable; v1 Codex fixtures fail with an explicit unsupported-runtime blocker until C3 lands, and no shared contract requires `output_file` for Codex.
+15. C1 documentation never claims Codex tier resolution, native worker lifecycle, setup, scheduling, escalation, or release validation is implemented; those dependent capabilities remain explicitly blocked.
+16. Existing Claude validators and focused worker-script tests remain green; C1 introduces no v0.16 workflow-state transition or PM behavior change.
+17. Version-bearing metadata is not bumped by C1 unless DOD-810 records an amendment; C5 owns the `0.17.0` release bump and verifies both marketplaces still resolve the same `./dodi-dev` directory with no second skill tree or symlink.
 
 ## Validation Commands
 
@@ -512,9 +527,9 @@ The C5 isolated-install smoke and live Codex gate are not C1 validation commands
 
 ## Migration, Compatibility, and Rollback
 
-- **Claude Code:** behavior remains current. Its adapter uses `${CLAUDE_PLUGIN_ROOT}` only to propose a candidate, then ordinary calls use the verified concrete root. Current transcript await/reap behavior remains in place.
+- **Claude Code:** behavior remains current. Its adapter uses `${CLAUDE_PLUGIN_ROOT}` only to propose a candidate data value, then ordinary calls use the parsed verified root through quoted argv transport. Current transcript await/reap behavior remains in place.
 - **Codex after C1 only:** installed policy and root bootstrap are available, but every non-bootstrap deterministic script, tiered dispatch, or worker lifecycle path returns a concrete unsupported/setup blocker until C4 profile verification and the relevant C2/C3 adapters exist. Lights-out remains disabled.
-- **Existing manifests:** unversioned v0.16 records remain defined as legacy Claude records. New Claude writers may use v1 once implemented, and C1 fixtures pin both Claude shapes. C3 owns Codex reaping and must not rewrite old JSONL history.
+- **Existing manifests:** unversioned v0.16 records remain defined as legacy Claude records. New v1 records accept only `write_scope: mutable|read-only`; development-only records using another scope token are not valid v1 contract evidence. New Claude writers may use v1 once implemented, and C1 fixtures pin both Claude shapes. C3 owns Codex reaping and must not rewrite old JSONL history.
 - **Existing local state:** C1 creates no operator profile or health file and no Linear register, so there is no local-state migration yet.
 - **Rollback:** restoring the pre-C1 plugin restores repository-root policy dependence and ambient-root calls. Because C1 has no PM or operator-state mutation, rollback is code-only. Any v1 manifest created during development remains append-only evidence and must not be deleted blindly.
 
@@ -523,7 +538,8 @@ The C5 isolated-install smoke and live Codex gate are not C1 validation commands
 | Risk | Mitigation |
 | --- | --- |
 | Shipped canon and `AGENTS.md` drift | move operative text, retain one pointer, and fail validation on operative repo-root references |
-| Root verification itself depends on knowing the root | derive one candidate from the invoked skill locator, call the verifier by that concrete candidate path, and never search |
+| Root verification itself depends on knowing the root | derive one candidate from the invoked skill locator, carry it as a safely transported value, invoke the verifier through quoted argv, and never search |
+| A legal path becomes executable shell source | parse JSON structurally, retain root/locator bytes as data, forbid source substitution/eval/reparse, and prove a shell-active literal path end to end with no side effect |
 | A stale Claude variable masks the installed skill root | present-but-invalid variable fails instead of falling back |
 | C1 schemas overfit later implementations | version every contract, namespace runtime data, keep adapter operations semantic, and require explicit amendment for shape changes |
 | Health projection hash is circular | hash only the canonical `projection` object; bind the exact profile separately |
@@ -534,4 +550,4 @@ The C5 isolated-install smoke and live Codex gate are not C1 validation commands
 
 ## Blocking Questions
 
-None. The parent design and DOD-811 intent are sufficient to draft and plan this child. Any requested change to the approved profile fields, register authority, model-tier semantics, Codex takeover safety, or child ownership boundaries requires a DOD-810 decision-register amendment rather than an implementation-time choice.
+None. The signed parent and DOD-813 contracts resolve the scope vocabulary, baseline meaning, and root-transport requirements without a delegated assumption. Any requested change to the approved profile fields, register authority, model-tier semantics, Codex takeover safety, or child ownership boundaries requires a DOD-810 decision-register amendment rather than an implementation-time choice.
