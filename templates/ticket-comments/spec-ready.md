@@ -11,6 +11,7 @@ Ticket: `<ticket-id>`
 - Reviewer type: `<product|ux|architect|security|implementation>`
 - Final review status: `clean`
 - Review artifact or comment: `<path-or-url>`
+- Gate ledger: `gate-ledger: spec-review rounds=<n> findings=<b/a[,b/a...]> outcome=clean final=<tier>`
 
 ## Human Signoff
 

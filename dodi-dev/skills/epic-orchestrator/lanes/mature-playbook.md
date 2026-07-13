@@ -51,6 +51,7 @@ The `model: fable` frontmatter pin on the manual wrapper covers its main loop on
 ## Evidence
 
 - Record spec artifact, plan artifact, reviewer type, review status, assumptions, dependency state, and labels applied or withheld.
+- Post each review gate's close-out `gate-ledger` line in the gate-transition comment it rides — spec-review in the → `needs-plan` comment, plan-review in the → `ready-to-implement` comment (grammar and rationale: `review` § Gate Ledger).
 - Record the delivery-tier classification (standard | capable) with the reviewer's one-line reason; on `capable`, record the `needs-capable-delivery` label application.
 - Record which signoff path applied: Gate 1 delegation (link the epic delegation comment), per-child signoff, or human answers to drafter questions.
 - Record why any ticket remains in maturity work.

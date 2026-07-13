@@ -55,7 +55,7 @@ The pre-PR gate already ran the full checklist; the child-PR gate re-reviews the
 - **Focused re-review** is required when production code changes during verification: a fresh reviewer at Capable tier (`model: opus` on Claude Code) reads the fix delta plus its blast surface (callers/consumers), full checklist (review-prompt.md) scoped to that delta, before the reset seam — a scoped instance of the review fix loop (findings → fix worker → fresh focused round) under the pre-PR loop's cap.
 - Child-PR rounds are delta-aimed — exactly what is new or changed since the pre-PR gate — and read the whole PR diff. Aim guides attention, not admissibility: any defect seen anywhere in the diff is a legal finding; the rounds simply do not re-execute the generic checklist the pre-PR gate owns.
 - Child-PR context: if the epic branch moved, update the child branch from the epic branch and rerun relevant checks; stop on an unresolved merge conflict requiring judgment.
-- Record reviewer status, findings, fixes, reviewed diff range, commands and exit codes, and the final clean-round evidence.
+- Record reviewer status, findings, fixes, reviewed diff range, commands and exit codes, the final clean-round evidence, and the gate's close-out `gate-ledger` line (§ Gate Ledger).
 
 ## Catch Attribution
 
@@ -65,6 +65,23 @@ Every posted review-evidence finding — lane checkpoint evidence, review commen
 - **Tier-degraded suffix (fable substitution):** a fable-seated round run at a substituted tier under a `deferred`/`soft` fable-policy (AGENTS.md § Fable Availability Policy) appends ` tier-degraded(fable→<tier>,<policy>)` to its finding tags — e.g. `caught-by: pre-pr/2/opus tier-degraded(fable→opus,deferred)`. The dispatcher appends it exactly where it appends `<round>/<tier>`; append-only, next-boundary rule unchanged. The substitution is recorded and the obligation (deferred) queued — a gate is never clean by silence.
 - **Tagging surfaces (append-only — never edit a posted checkpoint):** tags land in the next boundary's evidence — a verify-stage failure tags in the `ready-for-child-pr` checkpoint evidence; a child-PR-stage local-CI failure (when the conditional dispatches it) tags in the lane's `ready-to-merge-child` exit report.
 - No new artifact, no script: the tag is grep-aggregatable from PM comments.
+
+## Gate Ledger
+
+Catch attribution records findings; it is blind to clean rounds, so rounds-to-clean cannot be reconstructed from tags alone. The gate ledger closes that gap: when a looped review gate closes — clean or cap-exhaustion escalation — the dispatcher posts one machine-parseable line in that gate's existing close-out surface:
+
+`gate-ledger: <gate> rounds=<n> findings=<b/a[,b/a...]> outcome=<clean|escalated> final=<tier>[ tier-degraded(fable→<tier>,<policy>)]`
+
+Example: `gate-ledger: spec-review rounds=3 findings=4/2,1/1,0/1 outcome=clean final=fable`
+
+- **Covered gates:** the looped in-lane gates — `spec-review`, `plan-review`, `pre-pr`, `child-pr`, and `focused-re-review` when it runs. Single-shot gates (verify, local-ci, coherence) need no ledger — a one-round gate's catch tags already carry its whole signal. The epic-level loops (epic-integration) are a deliberate exclusion for now: the lane gates are where loop-depth tuning has an open question.
+- **`findings=`** — one `b/a` pair per round in dispatch order: `b` counts blocking findings (the reviewer's **Issues**, all severities — any Issue blocks gate-clean; severity stays visible in the tagged findings, not the ledger), `a` counts advisory ones (**Recommendations**). Only the spec- and plan-reviewer prompts carry an advisory section, so the code gates read `a=0` by construction — advisory-churn tuning is an artifact-gate signal. When `outcome=clean`, the last pair is the clean closing round (`0/a`).
+- **`final=<tier>`** — the tier alias of the round that closed the gate; a fable-seat substitution appends the same `tier-degraded(fable→<tier>,<policy>)` marker as catch attribution, same semantics, same append point.
+- **Posting surfaces (same next-boundary, append-only rule as catch tags):** `spec-review` → the `needs-plan` gate-transition comment (with `spec-ready`); `plan-review` → the `ready-to-implement` gate-transition comment; `pre-pr` → the `testing` checkpoint evidence; `focused-re-review` → the `ready-for-child-pr` checkpoint evidence; `child-pr` → the lane's `ready-to-merge-child` exit report. On `outcome=escalated` the gate never reaches its clean-close surface — the line rides the escalation (or demotion) comment instead; the companion `rework-origin:` line is what distinguishes a demotion close from cap exhaustion. A deliberate mid-loop context exit (`RESUMABLE`, refresh-park) records the running round tally in the continuation brief so the successor resumes the count rather than restarting it. Interactive contexts carry the equivalent line in their close-out report, or none — matching the catch-attribution rule.
+- **Reviewer prompts stay pure:** the dispatcher counts from the reviewer's returned Issues/Recommendations sections and posts the line — no prompt change, no new artifact, no script. `grep -h "gate-ledger:"` over PM comments is the aggregation; per-phase wall-clock needs no field because the bounding state transitions are PM-timestamped.
+- **Rework companion line:** every demotion comment additionally carries `rework-origin: <spec|plan> caught-at=<gate>/<round>/<tier>` (state-transitions.md § Demotion Rules) — origin `spec` when the spec itself is invalidated, `plan` when `spec-ready` is kept and only the plan must be revised: the same split the demotion's label decision already makes. This is the downstream-rework-traced-to-upstream-gap signal.
+
+The ledger exists to make loop depth empirically tunable rather than argued: rounds-to-clean distribution per gate, whether late rounds still surface blocking findings (if `b` hits zero by round 2 across the sample, the cap is fat; if the fable final still catches blockers, it is earning its seat), advisory churn, and how much delivery-lane rework traces to spec/plan gaps.
 
 ## Don't Skip This
 

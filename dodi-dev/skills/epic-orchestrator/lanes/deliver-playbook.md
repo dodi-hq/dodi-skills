@@ -30,7 +30,7 @@ fable-policy values are the per-gate policy the executing session looks up (per 
 6. **Verify→PR seam** (a context reset for a standalone lane; a durable-brief anchor for the resident driver walking inline) — see § Context hygiene.
 7. `submit-ticket-pr` (Open only) — push the child branch, open the PR against the epic branch, write the PR body.
 8. `review` (child-PR context) — the delta-scoped integration pair (one `opus` integration round + a `fable` integration final per `review/child-pr-integration-prompt.md`) ∥ conditional local CI (dispatched in parallel unless the skip predicate holds — per `review`, child-PR context).
-9. Report `ready-to-merge-child` with the evidence trail. Do not merge.
+9. Report `ready-to-merge-child` with the evidence trail, including the child-PR gate's close-out `gate-ledger` line (`review` § Gate Ledger). Do not merge.
 
 ## Checkpoints
 
