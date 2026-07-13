@@ -14,6 +14,12 @@ Ticket: `<ticket-id>`
 
 - `<review finding, test failure, worker report, or command output>`
 
+## Rework Origin
+
+`rework-origin: <spec|plan> caught-at=<gate>/<round>/<tier>`
+
+`gate-ledger: <gate> rounds=<n> findings=<b/a[,b/a...]> outcome=escalated final=<tier>` `<only when the demotion closes a looped review gate>`
+
 ## Why Automation Cannot Continue
 
 `<reason>`

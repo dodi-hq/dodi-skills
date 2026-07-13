@@ -28,9 +28,9 @@ The deliver lane posts these as **Lane Checkpoint** comments (pinned `# Lane Che
 | --- | --- | --- |
 | implementing | child branch/worktree created, workers dispatched | branch, worktree, plan link |
 | implementation-reviewing | implementation commits complete | commit ids, worker evidence |
-| testing | pre-PR review clean (incl. fable final round) | review evidence, reviewed diff range |
+| testing | pre-PR review clean (incl. fable final round) | review evidence, reviewed diff range, pre-PR `gate-ledger` line (`review` § Gate Ledger) |
 | verifying | Testing Contract tests exist | test files, harness evidence |
-| ready-for-child-pr | verification green (Contract groups + local-CI runner scope; focused re-review clean if fixes occurred) — reset seam for a standalone/manual lane, a durable-brief anchor for the resident driver walking inline (per `deliver-playbook.md` § Context hygiene / `AGENTS.md` § Context Hygiene) | verification evidence, including each runner digest's recorded head SHA with the local-CI runner's named explicitly; continuation brief |
+| ready-for-child-pr | verification green (Contract groups + local-CI runner scope; focused re-review clean if fixes occurred) — reset seam for a standalone/manual lane, a durable-brief anchor for the resident driver walking inline (per `deliver-playbook.md` § Context hygiene / `AGENTS.md` § Context Hygiene) | verification evidence, including each runner digest's recorded head SHA with the local-CI runner's named explicitly; focused-re-review `gate-ledger` line when that loop ran; continuation brief |
 | child-pr-reviewing | child PR open against epic branch | PR link, PR body |
 | (exit) ready-to-merge-child | child-PR review clean + local CI clean *or* verify-stage local-CI digest under the conditional-CI predicate (per `submit-ticket-pr` § Merge) | reviewer status, CI digests |
 
@@ -89,5 +89,6 @@ When a ticket must return to an earlier lane:
 - Demote from any state between `ready-to-implement` and `ready-to-merge-child` (including any lane checkpoint) to the spec lane when a product, architecture, scope, or spec/plan mismatch is discovered.
 - Remove or withhold `ready-to-implement`. Keep `spec-ready` only if the spec itself remains valid and the issue is limited to the plan.
 - Add a ticket comment with: current state, demotion target, triggering evidence, why automation cannot continue safely, the concrete question or decision needed from the human, and the artifacts that must be revised.
+- The demotion comment carries a machine-parseable `rework-origin: <spec|plan> caught-at=<gate>/<round>/<tier>` line (grammar: `review` § Gate Ledger) — origin `spec` when the spec itself is invalidated, `plan` when `spec-ready` is kept and only the plan needs revision. This traces delivery-lane rework back to the upstream artifact gate that should have prevented it.
 - Preserve existing artifact links for audit history; supersede them with new links after revision rather than deleting old references.
 - Close or mark stale an open child PR only when continuing it would be misleading; otherwise leave it open with a blocking comment.
