@@ -19,10 +19,11 @@ Two separately invoked halves. **Open** runs inside a `deliver-ticket` lane afte
 ## Open (lane-invoked)
 
 1. Verify the child branch is not main/master and targets the epic branch.
-2. Push the child branch.
-3. Open a PR from child branch to epic branch.
-4. Write a PR body with spec, plan, test evidence, verification evidence (incl. repo-local + broader checks), and ticket link. Reference the ticket with the **non-closing** form `Part of <ticket-id>` — never `Closes`/`Fixes` on a child PR: children reach their terminal state when the epic merges to main/master, not when the child merges to the epic branch.
-5. Return to the lane — the lane runs `review` (child-PR context) next. Do not merge from this half.
+2. **Docs-sync.** Dispatch the docs-sync worker (see `docs-sync-prompt.md`, child mode) at Frontier tier — policy **soft** per AGENTS.md § Fable Availability Policy (`opus` substitutes attributed, no make-up; the epic docs-sync sweep in `submit-epic-pr` is the backstop). Scope: the child diff vs the epic branch. If the worker edited module docs, commit them on the child branch (`docs-sync: <summary>`) — the doc edits ride the pushed diff so the child-PR review gate reviews them. Carry the worker's `docs-sync:` evidence line forward; "no update" is a recorded decision with its reason, never a silent skip.
+3. Push the child branch.
+4. Open a PR from child branch to epic branch.
+5. Write a PR body with spec, plan, test evidence, verification evidence (incl. repo-local + broader checks), the `docs-sync:` line, and ticket link. Reference the ticket with the **non-closing** form `Part of <ticket-id>` — never `Closes`/`Fixes` on a child PR: children reach their terminal state when the epic merges to main/master, not when the child merges to the epic branch.
+6. Return to the lane — the lane runs `review` (child-PR context) next. Do not merge from this half.
 
 ```bash
 git push -u origin <child-branch>
@@ -52,6 +53,7 @@ merge_sha="$("${CLAUDE_PLUGIN_ROOT}/scripts/verify-merge.sh" <child-pr-number> <
 Expected evidence:
 
 - push output or remote branch URL
+- the `docs-sync:` evidence line (updated paths, or an attributed no-op with its reason)
 - PR URL
 - clean child-PR review evidence (`review`, child-PR context)
 - local CI-equivalent command evidence — a child-PR-stage local CI digest, or the **checkpoint-recorded** verify-stage local-CI digest when the conditional-CI predicate held (`review`, child-PR context; the durable record, not session memory)
