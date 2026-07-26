@@ -6,7 +6,7 @@ The executing session (the resident driver walking this lane inline, or a manual
 
 ## Phase sequence
 
-Each phase is the named phase skill's process, executed inside this lane with the same worker-dispatch discipline. Implementers pin `sonnet` per task (the default in `implement/implementer-prompt.md`, with per-task adjustments per `implement/SKILL.md`); **on a ticket carrying `needs-capable-delivery`, every implementer and fix worker pins `opus` instead, no per-task demotion.** Fresh-context reviewers: pre-PR uses `opus` rounds with a `fable` final; child-PR uses one `opus` integration round plus a `fable` integration final. Test runners pin `haiku`.
+Each phase is the named phase skill's process, executed inside this lane with the same worker-dispatch discipline. Implementers pin `sonnet` per task (the default in `implement/implementer-prompt.md`, with per-task adjustments per `implement/SKILL.md`); **on a ticket carrying `needs-capable-delivery`, every implementer and fix worker pins `opus` instead, no per-task demotion.** Fresh-context reviewers: pre-PR uses `opus` rounds with a `fable` final; child-PR uses one `opus` integration round plus a `fable` integration final. Test runners pin `haiku`. The docs-sync worker pins `fable` (soft policy — its edits commit on the child branch before the push, so the child-PR gate reviews them).
 
 | Phase (skill) | Worker prompt(s) | Tier pin + fable-policy | Checkpoint posted | Exit / demotion edge |
 | --- | --- | --- | --- | --- |
@@ -15,7 +15,7 @@ Each phase is the named phase skill's process, executed inside this lane with th
 | `review` (pre-PR) | `review/review-prompt.md` | Capable (`opus`) rounds + Frontier (`fable`) final; **final round deferred** | `testing` (pre-PR review clean, incl. fable final) | loop capped at 5 rounds + the Frontier final; findings ⇒ another round |
 | `create-tests` | — (Testing Contract) | Standard (`sonnet`) | `verifying` (Testing Contract tests exist) | test/harness work ⇒ back to testing |
 | `verify` | `verify/test-runner-prompt.md`, `submit-ticket-pr/local-ci-runner-prompt.md` | Fast (`haiku`) runners | `ready-for-child-pr` (verification green; **reset seam for a standalone lane, durable-brief anchor for the resident driver**) | a product-code fix here triggers the focused re-review before the seam |
-| `submit-ticket-pr` (Open only) | — | Standard (`sonnet`) | `child-pr-reviewing` (child PR open against epic branch) | — |
+| `submit-ticket-pr` (Open only) | `submit-ticket-pr/docs-sync-prompt.md` | Standard (`sonnet`); docs-sync seat Frontier (`fable`, soft policy) | `child-pr-reviewing` (child PR open against epic branch) | — |
 | `review` (child-PR) | `review/child-pr-integration-prompt.md` | one Capable (`opus`) integration round + Frontier (`fable`) integration final; **final round deferred on standard-tier, hard on `needs-capable-delivery`** | (exit) `ready-to-merge-child` | child-PR review clean + local CI clean ⇒ report; **do not merge** |
 
 fable-policy values are the per-gate policy the executing session looks up (per § 2 of `execution-model.md`) immediately before writing each dispatch's tier pin; the AGENTS.md gate-policy table is authoritative.
@@ -28,7 +28,7 @@ fable-policy values are the per-gate policy the executing session looks up (per 
 4. `create-tests` — satisfy the Testing Contract.
 5. `verify` — one test-runner worker per group plus the local-CI runner dispatch (repo-local gates + broader checks, discovery mandate intact); claim results only from digests; every runner digest records the head SHA it ran against; a product-code fix here triggers the focused re-review (`review` § Epic Lane Rules) before the seam.
 6. **Verify→PR seam** (a context reset for a standalone lane; a durable-brief anchor for the resident driver walking inline) — see § Context hygiene.
-7. `submit-ticket-pr` (Open only) — push the child branch, open the PR against the epic branch, write the PR body.
+7. `submit-ticket-pr` (Open only) — run the docs-sync step (Frontier seat, soft policy), then push the child branch, open the PR against the epic branch, write the PR body (incl. the `docs-sync:` line).
 8. `review` (child-PR context) — the delta-scoped integration pair (one `opus` integration round + a `fable` integration final per `review/child-pr-integration-prompt.md`) ∥ conditional local CI (dispatched in parallel unless the skip predicate holds — per `review`, child-PR context).
 9. Report `ready-to-merge-child` with the evidence trail, including the child-PR gate's close-out `gate-ledger` line (`review` § Gate Ledger). Do not merge.
 

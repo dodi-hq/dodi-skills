@@ -46,6 +46,7 @@ prompt_files=(
   mature-ticket/spec-drafter-prompt.md
   verify/test-runner-prompt.md
   submit-ticket-pr/local-ci-runner-prompt.md
+  submit-ticket-pr/docs-sync-prompt.md
   submit-epic-pr/epic-integration-reviewer-prompt.md
 )
 

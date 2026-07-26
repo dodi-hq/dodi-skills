@@ -13,6 +13,7 @@ Epic: `<epic-id>`
 - `<migration or none>`
 - `<coverage summary>`
 - `<known gap or none>`
+- `docs-sync: <the sweep's evidence line — updated paths, or no update with reason>`
 
 ## What Changed Since Signoff
 

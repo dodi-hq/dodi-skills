@@ -45,9 +45,9 @@ Fable (Frontier) tokens are scarce; every fable-seated gate pre-declares how sca
 
 | Policy | Meaning | Gates |
 |--------|---------|-------|
-| **hard** | park-and-wait; no substitution ever | spec authoring (drafter); the **final** spec-review round; coherence checks; the capable-tier child-PR final round (`needs-capable-delivery` tickets); and the fable make-up round itself (hard by construction — the debt collector cannot be substituted, else deferred collapses to soft) |
+| **hard** | park-and-wait; no substitution ever | spec authoring (drafter); the **final** spec-review round; coherence checks; the capable-tier child-PR final round (`needs-capable-delivery` tickets); the fable make-up round itself (hard by construction — the debt collector cannot be substituted, else deferred collapses to soft); and the epic docs-sync sweep in `submit-epic-pr` (last docs look before Gate 2 — module docs are canon for every future session) |
 | **deferred** | `opus` substitutes now; a fable make-up is queued as a durable obligation, batched at the dedicated make-up round in `submit-epic-pr` | the standard-tier child-PR final round; the pre-PR final round (all tiers — the child-PR gate still guards the merge, hard on capable tier); plan writing; the **final** plan-review round |
-| **soft** | `opus` substitutes; no make-up | the **non-final** spec-review and plan-review rounds; post-clean-pass confirmation sweeps; Gate 1 package drafting (the human reads the package at signoff — the human gate is the catch) |
+| **soft** | `opus` substitutes; no make-up | the **non-final** spec-review and plan-review rounds; post-clean-pass confirmation sweeps; Gate 1 package drafting (the human reads the package at signoff — the human gate is the catch); and the child docs-sync step in `submit-ticket-pr` (the epic docs-sync sweep is the backstop) |
 
 A fable seat without a row is a defect. Focused post-fix re-rounds inherit their gate's policy (the child-PR post-fix re-round is hard on capable-tier, deferred on standard-tier — it establishes gate-clean). The deliberate asymmetry — spec-review final **hard**, plan-review final **deferred** — is because the spec is the canon everything downstream consumes, while plan defects still face the pre-PR/child-PR review chain and the make-up round's consequence surface.
 

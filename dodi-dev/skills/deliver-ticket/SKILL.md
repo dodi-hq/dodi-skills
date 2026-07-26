@@ -14,7 +14,7 @@ The lane's sequence, checkpoints, and context-hygiene seams live in **`epic-orch
 
 | Trigger | Inputs | Outputs | Durable writes | Allowed delegation | Failure states |
 | --- | --- | --- | --- | --- | --- |
-| child has `spec-ready` and `ready-to-implement` | ticket id, clean spec, clean plan (with Testing Contract), register canon summary, epic branch, repo path | `ready-to-merge-child` with full evidence trail, or an exit state | checkpoint comments per state boundary, child PR, notes entries | implementer workers, reviewers, test runners, fix workers | demotion surprise, concrete blocker, resumable context exit |
+| child has `spec-ready` and `ready-to-implement` | ticket id, clean spec, clean plan (with Testing Contract), register canon summary, epic branch, repo path | `ready-to-merge-child` with full evidence trail, or an exit state | checkpoint comments per state boundary, child PR, notes entries | implementer workers, reviewers, test runners, fix workers, docs-sync worker | demotion surprise, concrete blocker, resumable context exit |
 
 ## Claim discipline
 
