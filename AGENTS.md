@@ -13,7 +13,7 @@
 - Skills are harness-neutral: one SKILL.md must read correctly on both Claude Code and Codex.
 - Write harness-specific mechanics (model aliases, Agent tool) as the Claude form plus the tier name, e.g. "Capable tier (`model: opus` on Claude Code)". Codex maps tiers per the table below.
 - If a released skill changes, bump the version in all three metadata files in the same change.
-- Releases are not git-tagged; the version-bump commit is the release record. Always include the bare version string (e.g. `0.16.0`) in the release commit message so releases stay findable with `git log --grep`. Never create release tags.
+- Tag every release as `vX.Y.Z` on its version-bump commit and push the tag; keepur-team projects pin against these tags. Also include the bare version string (e.g. `0.16.0`) in the release commit message so releases stay findable with `git log --grep`.
 - Preserve each skill's frontmatter with `name` and `description`.
 - Keep workflow instructions concrete and command-oriented.
 - Prefer adding supporting prompt files beside the owning skill when the prompt is too long for `SKILL.md`.
