@@ -6,7 +6,7 @@
 set -uo pipefail
 
 input="$(cat)"
-command="$(HOOK_IN="$input" python3 -c 'import json,os; print(json.loads(os.environ["HOOK_IN"]).get("tool_input", {}).get("command", ""))' 2>/dev/null)" || exit 0
+command="$(HOOK_IN="$input" python3 -c 'import json,os; d=json.loads(os.environ["HOOK_IN"]); ti=d.get("tool_input") or d.get("toolInput") or {}; print(ti.get("command",""))' 2>/dev/null)" || exit 0
 
 # Not a PR merge → allow.
 if ! grep -qE 'gh[[:space:]]+pr[[:space:]]+merge' <<<"$command"; then

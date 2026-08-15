@@ -11,7 +11,7 @@ if [[ "${DODI_ALLOW_UNPINNED:-0}" == "1" ]]; then
 fi
 
 input="$(cat)"
-model="$(HOOK_IN="$input" python3 -c 'import json,os; print(json.loads(os.environ["HOOK_IN"]).get("tool_input", {}).get("model", "") or "")' 2>/dev/null)" || exit 0
+model="$(HOOK_IN="$input" python3 -c 'import json,os; d=json.loads(os.environ["HOOK_IN"]); ti=d.get("tool_input") or d.get("toolInput") or {}; print(ti.get("model","") or "")' 2>/dev/null)" || exit 0
 
 if [[ -z "$model" ]]; then
   echo "BLOCKED by dodi-dev dispatch-pin guard: this Agent dispatch has no explicit 'model' parameter. An unpinned dispatch inherits the session model — a defect, not a default. Pin by capability: fable = spec/plan drafting+review and final review rounds; opus = per-round code/PR review + implementers/fix workers on needs-capable-delivery tickets; sonnet = writing code (implementers), tests, research digests, orchestration routing; haiku = git mechanics, test runners, state digests. Add the pin and retry. (Escape hatch for non-dodi work: DODI_ALLOW_UNPINNED=1.)" >&2
