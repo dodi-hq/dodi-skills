@@ -5,6 +5,8 @@ python3 -m json.tool .claude-plugin/marketplace.json >/dev/null
 python3 -m json.tool dodi-dev/.claude-plugin/plugin.json >/dev/null
 python3 -m json.tool .agents/plugins/marketplace.json >/dev/null
 python3 -m json.tool dodi-dev/.codex-plugin/plugin.json >/dev/null
+python3 -m json.tool .grok-plugin/marketplace.json >/dev/null
+python3 -m json.tool dodi-dev/.grok-plugin/plugin.json >/dev/null
 
 python3 - <<'PY'
 import json
@@ -12,15 +14,22 @@ from pathlib import Path
 
 market = json.loads(Path('.claude-plugin/marketplace.json').read_text())
 codex_market = json.loads(Path('.agents/plugins/marketplace.json').read_text())
+grok_market = json.loads(Path('.grok-plugin/marketplace.json').read_text())
 claude = json.loads(Path('dodi-dev/.claude-plugin/plugin.json').read_text())
 codex = json.loads(Path('dodi-dev/.codex-plugin/plugin.json').read_text())
+grok = json.loads(Path('dodi-dev/.grok-plugin/plugin.json').read_text())
 
 market_version = market['plugins'][0]['version']
 assert market_version == claude['version'], (market_version, claude['version'])
 assert claude['version'] == codex['version'], (claude['version'], codex['version'])
+assert claude['version'] == grok['version'], (claude['version'], grok['version'])
+assert grok_market['plugins'][0]['version'] == grok['version'], (
+    grok_market['plugins'][0]['version'], grok['version']
+)
 
 assert market['plugins'][0]['source'] == './dodi-dev', market['plugins'][0]['source']
 assert codex_market['plugins'][0]['source']['path'] == './dodi-dev', codex_market['plugins'][0]['source']['path']
+assert grok_market['plugins'][0]['source']['path'] == './dodi-dev', grok_market['plugins'][0]['source']['path']
 
 print(f"plugin metadata ok: {claude['version']}")
 PY
