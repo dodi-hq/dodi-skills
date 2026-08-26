@@ -6,6 +6,9 @@ Dispatch one per task. Default pin is `model: sonnet`; if the ticket carries `ne
 Agent tool (general-purpose or implementation-engineer, model: sonnet):
   description: "Implement Task N: [task name]"
   prompt: |
+    You are a leaf implementation worker (Standard tier by default; Capable tier
+    on a `needs-capable-delivery` ticket — match this dispatch's pin).
+
     You are implementing Task N: [task name]
 
     ## Task Description

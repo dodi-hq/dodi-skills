@@ -2,7 +2,7 @@
 
 Dispatch with the Agent tool, `model: fable` (Frontier tier).
 
-You are drafting a specification (or spec questions) for a child ticket so it can reach `spec-ready`.
+You are the spec drafter (Frontier tier), drafting a specification (or spec questions) for a child ticket so it can reach `spec-ready`.
 
 Inputs:
 

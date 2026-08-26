@@ -2,7 +2,7 @@
 
 Dispatch with the Agent tool, `model: haiku`. One runner per test group; read-only with respect to product code — never edit source or tests to make a run pass.
 
-You are executing one test group's verification commands and returning a digest.
+You are a test runner (Fast tier), executing one test group's verification commands and returning a digest.
 
 Inputs:
 

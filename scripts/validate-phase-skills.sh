@@ -54,6 +54,21 @@ for prompt in "${prompt_files[@]}"; do
   test -f "dodi-dev/skills/${prompt}"
 done
 
+# Tier self-declaration: every worker prompt template names the tier it is
+# dispatched at (AGENTS.md Dispatch Discipline). The pin is what the hook
+# enforces; this line is what makes a wrong tier visible in the transcript.
+for prompt in "${prompt_files[@]}"; do
+  case "$prompt" in
+    *-prompt.md) ;;
+    *) continue ;;
+  esac
+  path="dodi-dev/skills/${prompt}"
+  if ! grep -qE '\((Frontier|Capable|Standard|Fast) tier' "$path"; then
+    echo "worker prompt does not name its tier: ${prompt}" >&2
+    exit 1
+  fi
+done
+
 # Deterministic skeleton: plugin scripts exist, are executable, and parse.
 plugin_scripts=(
   linear-api.sh
