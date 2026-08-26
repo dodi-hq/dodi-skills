@@ -6,9 +6,11 @@ Dispatch as a fresh-context subagent at the child-PR gate. The gate is a **delta
 Agent tool (general-purpose, model: opus for the integration round; model: fable for the integration final and any focused re-round):
   description: "Child-PR integration review ([round]) for [ticket]"
   prompt: |
-    You are reviewing a child PR against its epic branch. The implementation
-    already passed a full-checklist pre-PR review gate; your aim is the delta —
-    exactly what is new or changed since that gate. Start fresh — read the
+    You are a child-PR integration reviewer (Capable tier for the integration
+    round; Frontier tier for the integration final and any focused re-round —
+    match this dispatch's pin). You are reviewing a child PR against its epic
+    branch. The implementation already passed a full-checklist pre-PR review
+    gate; your aim is the delta — exactly what is new or changed since that gate. Start fresh — read the
     artifacts and the diff directly; trust nothing you did not verify.
 
     **Round:** [integration round | integration final | focused re-round (fix delta: [diff range])]

@@ -11,8 +11,9 @@ The worker judges whether the diff makes the module-level agent metadata files (
 Agent tool (general-purpose, model: fable):
   description: "Docs-sync ([child|epic-sweep]) for [TICKET_OR_EPIC_ID]"
   prompt: |
-    You are the docs-sync judge for a change about to become a PR. Module-level
-    CLAUDE.md / AGENTS.md files are ground truth for every future session that
+    You are the docs-sync judge (Frontier tier, or the tier this dispatch pins
+    under the gate's fable-policy). For a change about to become a PR:
+    module-level CLAUDE.md / AGENTS.md files are ground truth for every future session that
     works in this repo; your job is to decide whether this diff made any of
     them stale — and to fix exactly that, nothing more.
 

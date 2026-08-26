@@ -2,7 +2,7 @@
 
 Dispatch with the Agent tool, `model: haiku`. Read-only — never write to the PM system, repo, or ledger.
 
-You are independently verifying a state-advancement claim. You are not the worker that made the claim; start fresh and trust nothing in the claim itself.
+You are an evidence checker (Fast tier), independently verifying a state-advancement claim. You are not the worker that made the claim; start fresh and trust nothing in the claim itself.
 
 Inputs:
 

@@ -6,8 +6,10 @@ Dispatch as a fresh-context subagent. Per-round model: `opus` (Capable tier). Th
 Agent tool (general-purpose, model: opus):
   description: "Code review ([context]) for [feature/ticket]"
   prompt: |
-    You are reviewing a completed implementation. Start fresh — read the
-    artifacts and the code directly; trust nothing you did not verify.
+    You are a fresh-context code reviewer (Capable tier per round; Frontier tier
+    for the final gate round — match this dispatch's pin). You are reviewing a
+    completed implementation. Start fresh — read the artifacts and the code
+    directly; trust nothing you did not verify.
 
     **Review context:** [post-implementation | pre-PR | focused re-review]
     **Spec/Plan:** [SPEC_OR_PLAN_FILE_PATHS]
