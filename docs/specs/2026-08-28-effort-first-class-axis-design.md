@@ -22,7 +22,7 @@ The repo enforces model tier as a first-class axis but writes reasoning effort d
 
 Verified in this worktree (branch `epic/dod-1213-fable-scarcity-doctrine`):
 
-- The tier table (`AGENTS.md:26-31`) has no effort dimension. Effort's entire repo footprint is `AGENTS.md:36` (Grok row), `AGENTS.md:70` (Grok clause in the dispatch bullet), and an unrelated "best-effort" in `dodi-dev/scripts/await-worker.sh:57` — confirmed by `grep -rn effort`.
+- The tier table (`AGENTS.md:26-31`) has no effort dimension. `grep -rn effort` finds the doctrine footprint at `AGENTS.md:36` (Grok row) and `AGENTS.md:70` (Grok clause in the dispatch bullet), plus two unrelated "best-effort" hits (`dodi-dev/scripts/await-worker.sh:57` and a historical plan doc, `docs/plans/2026-07-04-resident-orchestrator-0.14.0.md:1277`) — the doctrine footprint is still exactly one sentence.
 - All 15 `dodi-dev/skills/*/*-prompt.md` templates name a tier (validator-enforced at `scripts/validate-phase-skills.sh:60-70`); none names an effort.
 - `dodi-dev/scripts/hook-require-model-pin.sh` checks pin presence and tier fit from `tool_input`/`toolInput`; there is no effort field in the Claude Code payload for it to read.
 - `dodi-dev/skills/review/SKILL.md:65,73,79`: the substitution marker `tier-degraded(fable→<tier>,<policy>)` and `gate-ledger: ... final=<tier>` are tier-only — an `opus@max` substitution and an `opus@high` one are indistinguishable in every posted finding and ledger line.
@@ -85,7 +85,11 @@ Extend the self-declaration contract: every worker prompt names its tier **and i
 - Standard: `(Standard tier, session-default effort)`
 - Fast: `(Fast tier, no effort axis)`
 
-Multi-seat templates name the effort for each seat, matching the existing tier pattern, e.g. `review/review-prompt.md`: `(Capable tier, high effort per round; Frontier tier, xhigh effort for the final gate round — match this dispatch's pin)`. The four multi-seat templates are `review/review-prompt.md`, `review/child-pr-integration-prompt.md`, `implement/implementer-prompt.md`, `submit-ticket-pr/docs-sync-prompt.md`. Because these parentheticals wrap across lines today, templates are reflowed so each seat's `<tier> tier, <effort> effort` unit sits on one line (this also keeps the ticket's verification grep single-line-satisfiable).
+Standard and Fast have no legal `<tier>@<effort>` form — "session-default" and "no effort axis" are declared postures, not values in the `low|medium|high|xhigh|max` vocabulary, so `Standard@...`/`Fast@...` never appears in doctrine or a marker.
+
+Multi-seat templates name the effort for each seat, matching the existing tier pattern, e.g. `review/review-prompt.md`: `(Capable tier, high effort per round; Frontier tier, xhigh effort for the final gate round — match this dispatch's pin)`. The four multi-seat templates are `review/review-prompt.md`, `review/child-pr-integration-prompt.md`, `implement/implementer-prompt.md`, `submit-ticket-pr/docs-sync-prompt.md`. Because these parentheticals wrap across lines today, templates are reflowed so each seat's `<tier> tier, <effort> effort` unit sits on one line (this also keeps the ticket's verification grep single-line-satisfiable). `docs-sync-prompt.md`'s second seat is a policy-substitution alternative, not a fixed tier: its canonical form is `(Frontier tier, xhigh effort — hard policy; or the tier and effort this dispatch's fable-policy lookup substitutes, per AGENTS.md § Fable Availability Policy)`.
+
+`submit-epic-pr/epic-integration-reviewer-prompt.md` is also DOD-1217's subject (the dual-tier self-declaration fix for that template). Both tickets edit the same parenthetical; whichever merges second rebases its effort addition onto the other's tier-declaration fix rather than reverting it.
 
 Rationale sentence added beside the existing one at `AGENTS.md:71`: the effort declaration is normative (what this seat is declared to run at per the table), not a runtime readout — it makes a wrong or missing effort visible in the transcript and in review, since nothing mechanical can check it on Claude Code.
 
