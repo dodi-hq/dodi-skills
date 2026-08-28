@@ -112,8 +112,10 @@
 #
 # Output (full flow): one TSV digest line
 #   CAPACITY_PARK <epic-id> label=<yes|no> age_h=<n|-> flaps=<n>@<W>h gate=<gate|-> child=<child|-> band=<none|self-healing|escalating>
-# Exit: 0 digest printed (band may be `none`); 2 error (API/transport/parse
-#       failure — NEVER readable as "no parks"; the sweep escalates non-zero).
+# Exit: 0 digest printed (band may be `none`); non-zero on error — 2 for
+#       API/transport failure, 1 for a malformed/parse-failure response under
+#       `set -e` — NEVER readable as "no parks"; the sweep escalates on any
+#       non-zero exit, not on exit=2 specifically.
 #
 # Semantics pinned here (this script is the arithmetic's single home):
 # - A comment is a CAPACITY_PARK entry iff its first non-empty line is the
