@@ -28,7 +28,7 @@ Epic: DOD-1213 (fable scarcity doctrine). Ticket type: bugfix. Status: spec draf
 
 A Frontier worker dispatched at step 4 therefore opens by reading a false statement about itself in the one line whose purpose (AGENTS.md § Dispatch Discipline, tier self-declaration) is to make a wrong tier visible. `scripts/validate-phase-skills.sh:60-70` cannot catch it: its grep `\((Frontier|Capable|Standard|Fast) tier` checks that *a* tier is named, never that *every dispatched* tier is named. Verified on this tree: the validator exits 0 today.
 
-Confirmed sole offender: the four other multi-tier templates (`review/review-prompt.md`, `review/child-pr-integration-prompt.md`, `implement/implementer-prompt.md`, `submit-ticket-pr/docs-sync-prompt.md`) already name their alternatives; all ten single-tier `*-prompt.md` files declare exactly their one dispatch tier (verified by grep against dispatch sites).
+Confirmed sole offender: the four other multi-seat templates (`review/review-prompt.md`, `review/child-pr-integration-prompt.md`, `implement/implementer-prompt.md`, `submit-ticket-pr/docs-sync-prompt.md`) already name their alternatives (three genuinely multi-tier, one single-tier-by-design per § 3 Registry semantics); all ten single-tier `*-prompt.md` files declare exactly their one dispatch tier (verified by grep against dispatch sites).
 
 ## Goals
 
@@ -152,7 +152,7 @@ First test of a repo-root validator; the existing `dodi-dev/scripts/tests/` sour
 - `set -euo pipefail`, executable bit set.
 - `mktemp -d`; `cp -R dodi-dev scripts "$tmp"/`; run `(cd "$tmp" && bash scripts/validate-phase-skills.sh)` — valid because the validator reads only `dodi-dev/**` and repo-relative paths (no `templates/`, no git state).
 - Case (a): unmutated copy → exit 0.
-- Case (b): mutate the copy's `epic-integration-reviewer-prompt.md` to name only Capable (e.g. `sed` the Frontier seat clause out of the declaration), run the validator → assert exit 1 and stderr contains `submit-epic-pr/epic-integration-reviewer-prompt.md`.
+- Case (b): mutate the copy's `epic-integration-reviewer-prompt.md` to remove **every** occurrence of the string `Frontier tier` (not just line 9 — the registry check is file-scope, so a partial removal leaving line 3's "Frontier tier (`model: fable` on Claude Code)" intact would let the check pass wrongly), run the validator → assert exit 1 and stderr contains `submit-epic-pr/epic-integration-reviewer-prompt.md` and names the missing seat (`Frontier`).
 - Case (c): append a fake `*-prompt.md` entry to the copy's `prompt_files` array (and `touch` the file with a valid single-tier declaration) → assert exit 1 with the no-seat-registry-row message. (Cheap, and it is the completeness assert's only test.)
 - Final line `echo "validate-phase-skills tests ok"`; invoked by path, no aggregate runner (none exists).
 
@@ -164,7 +164,7 @@ First test of a repo-root validator; the existing `dodi-dev/scripts/tests/` sour
 
 DOD-1214 (spec `docs/specs/2026-08-28-effort-first-class-axis-design.md` § 3-4; plan `docs/plans/2026-08-28-effort-first-class-axis.md` Task 5 Step 11, Task 8) is ready-to-implement and touches two of this ticket's surfaces. Its own plan already carries the mirror-image coordination note. Composition rules:
 
-1. **Line 9 parenthetical.** DOD-1214 rewrites it to `(Capable tier, high effort)`; this ticket rewrites it to the dual-tier form. Whichever merges second applies its change *onto* the other's text. Merged target, exactly as DOD-1214's plan anticipates: `(Capable tier, high effort for the integrated-head rounds; Frontier tier, xhigh effort for the fable make-up round — match this dispatch's pin)` — each seat's `<tier> tier, <effort> effort` unit on one physical line. In `<tier>@<effort>` vocabulary the seats are `Capable@high` and `Frontier@xhigh`; this ticket adds no effort text of its own when it merges first.
+1. **Line 9 parenthetical.** DOD-1214 rewrites it to `(Capable tier, high effort)`; this ticket rewrites it to the dual-tier form. Whichever merges second applies its change *onto* the other's text. Merged target, consistent with DOD-1214's plan's own coordination note (which defers to whatever tier structure this ticket ships): `(Capable tier, high effort for the integrated-head rounds; Frontier tier, xhigh effort for the fable make-up round — match this dispatch's pin)` — each seat's `<tier> tier, <effort> effort` unit on one physical line. In `<tier>@<effort>` vocabulary the seats are `Capable@high` and `Frontier@xhigh`; this ticket adds no effort text of its own when it merges first.
 2. **Lines 3 and 6.** DOD-1214 does not touch them; no composition needed.
 3. **Validator.** DOD-1214 extends the existing loop (:60-70) with an effort-presence check; this ticket adds a separate registry block after that loop. Disjoint hunks; whichever merges second resolves at most a trivial context conflict. The registry checks tiers only — effort coverage is DOD-1214's check, and extending the registry to efforts is out of scope here.
 4. **DOD-1214's Step-12 verification grep** expects exactly 4 multi-seat files without effort text; if this ticket merges first, `epic-integration-reviewer-prompt.md` becomes a 5th multi-seat file and DOD-1214's coordination note (apply effort onto the dual-tier text) governs. That adjustment lives in DOD-1214's lane, not this one.
@@ -188,7 +188,7 @@ This ticket must not duplicate any DOD-1214 edit (no effort parentheticals, no e
 
 The ticket's criteria 1-14 stand, with two amendments:
 
-- Criteria 8/10/14 (version): replace the hardcoded `0.16.5` with the resolved value per § 5 (one patch level above the epic-branch value at merge time).
+- Criteria 8/10/14 (version): replace the hardcoded `0.16.5` with the resolved value per § 5 (one patch level above the epic-branch value at merge time). Criterion 10's mechanics also need a fix independent of the value: the five files indent the `"version"` line differently (marketplace files vs plugin files), so `grep -h '"version"' <5 files> | sort -u | wc -l` returns **2** even when all five carry the identical version — verified on the current tree. Normalize whitespace before parity-checking, e.g. `grep -ho '"version": "[^"]*"' <5 files> | sort -u | wc -l` (extracts just the key:value pair, discarding leading indentation), expecting `1`.
 - Criterion 12 stands as written (the check ships — open question 1 is resolved as option (a)); criterion 13 stands (the test ships), extended by the completeness-assert case (§ 4 case c).
 - Additional criterion: if DOD-1214 has merged first, `epic-integration-reviewer-prompt.md:9`'s declaration carries both tier *and* effort per § Integration rule 1, and `git diff` shows no reverted DOD-1214 text.
 
