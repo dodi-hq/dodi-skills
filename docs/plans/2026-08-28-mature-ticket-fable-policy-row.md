@@ -140,8 +140,8 @@ with:
 
 - [ ] **Step 2:** Verify
 
-Run: `grep -n 'operator-choice seat\|asymmetry for the same playbook is deliberate\|no pin for scarcity to fail' AGENTS.md`
-Expected: all three phrases hit, all inside § Model Tiers (one bullet).
+Run: `grep -n 'operator-choice\*\* seat\|asymmetry for the same playbook is deliberate\|no pin for scarcity to fail' AGENTS.md`
+Expected: all three phrases hit, all inside § Model Tiers (one bullet). (The first pattern includes the literal `**` bold markers around `operator-choice` — the inserted text reads "it is the **operator-choice** seat", so a plain `operator-choice seat` substring never occurs.)
 
 ### Task 2: AGENTS.md § Fable Availability Policy — fourth row + operator-choice Mechanics bullet
 
@@ -402,7 +402,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```bash
 grep -n "operator-choice" AGENTS.md                                              # criterion 1: row inside the policy table + Mechanics bullet + Model Tiers sentence
 git log -p --follow -1 AGENTS.md >/dev/null; git diff main -- AGENTS.md | grep '^-' | grep -E '\*\*(hard|deferred|soft)\*\*'   # criterion 2: no output — existing rows byte-identical
-grep -rn "model: fable" dodi-dev/skills | grep 'SKILL.md:4'                      # criterion 3 input: mature-ticket is still the only frontmatter fable pin
+grep -rn "model: fable" dodi-dev/skills | grep 'SKILL.md:4:'                     # criterion 3 input: mature-ticket is still the only frontmatter fable pin (trailing colon avoids matching SKILL.md:4x, e.g. epic-orchestrator/SKILL.md:42's prose mention)
 grep -n "Capable tier" dodi-dev/skills/mature-ticket/SKILL.md                    # criterion 4: line contains `model: opus` on Claude Code
 grep -n "pending-capacity" dodi-dev/skills/mature-ticket/SKILL.md                # criterion 6: no output (exit 1)
 for f in dodi-dev/skills/*/SKILL.md; do awk 'NR>1 && /^---$/{exit} NR>1{print $1}' "$f"; done | sort -u   # criterion 12: exactly `description:` `model:` `name:`
