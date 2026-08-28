@@ -59,7 +59,7 @@ Added as the fourth row (normative content; exact wording at implementation):
 
 | Policy | Meaning | Gates |
 |--------|---------|-------|
-| **operator-choice** | manual-session ask: the session stops and the present operator decides — **wait** for fable, or **proceed at `Capable@max`** with the substitution declared. Never automatic: no park, no silent substitution, no make-up obligation. A session-pin policy a manual session applies to itself — never a dispatch policy; the driver never performs this lookup | the manual `mature-ticket` wrapper's `model: fable` main-loop session pin (the repo's only frontmatter fable seat) |
+| **operator-choice** | manual-session ask: the session stops and the present operator decides — **wait** for fable, or **proceed at `Capable@max`** with the substitution declared. Never automatic: no park, no silent substitution, no make-up obligation. A session-pin policy a manual session applies to itself — never a dispatch policy; the driver never performs this lookup | the manual `mature-ticket` wrapper's `model: fable` main-loop session pin — identified here as the frontmatter fable seat this row governs; the § 6 validator is what keeps this cell's scope from going stale if a second frontmatter fable pin is ever added |
 
 The three existing rows are untouched. The `AGENTS.md:54` paragraph needs no edit — the seat now has a row.
 
@@ -100,7 +100,7 @@ After the existing tier self-declaration loop, add the fable-seat-has-a-row chec
 for skill in "${skills[@]}"; do
   f="dodi-dev/skills/${skill}/SKILL.md"
   if awk 'NR==1 && /^---$/ {inf=1; next} inf && /^---$/ {exit} inf' "$f" | grep -q '^model: fable$'; then
-    if ! grep -E '^\s*\|' AGENTS.md | grep -q "$skill"; then
+    if ! grep -E '^\s*\|' AGENTS.md | grep -q "\`$skill\`"; then
       echo "frontmatter fable pin without a Fable Availability Policy row: ${skill}" >&2
       exit 1
     fi
@@ -108,7 +108,7 @@ for skill in "${skills[@]}"; do
 done
 ```
 
-Properties: scoped to the frontmatter block only (a `model: fable` in prose never matches); generic (a future skill adding a frontmatter fable pin fails until a table row names it); the match is any policy-table row line naming the skill, so renaming the bucket later does not break the check. The script runs from the repo root and may read `AGENTS.md` (it is a repo validation script, not plugin-shipped; the repo-only-reference ban applies to skills, not `scripts/`). Negative case demonstrated per the ticket's testing contract.
+Properties: scoped to the frontmatter block only (a `model: fable` in prose never matches); generic (a future skill adding a frontmatter fable pin fails until a table row names it); the match is any policy-table row line naming the skill in backticks (matching the table's own \`skill-name\` convention in Gates cells), so a substring collision with an unrelated cell (e.g. another row's prose mentioning this skill's name loosely) cannot false-positive, and renaming the bucket later does not break the check. The script runs from the repo root and may read `AGENTS.md` (it is a repo validation script, not plugin-shipped; the repo-only-reference ban applies to skills, not `scripts/`). Negative case demonstrated per the ticket's testing contract.
 
 ### 7. Version bump
 
@@ -132,7 +132,7 @@ Same-change bump in all five metadata files (`.claude-plugin/marketplace.json`, 
 4. **Resume after an operator-wait.** A successor session re-runs the step-zero self-check: fable back ⇒ normal lane, no marker; still out ⇒ the same ask. A lane matured across mixed sessions is legal — each gate-transition comment records the coordinator tier that posted it, and per-dispatch tiers are already in the gate-ledger lines.
 5. **Driver misreading the row as a dispatch policy.** Guarded twice: the Meaning cell's "never a dispatch policy; the driver never performs this lookup," and the § Model Tiers statement that the driver's Standard main loop for the same playbook is deliberate.
 6. **A future frontmatter fable pin.** Fails the § 6 validator check until a policy row names the skill — the `AGENTS.md:54` invariant is now mechanical for frontmatter seats.
-7. **Grok Build degeneracy.** All tiers map to `grok-4.6`, so "fable unavailable but opus available" cannot arise there — the row is harness-neutral prose that is simply never triggered on a runtime where Frontier and Capable share a slug; the wait option remains meaningful everywhere. No Grok-specific text needed beyond the existing tier-mapping doctrine.
+7. **Grok Build / Codex degeneracy.** On Grok Build all tiers map to `grok-4.6`, so "fable unavailable but opus available" cannot arise. On Codex, Frontier and Capable both map to "highest-reasoning configuration" (`AGENTS.md:35`), the same collapse for the same reason. On both runtimes the row is harness-neutral prose that is simply never triggered where Frontier and Capable share a slug/configuration; the wait option remains meaningful everywhere. No runtime-specific text needed beyond the existing tier-mapping doctrine.
 
 ## Testing contract
 
@@ -141,7 +141,7 @@ Matches the ticket's contract; no doctrine/prose test harness exists and none is
 - **Required (each exits 0, from repo root):** `scripts/validate-plugin-metadata.sh` (five-file version parity), `scripts/validate-phase-skills.sh` (prints `phase skills ok`), `scripts/validate-ticket-comment-templates.sh`.
 - **Required — negative case for the new check (§ 6):** in a scratch copy, delete the `operator-choice` row from `AGENTS.md` → non-zero exit naming `mature-ticket`; restore → exit 0. Record commands and exit codes as evidence; this demonstration is the test.
 - **Not required:** the six `dodi-dev/scripts/tests/*.sh` — the hook is untouched; run `test-hooks-payload.sh` only if the hook file shows in the diff (it must not).
-- **Manual verification (prose):** read the changed AGENTS.md section and both skill paragraphs end to end — (a) harness-neutral per `AGENTS.md:13-14` (Claude form + tier name), (b) no repo-only file referenced from inside a skill, (c) SKILL.md and playbook paragraphs agree, (d) the three existing table rows byte-identical in the diff.
+- **Manual verification (prose):** read the changed AGENTS.md section and both skill paragraphs end to end against the ticket's own checklist verbatim — (a) harness-neutral per `AGENTS.md:13-14` (Claude form + tier name), (b) no repo-only file referenced from inside a skill, (c) the scannable-header rule (`AGENTS.md` § Scannable Artifacts) is untouched — this change adds no human-facing artifact, (d) SKILL.md and playbook paragraphs agree, (e) the three existing table rows byte-identical in the diff.
 
 ## Acceptance criteria
 
