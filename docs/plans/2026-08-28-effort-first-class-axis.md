@@ -17,7 +17,7 @@
 ### Required Test Groups
 
 - Unit: `not-required`
-  - Scope: `<functions/components/modules>` — n/a (doctrine prose plus one validator predicate)
+  - Scope: n/a (doctrine prose plus one validator predicate)
   - Reason: no unit-test harness for markdown content exists in this repo and inventing one is out of scope (ticket contract).
   - Minimum assertions: none.
 
@@ -504,8 +504,8 @@ with:
 
 - [ ] **Step 5:** Verify (criteria 6 + 7)
 
-Run: `grep -L -E '(Frontier|Capable|Standard|Fast) tier[^)]*effort' dodi-dev/skills/*/*-prompt.md; echo "exit: $?"`
-Expected: no file names printed; `exit: 0` — all 15 templates have a single-line tier+effort declaration.
+Run: `[ -z "$(grep -L -E '(Frontier|Capable|Standard|Fast) tier[^)]*effort' dodi-dev/skills/*/*-prompt.md)" ] && echo CLEAN || echo REGRESSED`
+Expected: `CLEAN` — all 15 templates have a single-line tier+effort declaration. (Do not rely on the bare `grep -L` exit code: this session's shell wraps `grep` with ugrep, whose `-L` exits 1 when no files are listed — i.e. on success — the opposite of stock `/usr/bin/grep -L`'s always-0. Emptiness of the output, not the exit code, is the success signal.)
 
 Run: `grep -rn '^effort:' dodi-dev/skills; echo "exit: $?"`
 Expected: no output; `exit: 1` (criterion 12 — no frontmatter key added).
@@ -632,7 +632,7 @@ with:
 - [ ] **Step 2:** Verify (criterion 13)
 
 Run: `bash scripts/validate-plugin-metadata.sh; echo "exit: $?"`
-Expected: no assertion output, `exit: 0`.
+Expected: prints `plugin metadata ok: 0.17.0`, `exit: 0`.
 
 Run: `grep -h '"version"' .claude-plugin/marketplace.json dodi-dev/.claude-plugin/plugin.json dodi-dev/.codex-plugin/plugin.json .grok-plugin/marketplace.json dodi-dev/.grok-plugin/plugin.json | sort -u`
 Expected: exactly one line: `  "version": "0.17.0",` (leading whitespace may vary between marketplace and plugin files — if `sort -u` yields two lines differing only in indentation, verify the version substring is identical; the metadata validator is the authoritative parity check).
