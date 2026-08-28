@@ -44,7 +44,7 @@
 
 ### Regression Surface
 
-- The other 19 entries in the `prompt_files` array — the registry block must not fail any of them (criterion 7 covers this since the validator iterates the whole array; the registry rows in Task 3 were verified against every template's current declarations on this tree).
+- The other 18 entries in the `prompt_files` array (19 total: 15 prompt files + 4 non-prompt entries the case filter skips) — the registry block must not fail any of them (criterion 7 covers this since the validator iterates the whole array; the registry rows in Task 3 were verified against every template's current declarations on this tree).
 - `dodi-dev/skills/submit-epic-pr/SKILL.md` steps 2-4: step 3's Capable pin (`SKILL.md:32`) and step 4's hard fable policy, obligations preamble, keyed consumption, and restart-at-step-3 rule are unchanged in substance — only step 4's tier naming moves (confirm by reading the diff).
 - If DOD-1214 merged first: no DOD-1214 text reverted — `git diff` on `epic-integration-reviewer-prompt.md` and `scripts/validate-phase-skills.sh` shows only additions/rewrites per this plan's variant-B forms, with all effort text preserved.
 - The six existing scripts in `dodi-dev/scripts/tests/` still pass (they are cheap; run the whole directory).
@@ -533,8 +533,9 @@ Additionally read `dodi-dev/skills/submit-epic-pr/epic-integration-reviewer-prom
 - [ ] **Step 2:** If DOD-1214 merged first (Variant B was applied anywhere), confirm no DOD-1214 text was reverted
 
 ```bash
-git diff HEAD~3 -- dodi-dev/skills/submit-epic-pr/epic-integration-reviewer-prompt.md scripts/validate-phase-skills.sh
+git diff main -- dodi-dev/skills/submit-epic-pr/epic-integration-reviewer-prompt.md scripts/validate-phase-skills.sh
 ```
+(Diffed against `main`, not a fixed commit-count offset like `HEAD~3` — robust to however many commits this task's own work took, or to unrelated commits landing on the epic branch in the meantime.)
 Expected: the template diff shows the dual-tier declaration carrying both effort units (`high effort` / `xhigh effort`); the validator diff shows only the appended registry block — DOD-1214's effort check inside the tier loop is untouched (additional acceptance criterion; spec § Integration rules 1 and 3).
 
 - [ ] **Step 3:** Run the validators, the new test, and the full regression suite
