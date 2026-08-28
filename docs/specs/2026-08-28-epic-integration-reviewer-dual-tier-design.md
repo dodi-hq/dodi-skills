@@ -153,7 +153,7 @@ First test of a repo-root validator; the existing `dodi-dev/scripts/tests/` sour
 - `mktemp -d`; `cp -R dodi-dev scripts "$tmp"/`; run `(cd "$tmp" && bash scripts/validate-phase-skills.sh)` — valid because the validator reads only `dodi-dev/**` and repo-relative paths (no `templates/`, no git state).
 - Case (a): unmutated copy → exit 0.
 - Case (b): mutate the copy's `epic-integration-reviewer-prompt.md` to remove **every** occurrence of the string `Frontier tier` (not just line 9 — the registry check is file-scope, so a partial removal leaving line 3's "Frontier tier (`model: fable` on Claude Code)" intact would let the check pass wrongly), run the validator → assert exit 1 and stderr contains `submit-epic-pr/epic-integration-reviewer-prompt.md` and names the missing seat (`Frontier`).
-- Case (c): append a fake `*-prompt.md` entry to the copy's `prompt_files` array (and `touch` the file with a valid single-tier declaration) → assert exit 1 with the no-seat-registry-row message. (Cheap, and it is the completeness assert's only test.)
+- Case (c): append a fake `*-prompt.md` entry to the copy's `prompt_files` array, and create that file **with content carrying a valid single-tier declaration** (not `touch`, which creates an empty file and would fail the existing tier-presence loop first, with the wrong error message) → assert exit 1 with the no-seat-registry-row message, isolating the failure to the new registry's completeness assert. (Cheap, and it is that assert's only test.)
 - Final line `echo "validate-phase-skills tests ok"`; invoked by path, no aggregate runner (none exists).
 
 ### 5. Version bump (five files, same change)
@@ -186,7 +186,9 @@ This ticket must not duplicate any DOD-1214 edit (no effort parentheticals, no e
 
 ## Acceptance criteria
 
-The ticket's criteria 1-14 stand, with two amendments:
+The ticket's criteria 1-14 stand, with the following amendments:
+
+- Criterion 1: amend from "at least three `Frontier tier` matches" to "at least **two** matches, one in the header prose (~line 3) and one in the in-block self-declaration (~line 9); the Agent-tool block header (~line 6) names both seats by model pin per the exemplar form (criterion 3's `model: opus ...; model: fable ...`), not by repeating the tier name". As drafted, criteria 1 and 3 are mutually contradictory: the exemplar `review/child-pr-integration-prompt.md` (and every other multi-seat block header in the repo) names pins by alias only in the block header, so a design following criterion 3 necessarily contains exactly 2 `Frontier tier` occurrences, not 3. Jamming tier names into the block header to satisfy a literal reading of criterion 1 would diverge from the exemplar and from repo convention — the criterion's mechanics were wrong, not the design.
 
 - Criteria 8/10/14 (version): replace the hardcoded `0.16.5` with the resolved value per § 5 (one patch level above the epic-branch value at merge time). Criterion 10's mechanics also need a fix independent of the value: the five files indent the `"version"` line differently (marketplace files vs plugin files), so `grep -h '"version"' <5 files> | sort -u | wc -l` returns **2** even when all five carry the identical version — verified on the current tree. Normalize whitespace before parity-checking, e.g. `grep -ho '"version": "[^"]*"' <5 files> | sort -u | wc -l` (extracts just the key:value pair, discarding leading indentation), expecting `1`.
 - Criterion 12 stands as written (the check ships — open question 1 is resolved as option (a)); criterion 13 stands (the test ships), extended by the completeness-assert case (§ 4 case c).
