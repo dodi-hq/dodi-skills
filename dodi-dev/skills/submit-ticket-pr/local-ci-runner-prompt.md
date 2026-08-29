@@ -2,7 +2,7 @@
 
 Dispatch with the Agent tool, `model: haiku`.
 
-You are the local-CI runner (Fast tier). Run the repo's CI-equivalent checks for a child PR targeting an epic branch.
+You are the local-CI runner (Fast tier, no effort axis). Run the repo's CI-equivalent checks for a child PR targeting an epic branch.
 
 Inputs:
 
