@@ -46,12 +46,13 @@ The lane carries a **`RESUMABLE` exit state** (its ticket claim's exit state whe
 
 ## Model tiers
 
-The `model: fable` frontmatter pin on the manual wrapper covers its main loop only — it never flows into worker dispatches. Every dispatch carries its own explicit pin: spec drafter, spec/plan reviewers, and plan writer carry Frontier pins; research and read-and-digest workers (external/integration API docs, test-harness orientation, codebase exploration) pin Standard tier (`model: sonnet` on Claude Code). A dispatch without a pin inherits the frontmatter default — that is a defect, not a default, and `hook-require-model-pin.sh` forbids it.
+The `model: fable` frontmatter pin on the manual wrapper covers its main loop only — it never flows into worker dispatches. Every dispatch carries its own explicit pin: spec drafter, spec/plan reviewers, and plan writer carry Frontier pins; research and read-and-digest workers (external/integration API docs, test-harness orientation, codebase exploration) pin Standard tier (`model: sonnet` on Claude Code). A dispatch without a pin inherits the frontmatter default — that is a defect, not a default, and `hook-require-model-pin.sh` forbids it. The frontmatter pin is the **operator-choice** seat in AGENTS.md § Fable Availability Policy; when a manual session runs under that row's declared substitution, its main loop is `Capable@max` while every dispatch keeps its own per-gate pin and fable-policy, unchanged.
 
 ## Evidence
 
 - Record spec artifact, plan artifact, reviewer type, review status, assumptions, dependency state, and labels applied or withheld.
 - Post each review gate's close-out `gate-ledger` line in the gate-transition comment it rides — spec-review in the → `needs-plan` comment, plan-review in the → `ready-to-implement` comment (grammar and rationale: `review` § Gate Ledger).
+- A session running under an operator-choice substitution appends the `session-tier:` line (grammar: AGENTS.md § Fable Availability Policy) to each gate-transition comment it posts. A wait needs no marker — nothing was substituted.
 - Record the delivery-tier classification (standard | capable) with the reviewer's one-line reason; on `capable`, record the `needs-capable-delivery` label application.
 - Record which signoff path applied: Gate 1 delegation (link the epic delegation comment), per-child signoff, or human answers to drafter questions.
 - Record why any ticket remains in maturity work.
@@ -63,7 +64,7 @@ The `model: fable` frontmatter pin on the manual wrapper covers its main loop on
 - **QUESTIONS_FOR_HUMAN** — the spec drafter returned open product questions; stop and ask.
 - **blocked-dependency** — an unresolved dependency.
 - **demote-to-spec** — a product, architecture, scope, or spec/plan mismatch surprise; comment per the demotion rules in `state-transitions.md` and exit. Never redesign mid-flight.
-- **RESUMABLE** — a deliberate context exit (an emergency reset for either executor, or — driver-only — a capacity-park or refresh-park; a manual `mature-ticket` session stops and reports rather than parking): push to the epic branch, write the continuation brief keyed to that SHA + last seam, and exit for re-dispatch.
+- **RESUMABLE** — a deliberate context exit (an emergency reset for either executor, or — driver-only — a capacity-park or refresh-park; a manual `mature-ticket` session stops and reports rather than parking, including an operator-chosen **wait** under the operator-choice fable policy): push to the epic branch, write the continuation brief keyed to that SHA + last seam, and exit for re-dispatch.
 
 ## Stop conditions
 

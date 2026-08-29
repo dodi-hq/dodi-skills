@@ -81,6 +81,37 @@ for prompt in "${prompt_files[@]}"; do
   fi
 done
 
+# Fable Availability Policy: every frontmatter `model: fable` pin has a policy
+# row naming its skill (AGENTS.md "a fable seat without a row is a defect").
+# Scoped to the frontmatter block only (a `model: fable` in prose never
+# matches). The AGENTS.md side is deliberately loose: it matches ANY markdown
+# table row naming the skill in backticks, not policy-table rows specifically
+# — a skill named in some other table's cell (e.g. a dispatch-gate mention)
+# also satisfies it. A tighter predicate would risk missing legitimate policy
+# rows, since seat mentions and dispatch-gate mentions share the same tables;
+# this keeps prose-only mentions from counting and survives bucket renames.
+# Iterates the skill directories on disk rather than the hardcoded `skills`
+# array above, so a future skill that ships a frontmatter fable pin is covered
+# by this guard from the moment its directory exists — before anyone remembers
+# to add it to the array.
+for f in dodi-dev/skills/*/SKILL.md; do
+  skill="$(basename "$(dirname "$f")")"
+  # Capture the frontmatter block into a variable rather than piping awk into
+  # grep -q: under set -o pipefail, grep -q exiting early on its first match
+  # can kill awk with SIGPIPE, turning a real pass into a spurious failure.
+  fm="$(awk 'NR==1 && /^---$/ {inf=1; next} inf && /^---$/ {exit} inf' "$f")"
+  # The trailing `(#.*)?` catches a YAML-legal end-of-line comment
+  # (`model: fable # needs Frontier`), which is still a live pin. Widening
+  # here is the safe direction: it can only make the check trigger more
+  # often, never less.
+  if grep -qE "^model:[[:space:]]*[\"']?fable[\"']?[[:space:]]*(#.*)?$" <<< "$fm"; then
+    if ! grep -q "^[[:space:]]*|.*\`${skill}\`" AGENTS.md; then
+      echo "frontmatter fable pin without a Fable Availability Policy row: ${skill}" >&2
+      exit 1
+    fi
+  fi
+done
+
 # Deterministic skeleton: plugin scripts exist, are executable, and parse.
 plugin_scripts=(
   linear-api.sh
