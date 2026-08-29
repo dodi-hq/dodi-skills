@@ -11,7 +11,7 @@
 ## Editing Rules
 
 - Skills are harness-neutral: one SKILL.md must read correctly on Claude Code, Codex, and Grok Build.
-- Write harness-specific mechanics (model aliases, Agent tool / `spawn_subagent`) as the Claude form plus the tier name, e.g. "Capable tier (`model: opus` on Claude Code)". Codex and Grok Build map tiers per the table below.
+- Write harness-specific mechanics (model aliases, Agent tool / `spawn_subagent`) as the Claude form plus the tier name, e.g. "Capable tier (`model: opus` on Claude Code)". Codex and Grok Build map tiers and effort per the two tables below (§ Model Tiers); worker prompt templates additionally self-declare their tier and effort (§ Dispatch Discipline).
 - If a released skill changes, bump the version in every version-bearing metadata file in the same change: `.claude-plugin/marketplace.json`, `dodi-dev/.claude-plugin/plugin.json`, `dodi-dev/.codex-plugin/plugin.json`, `.grok-plugin/marketplace.json`, and `dodi-dev/.grok-plugin/plugin.json`.
 - Tag every release as `vX.Y.Z` on its version-bump commit and push the tag; keepur-team projects pin against these tags. Also include the bare version string (e.g. `0.16.0`) in the release commit message so releases stay findable with `git log --grep`.
 - Preserve each skill's frontmatter with `name` and `description`.
