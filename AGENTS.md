@@ -104,7 +104,7 @@ The header must be self-sufficient: a human who reads nothing else can approve o
 
 ## Deterministic Skeleton
 
-**Anything with an invariant becomes code; anything with a judgment stays prose.** Mechanical operations ship as scripts in `dodi-dev/scripts/` (worker await, claims, driver claims, comment-species classification, worker reaping, dispatch eligibility, merge verification, branch cleanup, deploy checks, watchdog data, heartbeat) and as plugin hooks (Gate 2 merge guard, dispatch-pin enforcement).
+**Anything with an invariant becomes code; anything with a judgment stays prose.** Mechanical operations ship as scripts in `dodi-dev/scripts/` (worker await, claims, driver claims, comment-species classification, worker reaping, dispatch eligibility, merge verification, branch cleanup, deploy checks, watchdog data, capacity-park banding, heartbeat) and as plugin hooks (Gate 2 merge guard, dispatch-pin enforcement).
 
 **Path resolution:** scripts live at the **plugin root**, not under any skill directory. Skills reference them as `${CLAUDE_PLUGIN_ROOT}/scripts/<name>.sh` — the installed plugin root (a versioned directory under the plugin cache), two levels up from a skill's own directory. On Grok Build the native variable is `GROK_PLUGIN_ROOT`; Grok also sets the `CLAUDE_PLUGIN_ROOT` alias, so the skill-facing name does not change. Never resolve a script path relative to the skill that names it.
 
