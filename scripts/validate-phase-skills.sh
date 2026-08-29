@@ -90,8 +90,12 @@ done
 # also satisfies it. A tighter predicate would risk missing legitimate policy
 # rows, since seat mentions and dispatch-gate mentions share the same tables;
 # this keeps prose-only mentions from counting and survives bucket renames.
-for skill in "${skills[@]}"; do
-  f="dodi-dev/skills/${skill}/SKILL.md"
+# Iterates the skill directories on disk rather than the hardcoded `skills`
+# array above, so a future skill that ships a frontmatter fable pin is covered
+# by this guard from the moment its directory exists — before anyone remembers
+# to add it to the array.
+for f in dodi-dev/skills/*/SKILL.md; do
+  skill="$(basename "$(dirname "$f")")"
   # Capture the frontmatter block into a variable rather than piping awk into
   # grep -q: under set -o pipefail, grep -q exiting early on its first match
   # can kill awk with SIGPIPE, turning a real pass into a spurious failure.
