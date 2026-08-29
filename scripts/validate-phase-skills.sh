@@ -81,6 +81,22 @@ for prompt in "${prompt_files[@]}"; do
   fi
 done
 
+# Fable Availability Policy: every frontmatter `model: fable` pin has a policy
+# row naming its skill (AGENTS.md "a fable seat without a row is a defect").
+# Scoped to the frontmatter block only (a `model: fable` in prose never
+# matches); the match is any policy-table row line naming the skill in
+# backticks, so bucket renames never break it and prose mentions outside the
+# table never false-positive.
+for skill in "${skills[@]}"; do
+  f="dodi-dev/skills/${skill}/SKILL.md"
+  if awk 'NR==1 && /^---$/ {inf=1; next} inf && /^---$/ {exit} inf' "$f" | grep -q '^model: fable$'; then
+    if ! grep -q "^[[:space:]]*|.*\`${skill}\`" AGENTS.md; then
+      echo "frontmatter fable pin without a Fable Availability Policy row: ${skill}" >&2
+      exit 1
+    fi
+  fi
+done
+
 # Deterministic skeleton: plugin scripts exist, are executable, and parse.
 plugin_scripts=(
   linear-api.sh
