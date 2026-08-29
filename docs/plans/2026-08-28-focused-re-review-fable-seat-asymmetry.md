@@ -251,7 +251,7 @@ The paragraph's opener ("A fable seat without a row is a defect. ") and its clos
 grep -cF 'Post-fix focused re-rounds run at Capable tier (`opus@high`) by default' AGENTS.md   # 1
 grep -cF 'and its post-fix focused re-round' AGENTS.md                                          # 1
 grep -c "inherit their gate's policy" AGENTS.md; echo "exit: $?"                                # 0, exit: 1
-git diff -U0 AGENTS.md | grep '^-' | grep -cE '\*\*(deferred|soft|operator-choice)\*\*'         # 0 (grep exits 1)
+git diff -U0 AGENTS.md | grep '^-|' | grep -cE '\*\*(deferred|soft|operator-choice)\*\*'         # 0 (grep exits 1)
 ```
 Expected: as annotated. Then read the section once end to end and confirm the acceptance read-through works from the doctrine sentence alone: all four tier×re-round cells are stated by name; the deferred row still carries the standard-tier child-PR **final**.
 
