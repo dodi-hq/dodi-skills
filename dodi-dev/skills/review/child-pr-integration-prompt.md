@@ -1,6 +1,6 @@
 # Child-PR Integration Reviewer Prompt Template
 
-Dispatch as a fresh-context subagent at the child-PR gate. The gate is a **delta-scoped integration pair**, both rounds from this template: the **integration round** at Capable tier (`model: opus` on Claude Code) and the **integration final** at Frontier tier (`model: fable` on Claude Code). A post-fix **focused re-round** is a fresh dispatch of this template aimed at the fix delta — `model: fable` on `needs-capable-delivery` tickets (the gate's hard seat), `model: opus` on standard-tier tickets (DR-025). The pre-PR full gate owns the generic checklist; these rounds own what is new or changed since it ran.
+Dispatch as a fresh-context subagent at the child-PR gate. The gate is a **delta-scoped integration pair**, both rounds from this template: the **integration round** at Capable tier (`model: opus` on Claude Code) and the **integration final** at Frontier tier (`model: fable` on Claude Code). A post-fix **focused re-round** is a fresh dispatch of this template aimed at the fix delta — `model: fable` on `needs-capable-delivery` tickets (the gate's hard seat), `model: opus` on standard-tier tickets (DR-025, epic DOD-1213). The pre-PR full gate owns the generic checklist; these rounds own what is new or changed since it ran.
 
 ```
 Agent tool (general-purpose, model: opus for the integration round; model: fable for the integration final; for a focused re-round: model: fable on `needs-capable-delivery` tickets, model: opus on standard-tier tickets):
