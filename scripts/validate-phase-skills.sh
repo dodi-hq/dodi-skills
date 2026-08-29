@@ -187,6 +187,7 @@ plugin_scripts=(
   cleanup-branch.sh
   check-deploy.sh
   watchdog-scan.sh
+  capacity-park-scan.sh
   heartbeat.sh
   driver-claim.sh
   reap-workers.sh
