@@ -24,6 +24,12 @@ cl() { bash "$SCAN" classify "$@"; }
 [[ "$(cl yes 10 1 24 3)" == self-healing ]] || { echo "FAIL nondefault-baseline" >&2; exit 1; }
 [[ "$(cl yes 10 1 8 3)" == escalating ]] || { echo "FAIL nondefault-age" >&2; exit 1; }
 [[ "$(cl yes 1 2 24 2)" == escalating ]] || { echo "FAIL nondefault-flap" >&2; exit 1; }
+# Non-numeric threshold (e.g. a malformed --age-threshold-hours) -> fail
+# loudly (non-zero exit), never silently fall through to self-healing.
+set +e
+cl yes 200 0 24h 3 >/dev/null 2>&1; rc=$?
+set -e
+[[ "$rc" -ne 0 ]] || { echo "FAIL non-numeric-threshold exit: got 0" >&2; exit 1; }
 
 # ---------- Integration: full flow over a stubbed linear-api.sh ----------
 # Shim-dir pattern (test-claim-liveness precedent): a mktemp dir holds a copy of

@@ -47,7 +47,18 @@ _classify() {
   local flap_threshold="${5:?classify: flap_threshold}"
   # Label absent: not a park, whatever the history says.
   if [[ "$label_present" != "yes" ]]; then echo none; return 0; fi
-  if (( $(python3 -c "print(1 if float('$age_h') >= float('$age_threshold_h') or int('$flap_count') >= int('$flap_threshold') else 0)") )); then
+  # Capture the python call's output BEFORE testing it: set -e does not fire
+  # inside an `if` condition, and (( $(...) )) reads an EMPTY substitution as
+  # false — so a raised ValueError (e.g. a non-numeric --age-threshold-hours)
+  # would otherwise fall through to self-healing with exit 0, the exact
+  # "never silent" violation this script exists to prevent.
+  local verdict
+  if ! verdict="$(python3 -c "print(1 if float('$age_h') >= float('$age_threshold_h') or int('$flap_count') >= int('$flap_threshold') else 0)" 2>&1)" \
+      || [[ "$verdict" != "0" && "$verdict" != "1" ]]; then
+    echo "capacity-park-scan: classify: bad input (age_h=$age_h flap_count=$flap_count age_threshold_h=$age_threshold_h flap_threshold=$flap_threshold): $verdict" >&2
+    return 1
+  fi
+  if (( verdict )); then
     echo escalating
   else
     echo self-healing
@@ -86,9 +97,12 @@ resp="$(linear_gql 'query($id: String!) {
 }' "{\"id\": \"$epic\"}")"
 
 # NOTE: heredoc lives inside a function, not inside $(...) — bash 3.2 (macOS
-# /bin/bash) cannot parse heredocs within command substitution when the body
-# contains backticks or odd apostrophes; the python builds backticks via
-# chr(96) for the same reason (the claim.sh precedent).
+# /bin/bash) cannot parse a heredoc within command substitution when the body
+# contains an ODD number of backticks (a balanced pair is fine; apostrophes
+# are fine either way). The function wrapper is what's load-bearing here: it
+# parses the heredoc at function-definition time, never inside a $(...). The
+# python's own chr(96) backtick-building is defense in depth on top of that
+# (the claim.sh precedent).
 _compute_facts() {
   RESP="$resp" FLAP_WINDOW_H="$flap_window_h" python3 <<'PY'
 import json, os, re
