@@ -497,7 +497,7 @@ with:
 with:
 
 ```text
-    You are the docs-sync judge (Frontier tier, xhigh effort — hard policy; or
+    You are the docs-sync judge (Frontier tier, xhigh effort; or
     the tier and effort this dispatch's fable-policy lookup substitutes, per
     AGENTS.md § Fable Availability Policy). For a change about to become a PR:
 ```

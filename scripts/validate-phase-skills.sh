@@ -70,8 +70,12 @@ for prompt in "${prompt_files[@]}"; do
   fi
   # Effort check is tolerant of parentheticals that wrap across lines
   # (multi-seat templates); the {0,200} bound keeps a stray unclosed
-  # parenthesis from matching across the whole file.
-  if ! tr '\n' ' ' < "$path" | grep -qE '\((Frontier|Capable|Standard|Fast) tier[^)]{0,200}effort'; then
+  # parenthesis from matching across the whole file. Flatten into a
+  # variable rather than piping into grep -q: under set -o pipefail, a
+  # large file could make tr die of SIGPIPE once grep -q exits early on
+  # its first match, turning a real pass into a spurious failure.
+  flattened="$(tr '\n' ' ' < "$path")"
+  if ! grep -qE '\((Frontier|Capable|Standard|Fast) tier[^)]{0,200}effort' <<< "$flattened"; then
     echo "worker prompt does not name its effort: ${prompt}" >&2
     exit 1
   fi
