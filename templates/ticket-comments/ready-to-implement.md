@@ -71,7 +71,8 @@ Ticket: `<ticket-id>`
 
 - Spec review: `<clean evidence>`
 - Plan review: `<clean evidence>`
-- Gate ledger: `gate-ledger: plan-review rounds=<n> findings=<b/a[,b/a...]> outcome=clean final=<tier>@<effort>`
+- Gate ledger: `gate-ledger: plan-review rounds=<n> findings=<b/a[,b/a...]> outcome=clean final=<tier>@<effort>[ tier-degraded(fable@<effort>→<tier>@<effort>,<policy>)]`
+- Session tier: `session-tier: tier-degraded(fable@<effort>→<tier>@<effort>,operator-choice)` `<only when this session ran under an operator-choice fable-policy substitution — AGENTS.md § Fable Availability Policy>`
 
 ## Next Action
 
