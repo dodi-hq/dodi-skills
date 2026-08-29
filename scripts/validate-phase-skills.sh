@@ -112,6 +112,70 @@ for f in dodi-dev/skills/*/SKILL.md; do
   fi
 done
 
+# Multi-tier seat registry: every worker prompt template must name every tier
+# it is dispatched at (AGENTS.md Dispatch Discipline — the second half of the
+# tier self-declaration invariant; the loop above checks only the first half).
+# A prompt file with no row here fails: registering the seats is part of
+# adding or re-seating a template.
+required_tiers_for() {
+  case "$1" in
+    brainstorm/spec-reviewer-prompt.md)                  echo "Frontier" ;;
+    implement/implementer-prompt.md)                     echo "Standard Capable" ;;
+    review/review-prompt.md)                             echo "Capable Frontier" ;;
+    review/child-pr-integration-prompt.md)               echo "Capable Frontier" ;;
+    write-plan/plan-reviewer-prompt.md)                  echo "Frontier" ;;
+    write-plan/plan-writer-prompt.md)                    echo "Frontier" ;;
+    epic-orchestrator/state-reader-prompt.md)            echo "Fast" ;;
+    epic-orchestrator/evidence-checker-prompt.md)        echo "Fast" ;;
+    epic-orchestrator/gate1-package-prompt.md)           echo "Frontier" ;;
+    epic-orchestrator/coherence-reviewer-prompt.md)      echo "Frontier" ;;
+    mature-ticket/spec-drafter-prompt.md)                echo "Frontier" ;;
+    verify/test-runner-prompt.md)                        echo "Fast" ;;
+    submit-ticket-pr/local-ci-runner-prompt.md)          echo "Fast" ;;
+    submit-ticket-pr/docs-sync-prompt.md)                echo "Frontier" ;;
+    submit-epic-pr/epic-integration-reviewer-prompt.md)  echo "Capable Frontier" ;;
+    *)                                                   echo "" ;;
+  esac
+}
+
+for prompt in "${prompt_files[@]}"; do
+  case "$prompt" in
+    *-prompt.md) ;;
+    *) continue ;;
+  esac
+  path="dodi-dev/skills/${prompt}"
+  tiers="$(required_tiers_for "$prompt")"
+  if [[ -z "$tiers" ]]; then
+    echo "worker prompt has no seat-registry row: ${prompt}" >&2
+    exit 1
+  fi
+  for tier in $tiers; do
+    if ! grep -q "${tier} tier" "$path"; then
+      echo "worker prompt does not name a tier it is dispatched at (${tier}): ${prompt}" >&2
+      exit 1
+    fi
+  done
+  if [[ "$tiers" == *" "* ]]; then
+    # Flatten into a variable rather than grep -qF on the raw file: the
+    # phrase can wrap across a line break in multi-seat templates (e.g.
+    # review/review-prompt.md's "match this\n    dispatch's pin"), which a
+    # per-line grep never matches even though the content satisfies the
+    # requirement. Squeeze (tr -s), not just translate, all whitespace to a
+    # single space: the wrapped continuation line's leading indentation
+    # would otherwise survive a plain newline-to-space swap as a run of
+    # spaces between "this" and "dispatch's", which the literal grep -qF
+    # phrase (single space) would still miss. Piping tr into grep -q
+    # directly risks the same SIGPIPE hazard noted above (set -o pipefail,
+    # tr killed once grep -q exits early on its first match), so capture
+    # first.
+    flattened_prompt="$(tr -s '[:space:]' ' ' < "$path")"
+    if ! grep -qF "match this dispatch's pin" <<< "$flattened_prompt"; then
+      echo "multi-tier worker prompt missing 'match this dispatch's pin': ${prompt}" >&2
+      exit 1
+    fi
+  fi
+done
+
 # Deterministic skeleton: plugin scripts exist, are executable, and parse.
 plugin_scripts=(
   linear-api.sh
