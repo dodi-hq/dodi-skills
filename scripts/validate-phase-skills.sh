@@ -272,6 +272,47 @@ check_count_at_least "$file" "Reason: \`<why>\`" 3
 check_count_at_least "$file" "Harness: \`<existing|setup-required|not-applicable>\`" 2
 check_count_at_least "$file" "Minimum assertions: \`<specific flows>\`" 2
 
+# DR-025 (DOD-1218): tier-conditional focused re-round wording pins. The
+# ruled doctrine is prose; these literals keep it from drifting silently.
+# (a) review/SKILL.md :47 hard + standard clauses; (b) the unchanged :55
+# verify-stage clause — the resolved asymmetry's stationary half; (c) the
+# AGENTS.md doctrine sentence's core; (d) the hard-row re-round cell;
+# (e) the :48 fix-loop closure clause — the gate-clean rule's two-path shape.
+dr025_pins_review=(
+  "on a \`needs-capable-delivery\` ticket it runs at the gate's **hard** fable seat (\`model: fable\` on Claude Code"
+  "on a standard-tier ticket it runs at Capable tier (\`model: opus\` on Claude Code"
+  "a fresh reviewer at Capable tier (\`model: opus\` on Claude Code) reads the fix delta"
+  "it is the **focused re-round** at its tier-conditional seat"
+)
+for pin in "${dr025_pins_review[@]}"; do
+  if ! grep -qF -- "$pin" dodi-dev/skills/review/SKILL.md; then
+    echo "review/SKILL.md missing DR-025 wording pin: ${pin}" >&2
+    exit 1
+  fi
+done
+dr025_pins_agents=(
+  "Post-fix focused re-rounds run at Capable tier (\`opus@high\`) by default"
+  "and its post-fix focused re-round"
+)
+for pin in "${dr025_pins_agents[@]}"; do
+  if ! grep -qF -- "$pin" AGENTS.md; then
+    echo "AGENTS.md missing DR-025 wording pin: ${pin}" >&2
+    exit 1
+  fi
+done
+# Negative assertions: the retired pre-DR-025 shapes must not reappear.
+# Combined with the positive pins, the asymmetry cannot silently return:
+# re-adding either retired phrase fails here, and deleting the new doctrine
+# text fails the positive pins instead.
+if grep -qF -- "focused re-round at the gate's fable seat" dodi-dev/skills/review/SKILL.md; then
+  echo "retired pre-DR-025 wording (unconditional re-round fable seat) reappeared: dodi-dev/skills/review/SKILL.md" >&2
+  exit 1
+fi
+if grep -qF -- "inherit their gate's policy" AGENTS.md; then
+  echo "retired pre-DR-025 inherit rule reappeared: AGENTS.md" >&2
+  exit 1
+fi
+
 find dodi-dev/skills -type l -print | while read -r link; do
   echo "unexpected symlink: ${link}" >&2
   exit 1
