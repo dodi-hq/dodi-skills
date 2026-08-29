@@ -27,6 +27,7 @@ Prepare the epic branch and epic worktree. This skill performs branch setup only
 - Verify the current repository worktree is clean before changing branches.
 - Discover the base branch from input or origin default branch.
 - Pull the latest base branch before creating or refreshing the epic branch.
+- Default the epic worktree to a sibling directory of the repo — `../<repo-name>-epic-<epic-id>` — unless an epic worktree path was given as input. Never nest the worktree inside the repo tree itself (e.g. not `<repo>/worktrees/...`): a worktree nested inside the repo shows up as untracked repo content and can get walked by the repo's own tooling.
 - Create or switch to the epic branch and epic worktree.
 - Do not create PRs or merge branches.
 

@@ -27,6 +27,7 @@ Create the child ticket branch and worktree from the epic branch. This skill is 
 
 - Verify spec-ready and ready-to-implement are present.
 - Refresh the epic branch before branching.
+- Default the child worktree to a sibling directory of the repo — `../<repo-name>-<ticket-id>` — matching the plain pickup skill's convention, unless a child worktree path was given as input. Never nest the worktree inside the repo tree itself (e.g. not `<repo>/worktrees/...`): a worktree nested inside the repo shows up as untracked repo content and can get walked by the repo's own tooling.
 - Create the child branch and child worktree from the epic branch.
 - Name the child branch `<user>/<ticket-id>-<slug>` with the ticket id lowercase (the PM system's branch-name format, e.g. `mike/dodi-123-instantly-webhook`) — this is what lets the PM system's GitHub integration attach PR state to the ticket automatically.
 - Record the created branch and the child worktree path **as an absolute path** before implementation starts — the lane's dispatch manifest anchors to this absolute path (agent cwd resets between Bash calls, so a relative path is fiction for the lane). The lane's first `.dodi/` manifest write self-creates `<child-worktree-abs>/.dodi/.gitignore` containing `*` (same self-ignoring behavior as the driver's — the first manifest write in _any_ worktree owns the ignore-file creation), so the lane worktree never leaks `.dodi/` into git.
