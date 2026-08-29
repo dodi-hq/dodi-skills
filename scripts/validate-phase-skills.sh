@@ -100,7 +100,11 @@ for f in dodi-dev/skills/*/SKILL.md; do
   # grep -q: under set -o pipefail, grep -q exiting early on its first match
   # can kill awk with SIGPIPE, turning a real pass into a spurious failure.
   fm="$(awk 'NR==1 && /^---$/ {inf=1; next} inf && /^---$/ {exit} inf' "$f")"
-  if grep -qE "^model:[[:space:]]*[\"']?fable[\"']?[[:space:]]*$" <<< "$fm"; then
+  # The trailing `(#.*)?` catches a YAML-legal end-of-line comment
+  # (`model: fable # needs Frontier`), which is still a live pin. Widening
+  # here is the safe direction: it can only make the check trigger more
+  # often, never less.
+  if grep -qE "^model:[[:space:]]*[\"']?fable[\"']?[[:space:]]*(#.*)?$" <<< "$fm"; then
     if ! grep -q "^[[:space:]]*|.*\`${skill}\`" AGENTS.md; then
       echo "frontmatter fable pin without a Fable Availability Policy row: ${skill}" >&2
       exit 1
