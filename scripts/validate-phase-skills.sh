@@ -84,12 +84,19 @@ done
 # Fable Availability Policy: every frontmatter `model: fable` pin has a policy
 # row naming its skill (AGENTS.md "a fable seat without a row is a defect").
 # Scoped to the frontmatter block only (a `model: fable` in prose never
-# matches); the match is any policy-table row line naming the skill in
-# backticks, so bucket renames never break it and prose mentions outside the
-# table never false-positive.
+# matches). The AGENTS.md side is deliberately loose: it matches ANY markdown
+# table row naming the skill in backticks, not policy-table rows specifically
+# — a skill named in some other table's cell (e.g. a dispatch-gate mention)
+# also satisfies it. A tighter predicate would risk missing legitimate policy
+# rows, since seat mentions and dispatch-gate mentions share the same tables;
+# this keeps prose-only mentions from counting and survives bucket renames.
 for skill in "${skills[@]}"; do
   f="dodi-dev/skills/${skill}/SKILL.md"
-  if awk 'NR==1 && /^---$/ {inf=1; next} inf && /^---$/ {exit} inf' "$f" | grep -q '^model: fable$'; then
+  # Capture the frontmatter block into a variable rather than piping awk into
+  # grep -q: under set -o pipefail, grep -q exiting early on its first match
+  # can kill awk with SIGPIPE, turning a real pass into a spurious failure.
+  fm="$(awk 'NR==1 && /^---$/ {inf=1; next} inf && /^---$/ {exit} inf' "$f")"
+  if grep -q '^model: fable$' <<< "$fm"; then
     if ! grep -q "^[[:space:]]*|.*\`${skill}\`" AGENTS.md; then
       echo "frontmatter fable pin without a Fable Availability Policy row: ${skill}" >&2
       exit 1
