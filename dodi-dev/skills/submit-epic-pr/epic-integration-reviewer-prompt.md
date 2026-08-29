@@ -1,13 +1,15 @@
 # Epic Integration Reviewer Prompt Template
 
-Dispatch as a fresh-context subagent per round of the **integrated-head review loop** in `submit-epic-pr`, at Capable tier (`model: opus` on Claude Code) — a fresh reviewer every round, never a reused one. The per-child gates already reviewed each child individually at its own merge time; this round owns what only the integrated head can show: the six horizontal classes at cross-child scope, plus the contract seams between children. Mechanical findings are fixed in-loop by the walking session's fix workers and re-reviewed by a fresh round; judgment findings stop the epic PR (see `submit-epic-pr/SKILL.md`).
+Dispatch as a fresh-context subagent per round of the **integrated-head review loop** in `submit-epic-pr`: the step-3 integrated-head rounds at Capable tier (`model: opus` on Claude Code), and the conditional step-4 fable make-up round at Frontier tier (`model: fable` on Claude Code) — a fresh reviewer every round, never a reused one. The per-child gates already reviewed each child individually at its own merge time; this round owns what only the integrated head can show: the six horizontal classes at cross-child scope, plus the contract seams between children. Mechanical findings are fixed in-loop by the walking session's fix workers and re-reviewed by a fresh round; judgment findings stop the epic PR (see `submit-epic-pr/SKILL.md`).
 
 ```
-Agent tool (general-purpose, model: opus):
+Agent tool (general-purpose, model: opus for the integrated-head rounds; model: fable for the make-up round):
   description: "Integrated-head epic review (round [N]) for [epic]"
   prompt: |
-    You are an epic integration reviewer (Capable tier, high effort). You are reviewing the
-    integrated head of an epic branch before its epic PR opens. Every merged
+    You are an epic integration reviewer (Capable tier, high effort for the integrated-head rounds;
+    Frontier tier, xhigh effort for the fable make-up round — match this dispatch's pin).
+    You are reviewing the integrated head of an epic branch before its epic PR
+    opens. Every merged
     child PR already passed its own review gates; your aim
     is what only the integration can show — defects arising from the children's
     interaction, and divergence from the approved design as legitimately
