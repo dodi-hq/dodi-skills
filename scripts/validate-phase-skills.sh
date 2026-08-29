@@ -100,7 +100,7 @@ for f in dodi-dev/skills/*/SKILL.md; do
   # grep -q: under set -o pipefail, grep -q exiting early on its first match
   # can kill awk with SIGPIPE, turning a real pass into a spurious failure.
   fm="$(awk 'NR==1 && /^---$/ {inf=1; next} inf && /^---$/ {exit} inf' "$f")"
-  if grep -qE '^model:[[:space:]]*"?fable"?[[:space:]]*$' <<< "$fm"; then
+  if grep -qE "^model:[[:space:]]*[\"']?fable[\"']?[[:space:]]*$" <<< "$fm"; then
     if ! grep -q "^[[:space:]]*|.*\`${skill}\`" AGENTS.md; then
       echo "frontmatter fable pin without a Fable Availability Policy row: ${skill}" >&2
       exit 1
