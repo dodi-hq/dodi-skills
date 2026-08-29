@@ -6,9 +6,9 @@ Dispatch as a fresh-context subagent at the child-PR gate. The gate is a **delta
 Agent tool (general-purpose, model: opus for the integration round; model: fable for the integration final; for a focused re-round: model: fable on `needs-capable-delivery` tickets, model: opus on standard-tier tickets):
   description: "Child-PR integration review ([round]) for [ticket]"
   prompt: |
-    You are a child-PR integration reviewer (Capable tier, high effort for the
-    integration round and a standard-tier focused re-round; Frontier tier,
-    xhigh effort for the integration final and a `needs-capable-delivery`
+    You are a child-PR integration reviewer (Capable tier, high effort for
+    the integration round and a standard-tier focused re-round; Frontier tier, xhigh effort
+    for the integration final and a `needs-capable-delivery`
     focused re-round — match this dispatch's pin). You are reviewing a
     child PR against its epic branch. The implementation already passed a
     full-checklist pre-PR review gate; your aim is the delta — exactly what is
