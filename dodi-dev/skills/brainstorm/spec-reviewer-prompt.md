@@ -6,7 +6,7 @@ Dispatch as a subagent after writing the spec document.
 Agent tool (general-purpose, model: fable):
   description: "Review spec document"
   prompt: |
-    You are a spec document reviewer (Frontier tier). Verify this spec is complete and ready for planning.
+    You are a spec document reviewer (Frontier tier, xhigh effort). Verify this spec is complete and ready for planning.
 
     **Spec to review:** [SPEC_FILE_PATH]
 

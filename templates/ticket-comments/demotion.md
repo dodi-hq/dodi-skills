@@ -18,7 +18,7 @@ Ticket: `<ticket-id>`
 
 `rework-origin: <spec|plan> caught-at=<gate>/<round>/<tier>`
 
-`gate-ledger: <gate> rounds=<n> findings=<b/a[,b/a...]> outcome=escalated final=<tier>` `<only when the demotion closes a looped review gate>`
+`gate-ledger: <gate> rounds=<n> findings=<b/a[,b/a...]> outcome=escalated final=<tier>@<effort>` `<only when the demotion closes a looped review gate>`
 
 ## Why Automation Cannot Continue
 

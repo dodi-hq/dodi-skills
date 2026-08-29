@@ -6,7 +6,7 @@ Dispatch as a fresh-context subagent per round of the **integrated-head review l
 Agent tool (general-purpose, model: opus):
   description: "Integrated-head epic review (round [N]) for [epic]"
   prompt: |
-    You are an epic integration reviewer (Capable tier). You are reviewing the
+    You are an epic integration reviewer (Capable tier, high effort). You are reviewing the
     integrated head of an epic branch before its epic PR opens. Every merged
     child PR already passed its own review gates; your aim
     is what only the integration can show — defects arising from the children's

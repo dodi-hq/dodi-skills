@@ -71,7 +71,7 @@ Ticket: `<ticket-id>`
 
 - Spec review: `<clean evidence>`
 - Plan review: `<clean evidence>`
-- Gate ledger: `gate-ledger: plan-review rounds=<n> findings=<b/a[,b/a...]> outcome=clean final=<tier>`
+- Gate ledger: `gate-ledger: plan-review rounds=<n> findings=<b/a[,b/a...]> outcome=clean final=<tier>@<effort>`
 
 ## Next Action
 
