@@ -7,6 +7,9 @@
 # Manifest: .dodi/dispatch-manifest-<session-run-id>.jsonl at an ABSOLUTE path.
 # Each line: {session_id, worker_id, output_file, purpose, tier, ts}
 # Reap records appended: {reaped, verdict, ts} keyed to worker_id.
+# Legacy records (pre-0.16.x sessions) key the worker as "worker" instead of
+# "worker_id"; manifests accrete across sessions in the same worktree, so both
+# spellings must be tolerated on every record kind — never assume one schema.
 #
 # Usage: reap-workers.sh <manifest-path>
 # Exit: 0 report printed; 2 error.
@@ -23,8 +26,10 @@ import json, os, subprocess
 from pathlib import Path
 mpath = os.environ["MANIFEST"]; now = int(os.environ["NOW"])
 lines = [json.loads(l) for l in Path(mpath).read_text().splitlines() if l.strip()]
-dispatched = {r["worker_id"]: r for r in lines if "worker_id" in r and "reaped" not in r}
-reaped = {r["worker_id"] for r in lines if r.get("reaped")}
+def wid_of(r):  # legacy records use "worker"; current schema uses "worker_id"
+    return r.get("worker_id") or r.get("worker")
+dispatched = {wid_of(r): r for r in lines if wid_of(r) and "reaped" not in r}
+reaped = {wid_of(r) for r in lines if r.get("reaped") and wid_of(r)}
 for wid, rec in dispatched.items():
     if wid in reaped:
         continue
