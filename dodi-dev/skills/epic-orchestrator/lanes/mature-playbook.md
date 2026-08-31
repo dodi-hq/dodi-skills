@@ -13,12 +13,23 @@ The executing session (the resident driver walking this lane inline, or a manual
 | Write plan | `write-plan/plan-writer-prompt.md` | Frontier (`fable`); **deferred** | → `plan-reviewing` (plan written) | planning exposes product ambiguity ⇒ demote to spec |
 | Plan review loop | `write-plan/plan-reviewer-prompt.md` | Frontier (`fable`); non-final rounds **soft**, **final round deferred** | → `ready-to-implement` — **terminal; applies `ready-to-implement` (+ `needs-capable-delivery` on a `capable` verdict)** | findings ⇒ another round; unresolved dependency ⇒ `blocked-dependency` |
 
+### Under Florist
+
+The same four phases, split across **two** kernel-seated dispatches — each a fresh process that runs its phases, emits one digest, and ends:
+
+| Florist lane | Phases | Ends at |
+| --- | --- | --- |
+| `contract-drafting` | Draft spec + spec review loop | the clean spec, pushed to the epic branch |
+| `contract-review` | Write plan + plan review loop | the clean plan and its delivery-tier classification |
+
+The lane boundary falls exactly where the durable seam already was (→ `needs-plan`, the transition that applies `spec-ready`), so the split adds no seam this lane did not have. The internal review loops stay inside their dispatch: a review round is not a lane transition, and only the loop's clean final result is reported. Gate tiers come from `FLORIST_EPIC_TIER` rather than the table below, and the result contract — digest grammar, evidence rows, decline vocabulary, the per-child signoff gate — is `mature-ticket` § Autonomous mode, over `epic-orchestrator/florist-worker-contract.md`. Nothing else in this file changes: same sequence, same durable surface, same demotion edges.
+
 fable-policy values are the per-gate policy the executing session looks up (per § 2 of `execution-model.md`) immediately before writing each dispatch's tier pin; the AGENTS.md gate-policy table is authoritative. Research and read-and-digest sub-dispatches within a phase (codebase exploration, external/integration API docs, test-harness orientation) pin Standard (`sonnet`); see § Model tiers.
 
 ## Signoff model
 
 - **Default (Gate 1 delegated):** if the epic carries `epic-signed-off`, proceed spec → plan → readiness labels without waiting on a human. Record delegated assumptions (⚠-flagged) in the spec and a ticket comment.
-- **Per-child gate:** if the child carries `needs-human-spec`, require explicit human signoff on the spec before write-plan — the pre-Gate-1 behavior.
+- **Per-child gate:** if the child carries `needs-human-spec`, require explicit human signoff on the spec before write-plan — the pre-Gate-1 behavior. Under Florist the label is captured into the unit's admit-time product snapshot and arrives as `FLORIST_NEEDS_HUMAN_SPEC`; the gate is **draft-then-review** (the spec is drafted and reviewed autonomously first, so the human reviews something real) and is enforced at the top of `contract-review`.
 - **Genuine ambiguity:** if the spec drafter returns `QUESTIONS_FOR_HUMAN`, stop and ask regardless of delegation. Delegation covers routine choices, not open product questions.
 - If the epic carries neither `epic-signed-off` nor a per-child signoff, do not enter planning — report `awaiting-epic-signoff` to the orchestrator.
 
@@ -46,7 +57,7 @@ The lane carries a **`RESUMABLE` exit state** (its ticket claim's exit state whe
 
 ## Model tiers
 
-The `model: fable` frontmatter pin on the manual wrapper covers its main loop only — it never flows into worker dispatches. Every dispatch carries its own explicit pin: spec drafter, spec/plan reviewers, and plan writer carry Frontier pins; research and read-and-digest workers (external/integration API docs, test-harness orientation, codebase exploration) pin Standard tier (`model: sonnet` on Claude Code). A dispatch without a pin inherits the frontmatter default — that is a defect, not a default, and `hook-require-model-pin.sh` forbids it. The frontmatter pin is the **operator-choice** seat in AGENTS.md § Fable Availability Policy; when a manual session runs under that row's declared substitution, its main loop is `Capable@max` while every dispatch keeps its own per-gate pin and fable-policy, unchanged.
+The executing session's own main-loop tier never flows into worker dispatches (`mature-ticket` carries no frontmatter `model:` pin as of 0.18.0 — see AGENTS.md § Model Tiers). Every dispatch carries its own explicit pin: spec drafter, spec/plan reviewers, and plan writer carry Frontier pins — Capable under a `standard`-tier epic on Florist; research and read-and-digest workers (external/integration API docs, test-harness orientation, codebase exploration) pin Standard tier (`model: sonnet` on Claude Code). A dispatch without a pin inherits the session model — that is a defect, not a default, and `hook-require-model-pin.sh` forbids it. A manual session's main-loop tier is the **operator-choice** seat in AGENTS.md § Fable Availability Policy; when it runs under that row's declared substitution, its main loop is `Capable@max` while every dispatch keeps its own per-gate pin and fable-policy, unchanged.
 
 ## Evidence
 
