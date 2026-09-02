@@ -1,12 +1,12 @@
 # Spec Reviewer Prompt Template
 
-Dispatch as a subagent after writing the spec document.
+Dispatch as a subagent after writing the spec document. Where this template is dispatched at Capable tier (`model: opus` on Claude Code) — a `standard`-tier epic's gates under Florist (`mature-ticket` § Gate tiers by epic tier) — the seat is **Capable tier, high effort**; otherwise it is **Frontier tier, xhigh effort**. Match this dispatch's pin.
 
 ```
 Agent tool (general-purpose, model: fable):
   description: "Review spec document"
   prompt: |
-    You are a spec document reviewer (Frontier tier, xhigh effort). Verify this spec is complete and ready for planning.
+    You are a spec document reviewer (Frontier tier, xhigh effort — or Capable tier, high effort at a `standard`-epic gate; match this dispatch's pin). Verify this spec is complete and ready for planning.
 
     **Spec to review:** [SPEC_FILE_PATH]
 

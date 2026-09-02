@@ -41,6 +41,7 @@ prompt_files=(
   epic-orchestrator/execution-model.md
   epic-orchestrator/lanes/mature-playbook.md
   epic-orchestrator/lanes/deliver-playbook.md
+  epic-orchestrator/florist-worker-contract.md
   epic-orchestrator/gate1-package-prompt.md
   epic-orchestrator/coherence-reviewer-prompt.md
   mature-ticket/spec-drafter-prompt.md
@@ -119,17 +120,17 @@ done
 # adding or re-seating a template.
 required_tiers_for() {
   case "$1" in
-    brainstorm/spec-reviewer-prompt.md)                  echo "Frontier" ;;
+    brainstorm/spec-reviewer-prompt.md)                  echo "Frontier Capable" ;;
     implement/implementer-prompt.md)                     echo "Standard Capable" ;;
     review/review-prompt.md)                             echo "Capable Frontier" ;;
     review/child-pr-integration-prompt.md)               echo "Capable Frontier" ;;
-    write-plan/plan-reviewer-prompt.md)                  echo "Frontier" ;;
-    write-plan/plan-writer-prompt.md)                    echo "Frontier" ;;
+    write-plan/plan-reviewer-prompt.md)                  echo "Frontier Capable" ;;
+    write-plan/plan-writer-prompt.md)                    echo "Frontier Capable" ;;
     epic-orchestrator/state-reader-prompt.md)            echo "Fast" ;;
     epic-orchestrator/evidence-checker-prompt.md)        echo "Fast" ;;
     epic-orchestrator/gate1-package-prompt.md)           echo "Frontier" ;;
     epic-orchestrator/coherence-reviewer-prompt.md)      echo "Frontier" ;;
-    mature-ticket/spec-drafter-prompt.md)                echo "Frontier" ;;
+    mature-ticket/spec-drafter-prompt.md)                echo "Frontier Capable" ;;
     verify/test-runner-prompt.md)                        echo "Fast" ;;
     submit-ticket-pr/local-ci-runner-prompt.md)          echo "Fast" ;;
     submit-ticket-pr/docs-sync-prompt.md)                echo "Frontier" ;;

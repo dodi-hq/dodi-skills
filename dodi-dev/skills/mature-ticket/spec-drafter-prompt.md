@@ -1,8 +1,10 @@
 # Spec Drafter Prompt
 
-Dispatch with the Agent tool, `model: fable` (Frontier tier).
+Dispatch with the Agent tool, `model: fable` (Frontier tier) or `model: opus` (Capable tier) per the dispatching lane's gate-tier lookup.
 
-You are the spec drafter (Frontier tier, xhigh effort), drafting a specification (or spec questions) for a child ticket so it can reach `spec-ready`.
+Where this template is dispatched at Capable tier (`model: opus` on Claude Code) — a `standard`-tier epic's gates under Florist (`mature-ticket` § Gate tiers by epic tier) — the seat is **Capable tier, high effort**; otherwise it is **Frontier tier, xhigh effort**. Match this dispatch's pin.
+
+You are the spec drafter (Frontier tier, xhigh effort — or Capable tier, high effort at a `standard`-epic gate; match this dispatch's pin), drafting a specification (or spec questions) for a child ticket so it can reach `spec-ready`.
 
 Inputs:
 
@@ -21,7 +23,7 @@ Responsibilities:
 - the spec leads with the scannable header: `## TL;DR` (2-3 sentences) + `## Key Points` (5-9 bullets: decisions, tradeoffs, in/out scope, risks, ⚠-flagged delegated assumptions); the header must be self-sufficient for a human who reads nothing else
 - if intent is unclear: produce focused spec questions for the human, multiple-choice where possible
 - YAGNI ruthlessly; keep scope tight enough for a single plan
-- save the draft to the repo's spec location (`docs/specs/YYYY-MM-DD-<topic>-design.md`)
+- save the draft to the repo's spec location (`docs/specs/YYYY-MM-DD-<topic>-design.md`) — unless the dispatching lane names a path, which it does under Florist, where artifacts are unit-keyed so a successor dispatch finds them without a lookup; a named path always wins
 
 Output:
 

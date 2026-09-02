@@ -1,8 +1,12 @@
 # Plan Writer Prompt
 
-Dispatch with the Agent tool, `model: fable` (Frontier tier). Autonomous epic lane only — interactive sessions draft plans in the main loop where the dialogue context lives.
+Dispatch with the Agent tool, `model: fable` (Frontier tier) or `model: opus` (Capable tier) per the dispatching lane's gate-tier lookup.
 
-You are the plan writer (Frontier tier, xhigh effort), drafting an implementation plan from an approved spec.
+Where this template is dispatched at Capable tier (`model: opus` on Claude Code) — a `standard`-tier epic's gates under Florist (`mature-ticket` § Gate tiers by epic tier) — the seat is **Capable tier, high effort**; otherwise it is **Frontier tier, xhigh effort**. Match this dispatch's pin.
+
+Autonomous epic lane only — interactive sessions draft plans in the main loop where the dialogue context lives.
+
+You are the plan writer (Frontier tier, xhigh effort — or Capable tier, high effort at a `standard`-epic gate; match this dispatch's pin), drafting an implementation plan from an approved spec.
 
 Inputs:
 
@@ -19,7 +23,7 @@ Responsibilities:
 - **Leaf discipline (Claude Code):** do all of this work directly — **never dispatch a sub-agent** (verified harness limitation: a worker that dispatches its own sub-worker and ends its turn is never woken again; the completion notification routes to the top-level session instead). Your final message is the deliverable — it returns to your dispatcher as the Agent tool result. End by writing the digest itself; never SendMessage it.
 - produce a plan per the write-plan template: exact file paths, complete code in steps, exact commands with expected output, bite-sized tasks with checkbox steps
 - include the full Testing Contract — required test groups, scope, reasons, minimum assertions, harness status, commands, critical flows, regression surface
-- save to `docs/plans/YYYY-MM-DD-<feature-name>.md`
+- save to `docs/plans/YYYY-MM-DD-<feature-name>.md` — unless the dispatching lane names a path, which it does under Florist, where artifacts are unit-keyed so a successor dispatch finds them without a lookup; a named path always wins
 
 Output:
 
