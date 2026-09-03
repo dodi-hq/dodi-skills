@@ -1,6 +1,6 @@
 # Florist Worker Contract
 
-The single canon of what changes when a lane session is **spawned by the Florist kernel** instead of invoked by a human. Written for the executing session; referenced by every skill that holds a Florist seat (today `mature-ticket`; the delivery-lane skills as their seats land).
+The single canon of what changes when a lane session is **spawned by the Florist kernel** instead of invoked by a human. Written for the executing session; referenced by every skill that holds a Florist seat — `mature-ticket` for the contract lanes, `implement-ticket` for `implementing`, `review` for `code-review` and `integrating`. § 9 is the per-seat table: which skill sits where, and the one digest each seat owes.
 
 Florist is the durable orchestration kernel that replaces the prose state machine these skills carry between them: it owns unit state, leases, attempt accounting, escalation, and the tracker projection, and it dispatches a provider CLI per lane into a per-unit worktree. The session it spawns is a **worker**, not a driver. Everything below follows from that one fact.
 
@@ -23,8 +23,11 @@ The check is the environment variable itself, never a heuristic about the harnes
 | `FLORIST_DELIVERY_TIER` | the unit's plan-reviewer delivery classification (`standard` \| `capable`) | not yet classified |
 | `FLORIST_NEEDS_HUMAN_SPEC` | `1` iff the admit-time product snapshot carried the `needs-human-spec` label | the label was absent |
 | `FLORIST_EPIC_BRANCH` | the epic branch unit branches fork from — the contract lanes' durable surface | never |
+| `LINEAR_API_KEY` | the **worker-lane** tracker credential, read by `${CLAUDE_PLUGIN_ROOT}/scripts/linear-api.sh` — distinct from the kernel's own key, which the allowlist strips (DOD-1300) | the deployment issued no worker tracker credential: a concrete blocker (`blocked reason=worker-blocked`), never an improvised read path |
 
 The worker's worktree is on `unit/<FLORIST_UNIT>`, forked from `FLORIST_EPIC_BRANCH`, and **persists across dispatches** for that unit: a later lane sees the earlier lane's files without fetching anything.
+
+That worktree is a worktree of the **kernel's own clone**. The branch head the kernel fences a delivery digest against (§ 9) is the local `refs/heads/unit/<FLORIST_UNIT>` — the worktree's committed `HEAD` — and the kernel's irreversible actions (`pr-create`, `child-merge`) then check **origin** against the same SHA and refuse on any difference. So a delivery seat pushes `unit/<FLORIST_UNIT>` before it reads the SHA it cites, cites exactly `git rev-parse HEAD` after the push, and commits nothing after that read. Uncommitted work is invisible to the kernel; unpushed work fails the irreversible action.
 
 The worker holds **none of the kernel's credentials** by design (the spawn-env allowlist strips them). It cannot read kernel state, cannot attest, and cannot advance itself. Everything it knows arrives in the table above, in its worktree, or on the ticket.
 
@@ -59,8 +62,10 @@ Outcomes and their required evidence are per lane; each seat-holding skill state
 
 Both park the unit on the same side-state and raise to a named human. They differ in one thing that matters:
 
-- **`FLORIST-STATUS: blocked reason=<reasonId>`** — the worker hit a wall *while working*: an operational failure or a judgment call above its authority. The attempt is spent.
-- **`FLORIST-STATUS: declined reason=<reasonId>`** — the worker refuses the dispatch on **policy**, deterministically: re-dispatching the identical configuration would decline identically, so **no attempt is burned**. A decline is a submission, not an exit — emit it and stop; never exit silently and let the lease reap.
+- **`FLORIST-STATUS: blocked reason=<reasonId>`** — the worker hit a wall *while working*: an operational failure or a judgment call above its authority. A plain unblock re-dispatches the same lane to try again.
+- **`FLORIST-STATUS: declined reason=<reasonId>`** — the worker refuses the dispatch on **policy**, deterministically: re-dispatching the identical configuration would decline identically, so an unblock that changes nothing the reason names re-declines at once. A decline is a submission, not an exit — emit it and stop; never exit silently and let the lease reap.
+
+Neither charges an attempt (corrected in 0.19.0 — 0.18.0 said a block did): the kernel settles both in the same block CAS that clears the lease, so the reap — the only place an attempt is counted — never sees either. What costs an attempt is **silence**: an exit with no digest leaves a dead lease for the reap, and the § 8 predicate charges the unit when the branch head did not move and no evidence landed. What choosing the wrong one costs is the human's time: the raise carries the reason's unpark instructions, and a block's say what to restore or rule on while a decline's say what configuration to change.
 
 `reason` must be a `reasonId` the kernel's registry knows; an unknown one fails closed and the run is thrown away. The registry (`schemas/reason-registry.json` in dodi-florist) is authoritative — these are the ones a lane worker emits:
 
@@ -103,3 +108,44 @@ Human signoff, where a gate requires it, is a ticket comment headed `# Spec Sign
 The mechanics in `execution-model.md` apply verbatim — the leaf rule (§1), explicit tier pins on every dispatch (§2), dual-wake await (§3), STALLED handling (§4), and manifest discipline (§6), with the manifest at the **unit worktree's** `.dodi/` since there is no epic worktree in a Florist dispatch. The lane's own playbook still declares its phase sequence, seams, and exit edges; this file changes only who is listening and how the session speaks to them.
 
 A `RESUMABLE` exit has no counterpart here: the kernel's lease reap and attempt accounting are the resumption machinery, and a mid-lane context exit is simply a run that produced no digest. Push what is durable before it happens — the successor re-enters from the epic branch.
+
+The deliver lane's `# Lane Checkpoint` comments are a driver-mode surface with no counterpart here: under Florist the checkpoints collapse into digest evidence, and a seat posts none. A delivery seat's durable progress is its commits on `unit/<FLORIST_UNIT>` plus its **Seat Record** (§ 9); a successor dispatch re-enters from those — implementation commits are never redone, and a gate is re-run at the current head unless a Seat Record for exactly that head already records it clean.
+
+## 9. Seats and digests
+
+Every kernel lane with a seat, the skill that holds it, what one dispatch runs, and the digest that advances it. `pr-open` has **no seat**: the kernel opens the child PR itself (the `pr-create` irreversible action) once the `impl-ready` digest verifies, and the scheduler dispatches `code-review` when the PR exists. `soak-ready` and the terminals dispatch nothing. A seat-holding skill states its phases, gate tiers, and edges in its own words; it never emits a digest this section does not list.
+
+| Lane | Seat | One dispatch runs | Advances on |
+| --- | --- | --- | --- |
+| `contract-drafting` | `mature-ticket` | draft the contract, spec-review loop to a clean final round, push to `FLORIST_EPIC_BRANCH` | `artifact-ready` |
+| `contract-review` | `mature-ticket` | write the plan, plan-review loop to a clean final round, push | `clean-final delivery-tier=…` |
+| `implementing` | `implement-ticket` | implement → pre-PR review loop → tests → docs-sync → verify → push | `impl-ready head=…` |
+| `pr-open` | — (kernel) | `pr-create` over the digest's head | scheduler dispatch |
+| `code-review` | `review` | the child-PR integration pair + fix loop + conditional local CI, on the kernel-opened PR; push fixes | `clean-final` (in-lane: the scheduler upgrades to `integrating` when the epic's integration slot is free) |
+| `integrating` | `review` | currency check → sync, **or** the coherence verdict | `synced head=…` (→ `code-review`) / `merge-ready head=…` (→ kernel `child-merge` → `soak-ready`) |
+
+### Outcomes the kernel accepts, per lane
+
+The kernel validates evidence presence and SHA identity before it commits anything; a row missing here is a rejected submission (thrown away, the attempt settles) and a SHA that does not match is `blocked:sha-mismatch`. `head=` is always the branch head **as the kernel observes it now** — the local `unit/<FLORIST_UNIT>` ref, which after the required push is also origin's.
+
+| Outcome | Lane | Required fields | Required evidence | What the kernel does |
+| --- | --- | --- | --- | --- |
+| `artifact-ready` | contract-drafting | — | `artifact` with a real `sha` (the pushed contract commit) | → `contract-review`; pins `contractSha` |
+| `findings` | contract-review | — | `thread` | → `contract-drafting` (a new lane, a new attempt budget) |
+| `clean-final` | contract-review | `delivery-tier=standard\|capable` | `thread` with `sha` = the pinned contract SHA | → `ready-to-implement`; stamps `deliveryTier` |
+| `impl-ready` | implementing | `head=<sha>` | `artifact` `sha`=head; `thread` (the clean closing pre-PR round, its own reviewed SHA); `ci` `sha`=head | branch head must equal `head`; then `pr-create` → `pr-open` |
+| `demote` | implementing, code-review | — | `thread` (the demotion record) | → `contract-drafting` |
+| `findings` | code-review | — | `thread` | **in-lane**: lease released, `attempt`+1, a fresh seat re-dispatches; the attempt ceiling is the escalation |
+| `clean-final` | code-review | — | `thread` with `sha` = the branch head now | **in-lane**: pins `headSha`; the scheduler moves the unit to `integrating` when the slot is free |
+| `synced` | integrating | `head=<sha>` | none required (record the sync as `artifact`) | → `code-review`; the merged delta re-passes review |
+| `merge-ready` | integrating | `head=<sha>` | `verdict` with `ref=<OUTCOME>[:<sibling>,…]` and `sha`=head | records the verdict, then `child-merge` at exactly `head` → `soak-ready`; `GATE1_AMENDMENT`/`GATE1_REFRESH` park on `gate1-ruling` instead; `LEGITIMATE_DIVERGENCE` realigns the named siblings — the kernel's act, never the worker's |
+| `blocked` | any | `reason=<reasonId>` | none required | side-state + raise; unblock re-enters the same lane at the same attempt |
+| `declined` | any | `reason=<reasonId>` | none required | side-state + raise; deterministic — an unchanged re-dispatch re-declines; no attempt either way (§ 5) |
+
+`verdict` outcomes are exactly `ALIGNED`, `MINOR`, `LEGITIMATE_DIVERGENCE`, `MATERIAL_DRIFT`, `GATE1_AMENDMENT`, `GATE1_REFRESH`; siblings are unit ids, comma-separated, no spaces, only on `LEGITIMATE_DIVERGENCE`. Anything else fails closed — no verdict, no merge.
+
+### Evidence refs and the Seat Record
+
+`ref` is a locator, never prose: a URL (a ticket comment, a PR), a repo path (`docs/specs/<unit>-contract.md`), or a `<kind>:<label>` token such as `sync:<epic sha>`. `sha` carries the commit the row attests to, and `-` only where the table above leaves the SHA free.
+
+Every **delivery** seat closes with one ticket comment headed `# Seat Record`, posted before the digest, carrying: `unit`, `lane`, `attempt`, `head`; each gate's `gate-ledger:` line (`review` § Gate Ledger) with the SHA its clean closing round reviewed — the pre-PR gate's is the baseline the code-review seat aims its delta at; every runner digest's commands, exit codes, and the head SHA it ran against, the local-CI runner's named explicitly; the reviewed diff ranges; the epic head a sync merged; and the verdict where one was recorded. Its URL is the default `ref` for `thread` and `ci` rows. It is an ordinary comment — bookkeeping under the comment-species partition, never a status write — and it is what a successor dispatch reads to avoid redoing a clean gate at the same head (§ 8).

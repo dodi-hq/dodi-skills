@@ -20,6 +20,19 @@ Each phase is the named phase skill's process, executed inside this lane with th
 
 fable-policy values are the per-gate policy the executing session looks up (per § 2 of `execution-model.md`) immediately before writing each dispatch's tier pin; the AGENTS.md gate-policy table is authoritative.
 
+### Under Florist
+
+The same phases, split across **three** kernel-seated dispatches — each a fresh process that runs its phases, emits one digest, and ends — with the two edges the lane never owned anyway (the PR, the merge) performed by the kernel as irreversible actions:
+
+| Florist lane | Seat | Phases | Ends at |
+| --- | --- | --- | --- |
+| `implementing` | `implement-ticket` | implement → pre-PR review loop → `create-tests` → docs-sync → `verify` → push | `impl-ready head=<sha>` |
+| `pr-open` | — (kernel `pr-create`) | opens the child PR against `FLORIST_EPIC_BRANCH` over the digest's head | the scheduler dispatches `code-review` |
+| `code-review` | `review` | the child-PR integration pair + fix loop + conditional local CI, on that PR | `clean-final` (or `findings` at `attempt`+1) |
+| `integrating` | `review` | currency check → sync (→ back to `code-review`), or the coherence verdict → `merge-ready` | kernel `child-merge` → `soak-ready` |
+
+What does not run: `pickup-ticket` (the kernel creates the unit worktree on `unit/<FLORIST_UNIT>` from `FLORIST_EPIC_BRANCH` at the `implementing` dispatch), and both halves of `submit-ticket-pr` (its docs-sync step moves into the implementing seat; its Merge eligibility rules are the kernel's — currency is the integrating seat's sync edge, review-clean is the pinned clean final round, the verified merge is the kernel's checkpoint read). The verify→PR seam has no counterpart: the seat boundary between `implementing` and `code-review` **is** the fresh-context reset, by construction. No `# Lane Checkpoint` comments are posted — the checkpoints collapse into digest evidence plus each seat's Seat Record — and resume is from the commits on the unit branch plus that record. The result contract — digest grammar, evidence rows, decline vocabulary, gate tiers by `FLORIST_EPIC_TIER` — is each seat skill's § autonomous mode over `epic-orchestrator/florist-worker-contract.md` (§ 9 for the per-seat table). Nothing else in this file changes: same phases, same demotion edges, same rules.
+
 ## Internal sequence
 
 1. `pickup-ticket` — create the child branch and worktree from the current epic branch.

@@ -8,6 +8,8 @@ model: haiku
 
 Create the child ticket branch and worktree from the epic branch. This skill is the implementation pickup gate; it must refuse tickets missing readiness labels.
 
+Under Florist this skill does not run — it holds no seat. The kernel creates the unit worktree on `unit/<FLORIST_UNIT>` from `FLORIST_EPIC_BRANCH` at the `implementing` dispatch, and readiness is the unit's lane, not a label (`epic-orchestrator/florist-worker-contract.md` § 9).
+
 ## Contract
 
 | Trigger | Inputs | Outputs | Durable writes | Allowed delegation | Failure states |

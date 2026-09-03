@@ -1,7 +1,6 @@
 ---
 name: review
 description: Fresh-context code review for any completed change — post-implementation, pre-PR in the epic lane, or child PR — with a fix loop and a Frontier-tier final round
-model: sonnet
 ---
 
 # Review
@@ -13,6 +12,22 @@ Comprehensive fresh-context, agent-driven code review with a fix loop. One skill
 | **post-implementation** | interactive: after `implement`, before `submit` | spec/plan, diff, project conventions | — |
 | **pre-PR** | epic lane: implementation complete, before tests and local readiness | spec, plan, diff in the child worktree | classify findings; demotion rules apply |
 | **child-PR** | epic lane: after `submit-ticket-pr` opens a PR against the epic branch | ticket, spec, plan, PR diff | delta-scoped integration pair — one `opus` integration round + one `fable` integration final (child-pr-integration-prompt.md); Testing Contract coverage; branch currency with the epic branch; local CI conditional — dispatched in parallel unless the `ready-for-child-pr` checkpoint's recorded local-CI head SHA still covers the branch (skip predicate in Process — child-PR) |
+
+## Invocation modes
+
+This skill has **two** modes, and the first thing it does is tell them apart:
+
+| | **Manual** | **Autonomous (Florist)** |
+| --- | --- | --- |
+| Detected by | `FLORIST_UNIT` unset | `FLORIST_UNIT` set |
+| Context | chosen by the caller: post-implementation, pre-PR, or child-PR | chosen by `FLORIST_LANE`: `code-review` is the child-PR gate on the kernel-opened PR; `integrating` is the epic-branch currency check and the coherence verdict. The pre-PR gate is **not** a seat — `implement-ticket` runs it inside the implementing seat |
+| Fix loop | in-skill, capped | in-dispatch, capped; fixes are pushed before the digest |
+| Result | a clean report, or an escalation to the caller | a stdout digest; the kernel moves the lane |
+| Human stop | ask or escalate | `declined` / `blocked` — there is nobody to ask |
+
+**Autonomous mode is governed by `epic-orchestrator/florist-worker-contract.md`** — read it before anything else in that mode. It is the canon for the digest grammar, the decline vocabulary, the env contract, the push rule, the Seat Record, and the writes a worker must never make. This file states only what is specific to the two review seats (§ Florist seats below).
+
+There is no frontmatter `model:` pin (retired in 0.19.0): the kernel seats this session at the unit's delivery tier — the Standard base seat, or the Capable variant when `FLORIST_DELIVERY_TIER=capable` — and a frontmatter pin would override that seat at skill load. In manual mode the invoking session's own tier applies: a deliver lane runs this skill at its Standard router; an interactive post-implementation review runs at whatever the operator's session is. Every reviewer and fix-worker dispatch carries its own explicit pin either way.
 
 ## What to Check
 
@@ -46,6 +61,59 @@ The pre-PR gate already ran the full checklist; the child-PR gate re-reviews the
 3. When the integration round is clean, dispatch the **integration final** — a fresh reviewer, same prompt, `model: fable`.
 4. **Fix loop** — findings from either round route to fix workers (`model: sonnet`; `model: opus` when the ticket carries `needs-capable-delivery`), then a **focused re-round** aimed at the fix delta — tier-conditional per AGENTS.md § Fable Availability Policy (DR-025, epic DOD-1213): on a `needs-capable-delivery` ticket it runs at the gate's **hard** fable seat (`model: fable` on Claude Code — the fix worker is `opus`, so this re-round is the last independent Frontier check before the merge); on a standard-tier ticket it runs at Capable tier (`model: opus` on Claude Code — the `sonnet` fix worker leaves no writer/reviewer collapse to guard against; not a fable seat — no substitution, no make-up). Either way it is the round that re-establishes gate-clean, not a confirmation sweep. Total child-PR rounds cap at 5; cap exhaustion escalates with the unresolved findings — it never merges.
 5. The gate is clean only when its closing round reports zero issues. With no fix loop, the closing round is the child-PR **final** — at its fable seat under **hard** policy (`needs-capable-delivery` tickets), or at the substituted effective tier (`model: opus`) under **deferred** policy (standard-tier tickets) with the make-up obligation queued. After a fix loop, it is the **focused re-round** at its tier-conditional seat (step 4) — hard `fable@xhigh` on `needs-capable-delivery` tickets, plain `opus@high` on standard-tier tickets with **no** substitution and **no** make-up. **No gate is ever clean by silence.** On clean, report `ready-to-merge-child`.
+
+## Florist seats (autonomous mode)
+
+### `FLORIST_LANE=code-review` — the child-PR gate
+
+**Entry.** The PR exists: the kernel opened it over the head the `impl-ready` digest named, against `FLORIST_EPIC_BRANCH`. `gh pr list --head "unit/$FLORIST_UNIT" --base "$FLORIST_EPIC_BRANCH" --state open --json number,url,headRefOid` locates it for the record; the review input is git — `git fetch origin "$FLORIST_EPIC_BRANCH"` first (nothing on the kernel side fetches, and sibling merges move the epic head), then `git diff "origin/$FLORIST_EPIC_BRANCH...HEAD"` — so an unauthenticated `gh` is not a blocker. The pre-PR gate baseline is the `thread` SHA in the implementing seat's Seat Record; the conditional-CI predicate (§ Process — child-PR, step 2) reads that record's local-CI head SHA, and fails closed to a dispatch as always.
+
+**Run** § Process — child-PR (integration pair) exactly: integration round → integration final → fix loop with its focused re-round, five rounds total, the conditional local CI in parallel. Fix workers commit on the unit branch. Before the digest: `git push origin "unit/$FLORIST_UNIT"`, then `head=$(git rev-parse HEAD)`, then the Seat Record. Nothing is committed after `head` is read.
+
+| Result | Digest |
+| --- | --- |
+| The closing round reports zero issues | `clean-final` + `FLORIST-EVIDENCE: kind=thread ref=<Seat Record URL> sha=<head>`. The reviewed SHA must be the branch head **now** — a clean round over any other commit blocks the unit on `sha-mismatch`. The kernel pins the head; the scheduler moves the unit to `integrating` when the epic's integration slot is free |
+| The cap is exhausted with findings still open (fixes committed or not) | `findings` + `FLORIST-EVIDENCE: kind=thread ref=<Seat Record URL> sha=<head reviewed>`. The kernel releases the lease at `attempt`+1 and re-dispatches a fresh seat; three such rounds reach `attempt-ceiling`, which **is** the escalation with the unresolved findings — never merge, never exit silently |
+| A product, architecture, scope, or spec/plan mismatch finding | `demote` + `FLORIST-EVIDENCE: kind=thread ref=<demotion comment URL> sha=-`, the comment per `epic-orchestrator/state-transitions.md` § Demotion Rules — do not fix it in-loop |
+| A **hard** fable gate cannot dispatch | `declined reason=fable-unavailable` |
+| `FLORIST_DELIVERY_TIER=capable` but `FLORIST_TIER` seats a Standard session | `declined reason=tier-mismatch` — before any dispatch |
+| An operational wall — auth, tooling, a harness, no `LINEAR_API_KEY` | `blocked reason=worker-blocked` |
+
+**Attempts.** `FLORIST_ATTEMPT` > 0 means a prior dispatch recorded `findings`. Read its Seat Record for what was found and fixed, then review the **current** head fresh: a prior round's clean claims cover only the commits it saw.
+
+**Tiers.** Fix workers follow `FLORIST_DELIVERY_TIER` (`capable` → Capable, `model: opus` on Claude Code; otherwise Standard). Gates follow `FLORIST_EPIC_TIER` (unset is treated as `standard`):
+
+| `FLORIST_EPIC_TIER` | Integration round | Integration final | Post-fix focused re-round |
+| --- | --- | --- | --- |
+| `standard` | Capable (`opus`) | Capable — fable nowhere; no substitution recorded, because no fable seat exists at this tier | Capable |
+| `capable` | Capable | Frontier (`fable`): **hard** when `FLORIST_DELIVERY_TIER=capable` (cannot dispatch ⇒ `declined reason=fable-unavailable`); **deferred** otherwise (`opus` substitutes, `tier-degraded(...)` marker, `Kind: FABLE_MAKEUP` register entry on the epic ticket) | per DR-025: Frontier **hard** when `FLORIST_DELIVERY_TIER=capable`, Capable otherwise |
+
+`FLORIST_DELIVERY_TIER` is the kernel's truth behind the `needs-capable-delivery` label; the label itself is a projection this session never reads for routing and never writes.
+
+### `FLORIST_LANE=integrating` — currency and the coherence verdict
+
+**Entry.** The code-review clean final round is pinned to the current head, and the kernel holds the epic's integration slot for this unit: the epic is frozen for this dispatch, and this unit is the only one integrating. Two questions, in order; a sync ends the dispatch, a verdict ends it otherwise.
+
+1. **Currency.** `git fetch origin "$FLORIST_EPIC_BRANCH"`. The branch is current iff `git merge-base --is-ancestor "origin/$FLORIST_EPIC_BRANCH" HEAD`. Not current ⇒ **sync**: `git merge "origin/$FLORIST_EPIC_BRANCH"` — merge, never rebase: the kernel's pins and the PR's recorded SHAs must stay reachable. Resolve only mechanical conflicts; run the local-CI runner at the merged head; push; post the Seat Record (the sync commit, the epic head merged, the runner digest at the merged head); then
+
+   ```
+   FLORIST-STATUS: synced head=<sha>
+   FLORIST-EVIDENCE: kind=artifact ref=sync:<epic head sha> sha=<head>
+   ```
+
+   The kernel returns the unit to `code-review` — the merged delta re-passes review. A conflict needing spec- or contract-level judgment ⇒ `git merge --abort`, then `blocked reason=merge-conflict`. The de-minimis exception in `submit-ticket-pr` § Merge is a human-mode judgment and is **not** available here: a moved epic head always syncs.
+
+2. **Coherence verdict, pre-merge.** Dispatch `epic-orchestrator/coherence-reviewer-prompt.md` over the PR diff against the current epic head — the merge commit does not exist yet, so the reviewed identity is the unit branch head, which is exactly the SHA the kernel merges at. Post the register entry comment on the epic ticket keyed to that head SHA and refresh the `## Decision Register — Canon` section of the epic description — both permitted writes (an ordinary comment, a product field) — then the Seat Record on the unit's ticket (the verdict, the register entry URL, the epic head the diff was judged against). Then
+
+   ```
+   FLORIST-STATUS: merge-ready head=<sha>
+   FLORIST-EVIDENCE: kind=verdict ref=<OUTCOME>[:<unit>,<unit>] sha=<head>
+   FLORIST-EVIDENCE: kind=thread ref=<register entry URL> sha=<head>
+   ```
+
+   Verdict mapping, prompt → kernel `ref`: `ALIGNED` → `ALIGNED`; `MINOR_DRIFT` → `MINOR`; `LEGITIMATE_DIVERGENCE` → `LEGITIMATE_DIVERGENCE:<affected unit ids, comma-separated, no spaces>`; `MATERIAL_DRIFT` → `MATERIAL_DRIFT`; a `GATE1_AMENDMENT` or `GATE1_REFRESH` flag **overrides** the verdict — the ref is the flag, the kernel parks the unit on `gate1-ruling`, and the held route recorded in the register entry is what the ruling session performs; `ALREADY_REVIEWED` → the existing entry's outcome for this head (idempotence). The kernel records the verdict, merges at exactly `head`, and realigns the named siblings itself on `LEGITIMATE_DIVERGENCE`. The worker never strips a label, never files the `MATERIAL_DRIFT` corrective (its draft rides the register entry; filing is Gate-1 work), never merges.
+
+   **Tier.** The coherence check is a **hard** fable gate: `FLORIST_EPIC_TIER=capable` ⇒ Frontier (`model: fable` on Claude Code), and `declined reason=fable-unavailable` when it cannot dispatch; `standard`/unset ⇒ Capable (`opus`), nothing recorded.
 
 ## Epic Lane Rules
 

@@ -8,6 +8,8 @@ model: sonnet
 
 Two separately invoked halves. **Open** runs inside a `deliver-ticket` lane after verify; **Merge** runs in the orchestrator's serial merge slot after the lane reports `ready-to-merge-child`. Child PRs target the epic branch, never main/master.
 
+**Under Florist neither half runs** — this skill holds no seat. The kernel opens the child PR (`pr-create`) once the implementing seat's `impl-ready` digest verifies, and merges it (`child-merge`) once the integrating seat's verdict lands; both are irreversible actions performed over an exact head SHA. The docs-sync step moves into the implementing seat (`implement-ticket` § Phase sequence) so its edits sit on the head the PR opens over. The Merge section's eligibility rules hold there as kernel mechanics: currency is the integrating seat's sync edge, review-clean is the pinned clean final round, the verified merge is the kernel's checkpoint read. See `epic-orchestrator/florist-worker-contract.md` § 9.
+
 ## Inputs
 
 - child ticket id
