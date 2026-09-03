@@ -46,7 +46,7 @@ Each dispatch runs the phases its lane seats, then emits one digest. The interna
 | `contract-drafting` | draft the contract, then the spec-review loop to a clean final round | `artifact-ready` + `FLORIST-EVIDENCE: kind=artifact ref=docs/specs/<unit>-contract.md sha=<pushed sha>` |
 | `contract-review` | write the plan, then the plan-review loop to a clean final round | `clean-final delivery-tier=<standard\|capable>` + `FLORIST-EVIDENCE: kind=thread ref=<review record> sha=<contract sha>` |
 
-The evidence rows are **required**, not decoration: a drafting digest without an artifact row carrying a real SHA is not a submission, and a `clean-final` whose thread SHA is not the pinned contract SHA blocks the unit on `sha-mismatch`. The `delivery-tier` field is likewise required — it is the plan reviewer's classification, and a clean plan review without it is an incomplete result. Push before you read the SHA (`florist-worker-contract.md` § 7).
+This table is the lane's restatement of `florist-worker-contract.md` § 9, the per-seat canon. The evidence rows are **required**, not decoration: a drafting digest without an artifact row carrying a real SHA is not a submission, and a `clean-final` whose thread SHA is not the pinned contract SHA blocks the unit on `sha-mismatch`. The `delivery-tier` field is likewise required — it is the plan reviewer's classification, and a clean plan review without it is an incomplete result. Push before you read the SHA (`florist-worker-contract.md` § 7).
 
 ### The other edges
 

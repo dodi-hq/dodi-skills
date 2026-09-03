@@ -177,6 +177,34 @@ for prompt in "${prompt_files[@]}"; do
   fi
 done
 
+# Florist seats (DOD-1255, DOD-1302): every seat-holding skill defers to the
+# worker contract and carries NO frontmatter `model:` pin — the kernel seats
+# the session per worker-dispatch.json (a capable unit runs its router at
+# Capable), and frontmatter cannot branch by mode, so a pin would override the
+# seat at skill load. The contract's per-seat table must name every digest
+# outcome the kernel's parser accepts (dodi-florist src/worker/digest.ts).
+florist_seat_skills=(mature-ticket implement-ticket review)
+for skill in "${florist_seat_skills[@]}"; do
+  path="dodi-dev/skills/${skill}/SKILL.md"
+  if ! grep -qF 'florist-worker-contract.md' "$path"; then
+    echo "Florist seat skill does not reference the worker contract: ${skill}" >&2
+    exit 1
+  fi
+  fm="$(awk 'NR==1 && /^---$/ {inf=1; next} inf && /^---$/ {exit} inf' "$path")"
+  if grep -qE '^model:' <<< "$fm"; then
+    echo "Florist seat skill carries a frontmatter model pin (cannot branch by mode): ${skill}" >&2
+    exit 1
+  fi
+done
+florist_outcomes=(artifact-ready findings clean-final impl-ready synced merge-ready demote blocked declined)
+contract=dodi-dev/skills/epic-orchestrator/florist-worker-contract.md
+for outcome in "${florist_outcomes[@]}"; do
+  if ! grep -qE "^\| \`${outcome}\` \|" "$contract"; then
+    echo "florist-worker-contract.md per-seat table missing kernel outcome: ${outcome}" >&2
+    exit 1
+  fi
+done
+
 # Deterministic skeleton: plugin scripts exist, are executable, and parse.
 plugin_scripts=(
   linear-api.sh
