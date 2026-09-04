@@ -10,6 +10,14 @@ Florist is the durable orchestration kernel that replaces the prose state machin
 
 The check is the environment variable itself, never a heuristic about the harness, the model, or the presence of a tty. A skill that holds a Florist seat states both modes explicitly; a skill that holds none never reads this file.
 
+**The check is a step, not a table row (DOD-1326).** The first Bash command of every seat-holding skill, in both modes, is:
+
+```bash
+"${CLAUDE_PLUGIN_ROOT}/scripts/florist-mode.sh"
+```
+
+It prints `mode=manual` or `mode=autonomous unit=… lane=… …` and, in autonomous mode, the three instructions the session then follows: read this file now; only the skill's Florist seat section for `FLORIST_LANE` applies (the manual process tables, checkpoints, and close-out vocabulary do not); close through `florist-digest.sh` (§ 4). A session that reaches its close-out without having run this step has skipped the contract — that is how three of four review dispatches ended a lane with `ready-to-merge-child` and no digest on 2026-09-04, each costing a reap.
+
 ## 2. What the kernel tells the worker
 
 | Variable | Meaning | Absent when |
@@ -57,6 +65,14 @@ Rules the parser enforces, stated here so they are never discovered by accident:
 - `ref=clean-final:…` is **manager-reserved** and silently dropped from worker evidence. Never emit it.
 
 Outcomes and their required evidence are per lane; each seat-holding skill states its own table. A worker never invents an outcome its lane does not accept — the kernel rejects it, and the rejection is indistinguishable from a crash.
+
+**Emit the digest through the helper, never by hand (DOD-1326):**
+
+```bash
+"${CLAUDE_PLUGIN_ROOT}/scripts/florist-digest.sh" <outcome> [key=value ...] [--evidence kind=<k> ref=<r> sha=<s|->]...
+```
+
+It validates the outcome, fields, and evidence rows against `FLORIST_LANE` per § 9 and prints exactly the two line kinds; it exits 2 with the reason when the digest would not be a submission (fix the input and run it again — that is a free retry; the kernel's rejection is not), and it refuses in manual mode. **Closing invariant:** an autonomous session's last stdout lines are the helper's output — for a success, a `blocked`, or a `declined` alike. The manual-mode close-out vocabulary (`ready-to-merge-child`, `Review Summary`, a checkpoint comment) is never the last thing an autonomous session prints.
 
 ## 5. Walls: `blocked` vs `declined`
 
