@@ -1,6 +1,6 @@
 # No-Re-Entry Rule for Dispatched Workers — Design Spec
 
-Status: draft for spec review. Ticket: to be filed after spec signoff (`dodi-dev:file-ticket`). Origin: 2026-09-05 subscription-window burn audit (hive session handoff; full audit in the hive project memory `project_token_window_burn_2026_09_05.md`). Claude Code build verified against: 2.1.261 (the installed build; the earliest build that recognizes `modules` in a hooks file is not established).
+Status: approved 2026-09-05 (five spec-review rounds, final clean), amended at the implementation review's Frontier final the same day (§ 3: id-shape denial, no registry lookup). Ticket: DOD-1336. Origin: 2026-09-05 subscription-window burn audit (hive session handoff; full audit in the hive project memory `project_token_window_burn_2026_09_05.md`). Claude Code build verified against: 2.1.261 (the installed build; the earliest build that recognizes `modules` in a hooks file is not established).
 
 ## TL;DR
 
@@ -136,9 +136,9 @@ export const register = (on) => {
   on("tool.call", { tool: "SendMessage" }, ($, e, next) => {
     const raw = String(e.to ?? "").trim()
     if (!raw) return next(e)
+    if (raw === "main") return next(e)                     // the lead: a raw compare, as the resolver does
     const name = stripRef(raw)
     const n = normalize(name)
-    if (n === "main") return next(e)                       // the lead, resolved before any name
     const prefixHits = n.length >= 3 ? [...spawnedNames].filter((s) => s.startsWith(n)).length : 0
     const isOwn = isAgentId(raw) || isAgentId(name) || (n.length > 0 && (spawnedNames.has(n) || prefixHits === 1))
     if (!isOwn) return next(e)
@@ -158,7 +158,7 @@ Helpers, mirroring the runtime resolver as read from the 2.1.261 binary (if the 
 - `stripRef(s)`: applies `/^(.*\S)\s*\[[^\]]+\]$/` and returns group 1, else `s`. The bracketed token is a short hex hash used to disambiguate peer sessions; it is never an agent id and the hook cannot recompute it, so any trailing bracketed token is dropped. An id never ends in `]`, so the wider pattern is safe.
 - `normalize(s)`: NFKC, strip control and format characters (whitespace kept), trim, lower-case, then whitespace runs → `-`. Byte-identical to the resolver's own fold, which it applies to names and, on its second attempt, to ids.
 - `isAgentId(s)`: the id shape, tested raw and after `normalize`, mirroring the resolver's two attempts (a case-folded id routes to the same subagent).
-- Prefix: the resolver matches a typed name to a registered one by prefix only when the typed name is at least 3 characters and exactly one registered name matches; `main` is routed to the lead before any name matching. The hook applies the same three rules.
+- Prefix: the resolver matches a typed name to a registered one by prefix only when the typed name is at least 3 characters and exactly one registered name matches; the literal `main` (raw, not folded) is routed to the lead before any name matching. The hook applies the same three rules; a folded `Main` is not the lead and can still be a unique prefix of a spawn named `main-…`, so it falls through to matching.
 
 Notes on the API as verified in the 2.1.261 binary's embedded `claude-code.d.ts` and its tool schemas:
 
@@ -220,7 +220,7 @@ Bump all five version files to `0.20.0` (doctrine plus a new hook surface is a m
 
 ## Verification
 
-- `bash dodi-dev/scripts/tests/test-hooks-module.sh` passes every case (the groups above plus the review-added id-shape, id-fold, and prefix cases; 32 checks at 0.20.0).
+- `bash dodi-dev/scripts/tests/test-hooks-module.sh` passes every case (the groups above plus the review-added id-shape, id-fold, and prefix cases; 33 checks at 0.20.0).
 - `bash scripts/validate-phase-skills.sh`, `bash scripts/validate-plugin-metadata.sh` (fails on main today, passes after the bump), `bash scripts/validate-ticket-comment-templates.sh` pass.
 - Anchor-phrase check: `grep -c "fresh plan-writer" dodi-dev/skills/write-plan/SKILL.md` ≥ 1; `grep -c "fresh implementer" dodi-dev/skills/implement/SKILL.md` ≥ 1; `grep -c "fresh revision-round" dodi-dev/skills/epic-orchestrator/lanes/mature-playbook.md` = 2; `grep -c "fresh workers" dodi-dev/skills/epic-orchestrator/lanes/mature-playbook.md` ≥ 1; `grep -c "prior round" dodi-dev/skills/brainstorm/SKILL.md` ≥ 1 and the same for `dodi-dev/skills/write-plan/SKILL.md`.
 - `git diff --stat main -- dodi-dev/hooks/hooks.json dodi-dev/scripts/hook-require-model-pin.sh dodi-dev/scripts/hook-gate2-guard.sh` is empty.

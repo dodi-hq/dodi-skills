@@ -67,10 +67,12 @@ export const register = (on) => {
   on("tool.call", { tool: "SendMessage" }, ($, e, next) => {
     const raw = String(e.to ?? "").trim()
     if (!raw) return next(e)
+    // The resolver routes the literal "main" to the lead before it matches any
+    // name — a raw compare, not a folded one: "Main" is not the lead, and it
+    // could still prefix-match a spawn named "main-…", so it falls through.
+    if (raw === "main") return next(e)
     const name = stripRef(raw)
     const n = normalize(name)
-    // The resolver routes "main" to the lead before it matches any name.
-    if (n === "main") return next(e)
     // Prefix matching mirrors the resolver: at least 3 characters, and exactly
     // one registered name starting with it.
     const prefixHits = n.length >= 3 ? [...spawnedNames].filter((s) => s.startsWith(n)).length : 0
