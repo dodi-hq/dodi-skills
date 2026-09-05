@@ -17,15 +17,15 @@
 ### Required Test Groups
 
 - Unit: `required`
-  - Scope: `dodi-dev/hooks/hooks.js` — `register`, the `agent.spawn` observer, the `tool.call` guard, `normalize`, `stripRef`
-  - Reason: the guard is the only mechanical enforcement of the rule; its matching must mirror the runtime resolver and must fail open on API drift, and a wrong shipped `$` surface would be refused by the loader's source scan
-  - Minimum assertions: the seven cases in Task 5 (id deny; recorded-name deny; peer allow; list-throw ⇒ allow + one log line; empty `to` ⇒ allow; exactly two registrations and exactly `agent.list` + `ui.log` on `$`; address forms per the spec's test 7)
+  - Scope: `dodi-dev/hooks/hooks.js` — `register`, the `agent.spawn` observer, the `tool.call` guard, `normalize`, `stripRef`, `isAgentId`
+  - Reason: the guard is the only mechanical enforcement of the rule; its matching must mirror the runtime resolver (id shape raw and folded, name fold, unique ≥3-char prefix, `main` pass-through), and it must make no calls on `$` — a runtime dependency is what let the registry-era version miss an evicted worker (post-amendment contract)
+  - Minimum assertions: the spec's § 4 list as amended (id-shaped deny incl. scoped and case-folded, non-id allow; recorded-name deny; peer allow; empty `to` ⇒ allow; exactly two registrations and **no** property access on the recording `$` stub; address forms and the prefix rule per tests 7/7b)
 
 - Integration: `required`
   - Scope: plugin loading — `.claude-plugin/plugin.json` `hooks` → `hooks/function-hooks.json` → `hooks/hooks.js`; validator coverage of that chain
   - Reason: the module is declared through a manifest path the repo has never used; a wrong relative path loads nothing, silently
   - Harness: `existing` (`scripts/validate-phase-skills.sh`, extended in Task 6) plus `claude plugin validate` (manual, Task 8)
-  - Minimum assertions: validator resolves the manifest chain and syntax-checks the module; `claude plugin validate` lists hooks `agent.spawn`, `tool.call` and calls `agent.list`, `ui.log`
+  - Minimum assertions: validator resolves the manifest chain and syntax-checks the module; `claude plugin validate` lists hooks `agent.spawn`, `tool.call` and reports `calls: nothing on $`
 
 - E2E: `required`
   - Scope: a live Claude Code session with `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` and the updated plugin
