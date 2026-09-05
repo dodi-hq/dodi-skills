@@ -56,9 +56,14 @@ export const register = (on) => {
     const n = normalize(name)
     // The resolver routes "main" to the lead before it matches any name.
     if (n === "main") return next(e)
-    let agents
+    // The resolver resolves an id both raw and case-folded, so fold before matching.
+    // Building `ids` inside the try keeps a surface change (non-array, odd
+    // entries) on the fail-open path instead of crashing the hooks worker.
+    let ids
     try {
-      agents = await $.agent.list()
+      const agents = await $.agent.list()
+      if (!Array.isArray(agents)) throw new Error("agent.list() did not return an array")
+      ids = new Set(agents.map((a) => a.id))
     } catch (err) {
       // Fail open, and never throw from the fail-open path: $.ui.log rejects on
       // over-long text, and an unhandled rejection here can disable the hooks
@@ -70,8 +75,6 @@ export const register = (on) => {
       } catch {}
       return next(e)
     }
-    // The resolver resolves an id both raw and case-folded, so fold before matching.
-    const ids = new Set(agents.map((a) => a.id))
     // Prefix matching mirrors the resolver: at least 3 characters, and exactly
     // one registered name starting with it.
     const prefixHits = n.length >= 3 ? [...spawnedNames].filter((s) => s.startsWith(n)).length : 0

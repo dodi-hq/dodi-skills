@@ -249,7 +249,9 @@ assert os.path.isfile(mod) and not os.path.islink(mod), f"module not a regular f
 print(f"function-hook chain ok: {mod}")
 PY
 if command -v node >/dev/null; then
-  node --check dodi-dev/hooks/hooks.js
+  # --input-type=module is load-bearing: a bare `node --check file.js` returns 0
+  # for any file containing `export`, syntax errors included (ESM detection path).
+  node --check --input-type=module < dodi-dev/hooks/hooks.js
 else
   echo "notice: node not found; skipping syntax check of dodi-dev/hooks/hooks.js" >&2
 fi

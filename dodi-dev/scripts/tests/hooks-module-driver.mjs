@@ -60,6 +60,8 @@ await spawn("worker")
 // 4 list throws ⇒ allow + one log line
 { const before = logLines; const r = await send(ID, { list: async () => { throw new Error("surface moved") } })
   check("4 list throw fails open", r.nextCalled && r.deny === undefined && logLines === before + 1) }
+{ const before = logLines; const r = await send(ID, { list: async () => ({ agents: [{ id: ID }] }) })
+  check("4b list non-array fails open", r.nextCalled && r.deny === undefined && logLines === before + 1) }
 
 // 5 empty to ⇒ allow
 { const r = await send("   "); check("5 empty to allowed", r.nextCalled && r.deny === undefined) }

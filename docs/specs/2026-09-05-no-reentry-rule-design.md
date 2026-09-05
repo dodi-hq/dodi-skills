@@ -234,7 +234,7 @@ Bump all five version files to `0.20.0` (doctrine plus a new hook surface is a m
 
 ## Verification
 
-- `bash dodi-dev/scripts/tests/test-hooks-module.sh` passes all seven cases.
+- `bash dodi-dev/scripts/tests/test-hooks-module.sh` passes every case (the seven groups above plus the review-added id-fold, prefix, and non-array cases; 30 checks at 0.20.0).
 - `bash scripts/validate-phase-skills.sh`, `bash scripts/validate-plugin-metadata.sh` (fails on main today, passes after the bump), `bash scripts/validate-ticket-comment-templates.sh` pass.
 - Anchor-phrase check: `grep -c "fresh plan-writer" dodi-dev/skills/write-plan/SKILL.md` ≥ 1; `grep -c "fresh implementer" dodi-dev/skills/implement/SKILL.md` ≥ 1; `grep -c "fresh revision-round" dodi-dev/skills/epic-orchestrator/lanes/mature-playbook.md` = 2; `grep -c "fresh workers" dodi-dev/skills/epic-orchestrator/lanes/mature-playbook.md` ≥ 1; `grep -c "prior round" dodi-dev/skills/brainstorm/SKILL.md` ≥ 1 and the same for `dodi-dev/skills/write-plan/SKILL.md`.
 - `git diff --stat main -- dodi-dev/hooks/hooks.json dodi-dev/scripts/hook-require-model-pin.sh dodi-dev/scripts/hook-gate2-guard.sh` is empty.

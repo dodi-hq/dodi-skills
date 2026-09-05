@@ -8,5 +8,5 @@ DRIVER="$HERE/hooks-module-driver.mjs"
 
 command -v node >/dev/null || { echo "test-hooks-module: node not found — concrete blocker" >&2; exit 2; }
 test -f "$MODULE"
-node --check "$MODULE"
+node --check --input-type=module < "$MODULE"
 node "$DRIVER"
