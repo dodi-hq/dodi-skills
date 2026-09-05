@@ -311,7 +311,7 @@ Run:
 ```bash
 bin="$(readlink -f "$(which claude)")"; strings -n 8 "$bin" | grep -oE 'normalize\("NFKC"\)\.replace\([^;]{0,200}' | head -3
 ```
-Expected: the first hit is the resolver's fold and reads `normalize("NFKC").replace(/[\p{Cc}\p{Cf}]/gu,(t)=>/\s/.test(t)?t:"").trim().toLowerCase().replace(/\s+/g,"-")` (minified variable names may differ). The binary carries two other, unrelated `normalize("NFKC")` folds; the one to match is the one ending `.trim().toLowerCase().replace(/\s+/g,"-")`. If that fold differs from Step 2's `normalize` (for example whitespace collapsed rather than replaced with `-`), write `normalize` to match what the binary shows and adjust test case 7 accordingly; the resolver wins.
+Expected: the first hit is the resolver's fold and reads `normalize("NFKC").replace(/[\p{Cc}\p{Cf}]/gu,(t)=>/\s/.test(t)?t:"").trim().toLowerCase().replace(/\s+/g,"-")` (minified variable names may differ). The binary carries three other, unrelated `normalize("NFKC")` folds (only some show under `head -3`); the one to match is the one ending `.trim().toLowerCase().replace(/\s+/g,"-")`. If that fold differs from Step 2's `normalize` (for example whitespace collapsed rather than replaced with `-`), write `normalize` to match what the binary shows and adjust test case 7 accordingly; the resolver wins.
 
 - [ ] **Step 2:** Create `dodi-dev/hooks/hooks.js`:
 
@@ -564,7 +564,7 @@ hooks_path = manifest.get("hooks")
 assert hooks_path == "hooks/function-hooks.json", f"plugin.json hooks must point at hooks/function-hooks.json, got {hooks_path!r}"
 fh = json.load(open(os.path.join("dodi-dev", hooks_path)))
 modules = fh.get("modules")
-assert isinstance(modules, list) and len(modules) == 1, f"function-hooks.json must name exactly one module, got {modules!r}"
+assert modules == ["hooks.js"], f"function-hooks.json must name exactly ['hooks.js'] (the node --check below is pinned to it), got {modules!r}"
 mod = os.path.join("dodi-dev", os.path.dirname(hooks_path), modules[0])
 assert os.path.isfile(mod) and not os.path.islink(mod), f"module not a regular file: {mod}"
 print(f"function-hook chain ok: {mod}")
@@ -576,16 +576,16 @@ else
 fi
 ```
 
-- [ ] **Step 2:** Also add `hooks-module-driver.mjs`'s companion to the per-test list if one exists — it does not; the repo runs tests individually. Instead add the new test to the regression command in this plan's Testing Contract only (no repo change).
+(The repo has no per-test runner list; tests run individually, and the new test is already in this plan's regression command.)
 
 - [ ] **Step 3:** Verify, including the negative path and the validator's own self-test.
 
 Run:
 ```bash
 bash scripts/validate-phase-skills.sh | grep -F "function-hook chain ok"
-cp dodi-dev/hooks/function-hooks.json /tmp/fh.bak && printf '{ "modules": ["missing.js"] }\n' > dodi-dev/hooks/function-hooks.json
+bak="$(mktemp)" && cp dodi-dev/hooks/function-hooks.json "$bak" && printf '{ "modules": ["missing.js"] }\n' > dodi-dev/hooks/function-hooks.json
 bash scripts/validate-phase-skills.sh >/dev/null 2>&1 && echo "UNEXPECTED PASS" || echo "negative path rejected"
-mv /tmp/fh.bak dodi-dev/hooks/function-hooks.json && git status --short dodi-dev/hooks/
+mv "$bak" dodi-dev/hooks/function-hooks.json && git status --short dodi-dev/hooks/
 bash dodi-dev/scripts/tests/test-validate-phase-skills.sh
 ```
 Expected: `function-hook chain ok: dodi-dev/hooks/hooks.js`; `negative path rejected`; an empty `git status` line (file restored); `validate-phase-skills tests ok`.
