@@ -4,6 +4,8 @@
 
 **Ticket:** DOD-1336. **Spec:** `docs/specs/2026-09-05-no-reentry-rule-design.md` (approved 2026-09-05). **Branch:** the `dodi-dev:pickup` worktree for DOD-1336, with the spec and plan commits cherry-picked from `spec/no-reentry-rule` (Task 0); PR to `main`. **Release:** 0.20.0.
 
+> **Amendment (Frontier review final, 2026-09-05):** the shipped module differs from the Task 5 code below. The live registry (`$.agent.list()`) evicts a finished subagent ~30 s after completion while `SendMessage` to its id still resumes it from disk, so the guard now denies every **agent-id-shaped** address outright (raw or folded) and makes **no `$` calls at all**; the name path is unchanged. Spec § 3 is the current design; `dodi-dev/hooks/hooks.js` and `hooks-module-driver.mjs` on the branch are the current code. Task 5's listings are kept as the historical record of the first implementation.
+
 **Goal:** Make every dispatched worker a one-shot leaf — doctrine on all runtimes, a function-hook `SendMessage` guard on Claude Code, and fresh-leaf fix rounds with a revision-round contract — shipped as dodi-dev 0.20.0.
 
 **Architecture:** Three independent units. (1) Doctrine and prompt text: `AGENTS.md`, `execution-model.md`, two drafter prompts, two reviewer prompts, four fix-loop sites. (2) The guard: `dodi-dev/hooks/hooks.js`, an ES module exporting `register(on)`, declared from the Claude plugin manifest through `dodi-dev/hooks/function-hooks.json`; `hooks/hooks.json` untouched. (3) Tests and release: a `node`-driven offline test with a stubbed `$`, a validator addition, the five-file version bump, tag.
@@ -652,7 +654,7 @@ and was never tagged, so validate-plugin-metadata.sh failed on main."
 - [ ] **Step 2:** Validate the plugin from the branch checkout.
 
 Run: `claude plugin validate dodi-dev 2>&1 | tail -20`
-Expected: no errors; the hooks-module scan lists hooks `agent.spawn`, `tool.call` and calls `agent.list`, `ui.log`. If the output shows a different call set, the source scan disagrees with the module — fix the module, never the expectation.
+Expected: no errors; the hooks-module scan lists hooks `agent.spawn`, `tool.call` and no calls on `$` (post-amendment). If the output shows a different call set, the source scan disagrees with the module — fix the module, never the expectation.
 
 - [ ] **Step 3:** Load the branch build and start a fresh session. Follow the repo's release process memory: point the marketplace at this checkout (or `claude plugin update` once the PR is merged for the post-merge re-check), then start a new `claude` session in any project with the plugin enabled.
 
@@ -661,7 +663,7 @@ Expected: no match. A match means the flag did not reach the session — fix set
 
 - [ ] **Step 4:** In the fresh session, run the live cases and record each result verbatim (the deny text or the delivery confirmation):
   1. Dispatch `Agent` with `model: sonnet`, `description: "probe"`, prompt "Reply with the single word done." Wait for completion. Note its agent id.
-  2. `SendMessage` to that id. Expected: refused; the error text begins `dodi-dev no-re-entry rule:`.
+  2. **Wait more than 30 seconds** after completion and confirm `ListAgents` no longer lists the agent (the registry has evicted it). Then `SendMessage` to that id. Expected: refused; the error text begins `dodi-dev no-re-entry rule:`. This is the case a registry lookup would have missed.
   3. Dispatch `Agent` with `model: sonnet`, `name: "probe-named"`, same prompt. After completion, `SendMessage` to `probe-nam` (a prefix). Expected: refused with the rule text.
   4. Open a second `claude` session on this machine; from the first, `ListAgents`, then `SendMessage` to that session's name. Expected: delivered (the other session shows the message).
   5. Teammate (⚠ assumption): start a coordinator-mode team with one teammate, `SendMessage` the teammate by name. Expected: delivered. If it is refused, the assumption is false — stop, record the deny text, and demote to the spec lane (the hook would need a teammate exclusion).

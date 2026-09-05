@@ -3,20 +3,30 @@
 // A dispatched worker is a one-shot leaf (AGENTS.md § Dispatch Discipline;
 // epic-orchestrator/execution-model.md § 1). This module refuses a SendMessage
 // whose target is a subagent this session spawned, so a dispatcher cannot
-// re-enter a parked worker. Peer sessions and teammates are not in
-// $.agent.list() and pass through; "main" short-circuits, as it does in the
-// runtime resolver.
+// re-enter a parked worker.
 //
-// Loaded only when CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 (or the harness rollout
-// flag) — see AGENTS.md § Deterministic Skeleton. Fails open: a thrown
-// $.agent.list() logs one line and allows the call.
+// How a target is recognised (mirrors the 2.1.261 resolver, read from the binary):
+//   - An id-shaped address (`a` + optional scope + 16 hex, tested raw and after
+//     the resolver's own fold) is routed ONLY to a subagent — live, or resumed
+//     from its transcript on disk after the ~30 s registry eviction that follows
+//     completion. It is never a teammate, a peer session, or "main". So every
+//     id-shaped address is denied, without consulting the live registry: the
+//     registry forgets a finished worker exactly when the dispatcher would be
+//     tempted to re-enter it.
+//   - A named spawn (Agent({ name })) is recorded at agent.spawn and denied by
+//     exact normalised name or by a unique prefix of at least 3 characters.
+//   - "main" is routed to the lead before any name matching; it passes through.
 //
-// Keep every call on `$` literal: the loader scans this source to whitelist
-// what the module hooks and calls.
+// The module makes no calls on `$`: nothing to fail open from, nothing that can
+// throw out of the hook. Loaded only when CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1
+// (or the harness rollout flag) — see AGENTS.md § Deterministic Skeleton.
 
 const REF_SUFFIX = /^(.*\S)\s*\[[^\]]+\]$/
+// The resolver's agent-id shape: `a`, optional `<scope>-`, then 16 hex digits.
+const AGENT_ID = /^a(?:[\w-]{1,63}-)?[0-9a-f]{16}$/
 
-// Mirrors the runtime resolver's folding of registry names.
+// Mirrors the runtime resolver's folding of registry names (and of ids on its
+// second resolution attempt).
 export function normalize(s) {
   return String(s)
     .normalize("NFKC")
@@ -31,6 +41,11 @@ export function normalize(s) {
 export function stripRef(s) {
   const m = REF_SUFFIX.exec(s)
   return m ? m[1] : s
+}
+
+// True when the resolver would treat `s` as an agent id (raw or folded).
+export function isAgentId(s) {
+  return AGENT_ID.test(s) || AGENT_ID.test(normalize(s))
 }
 
 const DENY_TAIL =
@@ -49,39 +64,19 @@ export const register = (on) => {
   })
 
   // Enforce: a SendMessage to one of this session's own subagents is refused.
-  on("tool.call", { tool: "SendMessage" }, async ($, e, next) => {
+  on("tool.call", { tool: "SendMessage" }, ($, e, next) => {
     const raw = String(e.to ?? "").trim()
     if (!raw) return next(e)
     const name = stripRef(raw)
     const n = normalize(name)
     // The resolver routes "main" to the lead before it matches any name.
     if (n === "main") return next(e)
-    // The resolver resolves an id both raw and case-folded, so fold before matching.
-    // Building `ids` inside the try keeps a surface change (non-array, odd
-    // entries) on the fail-open path instead of crashing the hooks worker.
-    let ids
-    try {
-      const agents = await $.agent.list()
-      if (!Array.isArray(agents)) throw new Error("agent.list() did not return an array")
-      ids = new Set(agents.map((a) => a.id))
-    } catch (err) {
-      // Fail open, and never throw from the fail-open path: $.ui.log rejects on
-      // over-long text, and an unhandled rejection here can disable the hooks
-      // worker for the session.
-      try {
-        await $.ui.log(
-          `dodi-dev no-re-entry hook: $.agent.list() failed (${String(err).slice(0, 200)}); allowing SendMessage`,
-        )
-      } catch {}
-      return next(e)
-    }
     // Prefix matching mirrors the resolver: at least 3 characters, and exactly
     // one registered name starting with it.
     const prefixHits = n.length >= 3 ? [...spawnedNames].filter((s) => s.startsWith(n)).length : 0
     const isOwn =
-      ids.has(raw) ||
-      ids.has(name) ||
-      ids.has(n) ||
+      isAgentId(raw) ||
+      isAgentId(name) ||
       (n.length > 0 && (spawnedNames.has(n) || prefixHits === 1))
     if (!isOwn) return next(e)
     return { deny: `dodi-dev no-re-entry rule: "${raw}"${DENY_TAIL}` }
