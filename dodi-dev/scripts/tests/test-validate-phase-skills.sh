@@ -4,7 +4,8 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../../.." && pwd)"
 
 # Copy-tree-and-mutate: the validator reads only dodi-dev/skills, dodi-dev/scripts,
-# dodi-dev/hooks, and its own repo-relative paths — no templates/, no git state.
+# dodi-dev/hooks, dodi-dev/.claude-plugin (the function-hook chain), and its own
+# repo-relative paths — no templates/, no git state.
 # Enumerated subtrees, not `cp -R dodi-dev`: the main checkout hosts worktrees
 # under dodi-dev/worktrees/, which a bare recursive copy would drag along.
 # AGENTS.md is copied too: the Fable Availability Policy check (validator,
@@ -15,7 +16,7 @@ REPO_ROOT="$(cd "$HERE/../../.." && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 mkdir -p "$tmp/dodi-dev"
-cp -R "$REPO_ROOT/dodi-dev/skills" "$REPO_ROOT/dodi-dev/scripts" "$REPO_ROOT/dodi-dev/hooks" "$tmp/dodi-dev/"
+cp -R "$REPO_ROOT/dodi-dev/skills" "$REPO_ROOT/dodi-dev/scripts" "$REPO_ROOT/dodi-dev/hooks" "$REPO_ROOT/dodi-dev/.claude-plugin" "$tmp/dodi-dev/"
 cp -R "$REPO_ROOT/scripts" "$tmp/"
 cp "$REPO_ROOT/AGENTS.md" "$tmp/"
 

@@ -10,6 +10,7 @@ Agent tool (general-purpose, model: fable):
 
     **Plan chunk to review:** [PLAN_FILE_PATH] - Chunk N only
     **Spec for reference:** [SPEC_FILE_PATH]
+    **Prior round (rounds ≥ 2):** the previous writer's Findings block — each earlier finding marked applied or declined with a reason.
 
     ## What to Check
 
@@ -20,6 +21,7 @@ Agent tool (general-purpose, model: fable):
     | Task Decomposition | Tasks atomic, clear boundaries, steps actionable |
     | File Structure | Files have clear single responsibilities |
     | Task Syntax | Checkbox syntax (`- [ ]`) on steps |
+    | Prior-round declines | A declined finding is closed unless you rebut its reason. To re-raise one, quote the decline and say why it is wrong; a re-raise without a rebuttal is not a finding. Verify each `applied` finding actually landed in the artifact |
 
     Look especially hard for:
     - Steps that say "similar to X" without actual content

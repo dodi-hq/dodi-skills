@@ -8,6 +8,8 @@ Every dispatched worker works **directly** — it never dispatches sub-agents, a
 
 This is permanent architecture, not an interim workaround. It follows a verified harness limitation: Agent-tool workers launch asynchronously (no blocking dispatch mode exists at any depth), and completion wake-ups reliably reach only the top-level session — a session that is itself a subagent and ends its turn with a child in flight is **never re-invoked**; the child's completion routes to the top-level session instead. So a nested lane subagent strands at its first phase dispatch. The executing session therefore walks each lane's sequence itself and dispatches every phase worker as its own leaf.
 
+**One-shot.** A dispatched worker's life is exactly one turn. When its turn ends its context is gone for good: the dispatcher never re-enters it — not by `SendMessage`, not by any continuation — and a fix round is a **fresh leaf** given the artifact path and the findings (the revision-round input block in the drafter prompts). Rationale: a worker parked across a review round outlives its prompt cache and is re-woken cold at its full prefix, an order of magnitude above a fresh leaf's read of the same artifact, and its context only grows across rounds. On Claude Code the plugin's `hooks/hooks.js` module refuses the `SendMessage` when loaded (AGENTS.md § Deterministic Skeleton names the load precondition); on every runtime the rule is the contract.
+
 ## 2. Tier pins
 
 Every dispatch carries an explicit model-tier pin per the AGENTS.md tier table (Frontier `fable` / Capable `opus` / Standard `sonnet` / Fast `haiku` on Claude Code); `hook-require-model-pin.sh` enforces the explicit pin. A dispatch that omits the pin silently inherits the session model — a defect, never a default.
@@ -41,7 +43,7 @@ This symmetry lets a hard capacity-park at a mature-lane gate resume instead of 
 
 ## 6. Manifest discipline
 
-Append every dispatch to the session's dispatch manifest at the epic worktree's **absolute path** (`<epic-worktree-abs>/.dodi/dispatch-manifest-<session-run-id>.jsonl`). Reap at close-out (`reap-workers.sh`; stop any straggler; append reap records). Wakes for reaped entries are ignored (§3).
+Append every dispatch to the session's dispatch manifest at the epic worktree's **absolute path** (`<epic-worktree-abs>/.dodi/dispatch-manifest-<session-run-id>.jsonl`). Reap at close-out (`reap-workers.sh`; stop any straggler; append reap records). Wakes for reaped entries are ignored (§3). A manifest entry is never a handle to resume a worker — it exists for wake attribution and reaping only (§ 1, one-shot).
 
 ## 7. Parallelism invariants (serial now, seams ready)
 

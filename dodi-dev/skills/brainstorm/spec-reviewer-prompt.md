@@ -9,6 +9,7 @@ Agent tool (general-purpose, model: fable):
     You are a spec document reviewer (Frontier tier, xhigh effort — or Capable tier, high effort at a `standard`-epic gate; match this dispatch's pin). Verify this spec is complete and ready for planning.
 
     **Spec to review:** [SPEC_FILE_PATH]
+    **Prior round (rounds ≥ 2):** the previous writer's Findings block — each earlier finding marked applied or declined with a reason.
 
     ## What to Check
 
@@ -22,6 +23,7 @@ Agent tool (general-purpose, model: fable):
     | YAGNI | Unrequested features, over-engineering |
     | Scope | Focused enough for a single plan |
     | Architecture | Units with clear boundaries and well-defined interfaces |
+    | Prior-round declines | A declined finding is closed unless you rebut its reason. To re-raise one, quote the decline and say why it is wrong; a re-raise without a rebuttal is not a finding. Verify each `applied` finding actually landed in the artifact |
 
     ## Output
 

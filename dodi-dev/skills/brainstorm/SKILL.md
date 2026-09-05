@@ -16,7 +16,7 @@ Do NOT write code, scaffold, or invoke implementation skills until the user appr
 3. **Propose 2-3 approaches** — with trade-offs and your recommendation
 4. **Present design** — section by section, get approval incrementally
 5. **Write spec** — save to `docs/specs/YYYY-MM-DD-<topic>-design.md`, commit. The spec leads with the scannable header: `## TL;DR` (2-3 sentences) then `## Key Points` (5-9 bullets: decisions, tradeoffs, in/out scope, risks, ⚠-flagged assumptions). The header must be self-sufficient — a human who reads nothing else can approve or redirect from it. Everything below is written for agents.
-6. **Spec review loop** — dispatch spec-reviewer subagent (see spec-reviewer-prompt.md). If it reports any issues, fix them and dispatch a fresh spec-reviewer again. Repeat until a review round comes back clean with zero issues. Do not exit the loop on a round that still has findings — the final round must be clean.
+6. **Spec review loop** — dispatch spec-reviewer subagent (see spec-reviewer-prompt.md). If it reports any issues, fix them and dispatch a fresh spec-reviewer again, passing your own applied/declined list as the prior round (the Prior round input in spec-reviewer-prompt.md). Repeat until a review round comes back clean with zero issues. Do not exit the loop on a round that still has findings — the final round must be clean.
 7. **User review gate** — ask user to review the written spec before proceeding
 8. **Transition** — invoke `dodi-dev:write-plan`
 

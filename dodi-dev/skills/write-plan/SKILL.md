@@ -148,7 +148,7 @@ git commit -m "feat: specific change"
 After completing each chunk (≤1000 lines):
 
 1. Dispatch plan-reviewer subagent (see plan-reviewer-prompt.md)
-2. Fix issues, re-dispatch until approved (max 5 iterations)
+2. Dispatch a **fresh plan-writer** in revision mode (plan path + findings + round — the Revision round block in plan-writer-prompt.md), then a **fresh reviewer** carrying the writer's Findings block as prior round; repeat until approved (max 5 iterations). Never re-enter the previous writer or reviewer (`execution-model.md` § 1, one-shot). Interactive sessions, which draft in the main loop, apply the fixes in the main loop and pass their own applied/declined list as the prior round.
 
 ## Execution Handoff
 
