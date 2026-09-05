@@ -240,7 +240,7 @@ python3 - <<'PY'
 import json, os
 manifest = json.load(open("dodi-dev/.claude-plugin/plugin.json"))
 hooks_path = manifest.get("hooks")
-assert hooks_path == "hooks/function-hooks.json", f"plugin.json hooks must point at hooks/function-hooks.json, got {hooks_path!r}"
+assert hooks_path == "./hooks/function-hooks.json", f"plugin.json hooks must be ./hooks/function-hooks.json (the loader requires the ./ prefix), got {hooks_path!r}"
 fh = json.load(open(os.path.join("dodi-dev", hooks_path)))
 modules = fh.get("modules")
 assert modules == ["hooks.js"], f"function-hooks.json must name exactly ['hooks.js'] (the node --check below is pinned to it), got {modules!r}"

@@ -6,5 +6,5 @@
     "name": "Dodi HQ",
     "email": "may@dodihome.com"
   },
-  "hooks": "hooks/function-hooks.json"
+  "hooks": "./hooks/function-hooks.json"
 }
