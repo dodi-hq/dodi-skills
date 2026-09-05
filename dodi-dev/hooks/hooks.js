@@ -3,8 +3,9 @@
 // A dispatched worker is a one-shot leaf (AGENTS.md § Dispatch Discipline;
 // epic-orchestrator/execution-model.md § 1). This module refuses a SendMessage
 // whose target is a subagent this session spawned, so a dispatcher cannot
-// re-enter a parked worker. Peer sessions, teammates and "main" are not in
-// $.agent.list() and pass through.
+// re-enter a parked worker. Peer sessions and teammates are not in
+// $.agent.list() and pass through; "main" short-circuits, as it does in the
+// runtime resolver.
 //
 // Loaded only when CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 (or the harness rollout
 // flag) — see AGENTS.md § Deterministic Skeleton. Fails open: a thrown
@@ -52,19 +53,33 @@ export const register = (on) => {
     const raw = String(e.to ?? "").trim()
     if (!raw) return next(e)
     const name = stripRef(raw)
+    const n = normalize(name)
+    // The resolver routes "main" to the lead before it matches any name.
+    if (n === "main") return next(e)
     let agents
     try {
       agents = await $.agent.list()
     } catch (err) {
-      $.ui.log(`dodi-dev no-re-entry hook: $.agent.list() failed (${err}); allowing SendMessage`)
+      // Fail open, and never throw from the fail-open path: $.ui.log rejects on
+      // over-long text, and an unhandled rejection here can disable the hooks
+      // worker for the session.
+      try {
+        await $.ui.log(
+          `dodi-dev no-re-entry hook: $.agent.list() failed (${String(err).slice(0, 200)}); allowing SendMessage`,
+        )
+      } catch {}
       return next(e)
     }
+    // The resolver resolves an id both raw and case-folded, so fold before matching.
     const ids = new Set(agents.map((a) => a.id))
-    const n = normalize(name)
+    // Prefix matching mirrors the resolver: at least 3 characters, and exactly
+    // one registered name starting with it.
+    const prefixHits = n.length >= 3 ? [...spawnedNames].filter((s) => s.startsWith(n)).length : 0
     const isOwn =
       ids.has(raw) ||
       ids.has(name) ||
-      (n.length > 0 && [...spawnedNames].some((s) => s === n || s.startsWith(n)))
+      ids.has(n) ||
+      (n.length > 0 && (spawnedNames.has(n) || prefixHits === 1))
     if (!isOwn) return next(e)
     return { deny: `dodi-dev no-re-entry rule: "${raw}"${DENY_TAIL}` }
   })

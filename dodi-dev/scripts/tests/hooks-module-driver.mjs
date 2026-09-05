@@ -1,5 +1,7 @@
 // Offline driver for dodi-dev/hooks/hooks.js: stub `on` and `$`, run the
-// seven cases from the no-re-entry spec's § 4 test list (DOD-1336).
+// seven cases from the no-re-entry spec's § 4 test list, plus the review
+// round-1 cases (1b case-folded ids, 7b the resolver-faithful prefix rule)
+// (DOD-1336).
 // The stub AgentInfo carries `status` because the runtime emits it (the
 // generated claude-code.d.ts may omit it); the module reads only `id`.
 import { register, normalize, stripRef } from "../../hooks/hooks.js"
@@ -74,6 +76,27 @@ for (const [to, want] of [
   const r = await send(to)
   const got = r.deny !== undefined ? "deny" : (r.nextCalled ? "allow" : "neither")
   check(`7 "${to}" ⇒ ${want}`, got === want)
+}
+
+// 1b a case-folded id resolves to the same subagent ⇒ deny
+for (const to of ["a0123456789ABCDEF", "A0123456789ABCDEF"]) {
+  const r = await send(to)
+  check(`1b case-folded id "${to}" denied`, !r.nextCalled && typeof r.deny === "string")
+}
+
+// 7b prefix rule mirrors the resolver: "main" routes to the lead, and a prefix
+// needs >= 3 characters and exactly one registered name starting with it.
+await spawn("main-helper")
+for (const [to, want] of [["main", "allow"], ["ma", "allow"], ["main-helper", "deny"]]) {
+  const r = await send(to)
+  const got = r.deny !== undefined ? "deny" : (r.nextCalled ? "allow" : "neither")
+  check(`7b "${to}" ⇒ ${want}`, got === want)
+}
+await spawn("workbench")
+for (const [to, want] of [["work", "allow"], ["worke", "deny"], ["worker", "deny"]]) {
+  const r = await send(to)
+  const got = r.deny !== undefined ? "deny" : (r.nextCalled ? "allow" : "neither")
+  check(`7b "${to}" ⇒ ${want}`, got === want)
 }
 
 // 6 ($ surface) — after all traffic.

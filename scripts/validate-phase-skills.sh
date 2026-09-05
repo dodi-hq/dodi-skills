@@ -244,7 +244,7 @@ assert hooks_path == "./hooks/function-hooks.json", f"plugin.json hooks must be 
 fh = json.load(open(os.path.join("dodi-dev", hooks_path)))
 modules = fh.get("modules")
 assert modules == ["hooks.js"], f"function-hooks.json must name exactly ['hooks.js'] (the node --check below is pinned to it), got {modules!r}"
-mod = os.path.join("dodi-dev", os.path.dirname(hooks_path), modules[0])
+mod = os.path.normpath(os.path.join("dodi-dev", os.path.dirname(hooks_path), modules[0]))
 assert os.path.isfile(mod) and not os.path.islink(mod), f"module not a regular file: {mod}"
 print(f"function-hook chain ok: {mod}")
 PY

@@ -16,7 +16,7 @@ A dispatched worker becomes a **one-shot leaf**: its life is exactly one turn, a
 - **Decision — the hook fails open, loudly where it can.** If `$.agent.list()` throws, the hook logs one transcript line and lets the call through rather than breaking peer-session handoffs. Flag off, an older loader, or a crashed hooks worker also leave the rule prose-only; the live verification in § 4 is how a machine proves the guard is on.
 - **In scope:** `AGENTS.md` §§ Dispatch Discipline and Deterministic Skeleton (including the flag bullet); `execution-model.md` §§ 1 and 6; both drafter prompts (revision-round input and output); both reviewer prompts (prior-round input and decline handling); fix-loop wording in `write-plan`, `implement`, `brainstorm`, `mature-playbook.md`; new `hooks/hooks.js` + `hooks/function-hooks.json` + a `hooks` entry in `.claude-plugin/plugin.json`; a `node`-driven test script; validator check; five-file version bump to `0.20.0` (also clears the pre-existing 0.19.0/0.19.1 skew that fails `validate-plugin-metadata.sh` on main today).
 - **Out of scope:** migrating `hook-require-model-pin.sh` to a function hook; plan-length cap; Capable-tier interim review rounds; main-thread context cap; a resident-drafter agent definition with a 1h cache TTL; any `promptCacheTtl` / `subagentPromptCacheTtl` setting. Each is its own ticket if wanted.
-- **Risk and ⚠ assumptions:** the function-hook API is EARLY ACCESS and undocumented; the hook is kept to one `agent.spawn` observer, one `tool.call` matcher, and two `$` calls, and the test stubs `$` so a surface change is a red test. ⚠ In-process teammates are assumed absent from `$.agent.list()` (plan: live check). ⚠ A fork's runtime-allocated name is assumed to arrive as `e.name` at `agent.spawn` (plan: check; dodi-dev spawns no forks).
+- **Risk and ⚠ assumptions:** the function-hook API is EARLY ACCESS and undocumented; the hook is kept to one `agent.spawn` observer, one `tool.call` matcher, and two `$` calls, and the test stubs `$` so a surface change is a red test. ⚠ In-process teammates are assumed absent from `$.agent.list()` (plan: live check). ⚠ A fork's runtime-allocated name does not reach `e.name` at `agent.spawn`, so a fork is denied by id only (dodi-dev spawns no forks).
 
 ## Problem
 
@@ -112,7 +112,7 @@ and one rule under `## What to Check`:
 
 **Wiring.** Three files, none of them the Grok-visible `hooks/hooks.json`:
 
-- `dodi-dev/.claude-plugin/plugin.json` gains `"hooks": "hooks/function-hooks.json"` (the manifest's `hooks` field accepts a path to an additional hooks file, relative to the plugin root, parsed by the same loader as `hooks/hooks.json`; its `modules` join the same module list).
+- `dodi-dev/.claude-plugin/plugin.json` gains `"hooks": "./hooks/function-hooks.json"` (the manifest schema requires the `./` prefix) (the manifest's `hooks` field accepts a path to an additional hooks file, relative to the plugin root, parsed by the same loader as `hooks/hooks.json`; its `modules` join the same module list).
 - `dodi-dev/hooks/function-hooks.json` is `{ "modules": ["hooks.js"] }` — `modules` names exactly one path relative to the file that declares it; the loader refuses a second module anywhere in the plugin, and accepts a hooks file that carries only `modules`.
 - `dodi-dev/hooks/hooks.js` is the module: plain ES-module JavaScript, no build step. The loader scans the source before loading to whitelist what it hooks and calls on `$`, so every `$` call is written literally.
 
@@ -220,7 +220,7 @@ Bump all five version files to `0.20.0` (doctrine plus a new hook surface is a m
 - **Peer sessions, teammates, `main`.** Not in `$.agent.list()` (teammates: ⚠ assumption, live-verified in the plan); allowed. A named subagent that shares a peer session's bare name is denied (subagent match wins). Acceptable: names are the dispatcher's own choice, and the runtime itself routes a bare name to the in-session subagent first.
 - **Completed vs running workers.** Both are denied; the list holds every local-agent task of the session. A running worker is not a re-entry target either — under the leaf rule the dispatcher awaits its digest.
 - **Plugin-spawned agents** (`$.agent.spawn` from another plugin) are listed and therefore denied as targets too. No dodi-dev flow messages them.
-- **Forks** (`subagent_type: fork`, forked skills) get a runtime-allocated registered name without the call passing `name`; whether it arrives as `e.name` at `agent.spawn` is ⚠ unverified. dodi-dev spawns no forks; a fork is still denied by id.
+- **Forks** (`subagent_type: fork`, forked skills) get a runtime-allocated registered name without the call passing `name`, and that name does not reach `e.name` at `agent.spawn`, so a fork is denied by id only — address it by the id `ListAgents` shows. dodi-dev spawns no forks, so this is not load-bearing.
 - **Hot reload** drops `spawnedNames`; id-based denial continues. Names are only the addressable form for named spawns, which dodi-dev prompts do not use today.
 - **Address forms.** Bare name, `name [ref]`, name prefix, case and whitespace variants, and raw id all resolve to the same subagent at the runtime and are all denied (§ 3 helpers, test 7).
 - **Grok Build / Codex.** No function hooks; the doctrine text and the fix-loop wording are the whole rule. Grok's harness depth limit already blocks nested dispatch, and neither runtime has a peer-messaging tool. `hooks/hooks.json` is unchanged, so Grok's loader sees nothing new.
@@ -229,8 +229,8 @@ Bump all five version files to `0.20.0` (doctrine plus a new hook surface is a m
 
 ## Open assumptions
 
-- ⚠ In-process teammates are absent from `$.agent.list()` (live check in the plan: message a teammate with the hook loaded).
-- ⚠ A fork's allocated name reaches `e.name` at `agent.spawn` (plan-time check; not load-bearing for dodi-dev flows).
+- ⚠ In-process teammates are absent from `$.agent.list()` — read from the 2.1.261 binary: teammates are a distinct task type and the Agent tool's teammate branch never fires `agent.spawn`; the plan's live check confirms rather than discovers.
+- ⚠ A fork's runtime-allocated name does not reach `e.name` at `agent.spawn` (read from the binary); a fork is denied by id only. Not load-bearing: dodi-dev spawns no forks.
 
 ## Verification
 

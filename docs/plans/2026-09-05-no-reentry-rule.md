@@ -665,7 +665,7 @@ Expected: no match. A match means the flag did not reach the session — fix set
   3. Dispatch `Agent` with `model: sonnet`, `name: "probe-named"`, same prompt. After completion, `SendMessage` to `probe-nam` (a prefix). Expected: refused with the rule text.
   4. Open a second `claude` session on this machine; from the first, `ListAgents`, then `SendMessage` to that session's name. Expected: delivered (the other session shows the message).
   5. Teammate (⚠ assumption): start a coordinator-mode team with one teammate, `SendMessage` the teammate by name. Expected: delivered. If it is refused, the assumption is false — stop, record the deny text, and demote to the spec lane (the hook would need a teammate exclusion).
-  6. Fork (⚠ assumption): dispatch `Agent` with `subagent_type: "fork"`, let it finish, then `ListAgents` and `SendMessage` it by the name the listing shows. Expected: refused (by id if the name was not recorded, by name if it was). Record which path denied it; either satisfies the rule.
+  6. Fork (⚠ assumption): dispatch `Agent` with `subagent_type: "fork"`, let it finish, then `ListAgents` and `SendMessage` it by the name the listing shows. Expected: refused by id (a fork's allocated name is not recorded; `SendMessage` by that name is not denied — address it by id from `ListAgents`).
 
 - [ ] **Step 5:** Remove nothing — the module ships as written (no probes were added). Confirm: `git status --short` is empty.
 
