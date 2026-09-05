@@ -20,6 +20,8 @@ This skill has **two** modes, and the first thing it does is tell them apart:
 | Result | the `implementation-reviewing` checkpoint + evidence | a stdout digest; the kernel moves the lane |
 | Human stop | stop and report to the lane | `declined` / `blocked` — there is nobody to ask |
 
+**First step, both modes — run `"${CLAUDE_PLUGIN_ROOT}/scripts/florist-mode.sh"` before anything else.** It prints `mode=manual` or `mode=autonomous …` from the environment itself (`florist-worker-contract.md` § 1, DOD-1326). In autonomous mode, follow the three instructions it prints: read the contract now, run only § Florist seats below for your `FLORIST_LANE`, and close through `florist-digest.sh` — its output is the last thing you print. A session that skips this step and reaches a manual close-out has silently exited as far as the kernel is concerned.
+
 **Autonomous mode is governed by `epic-orchestrator/florist-worker-contract.md`** — read it before anything else in that mode. It is the canon for the digest grammar, the decline vocabulary, the env contract, the push rule, the Seat Record, and the writes a worker must never make. This file states only what is specific to the implementing seat.
 
 There is no frontmatter `model:` pin (retired in 0.19.0): the kernel seats this session at the unit's delivery tier — the Standard base seat, or the Capable variant when `FLORIST_DELIVERY_TIER=capable` — and a frontmatter pin would override that seat at skill load. In manual mode the lane session's own tier applies (Standard: the lane's main loop is a router). Worker dispatches are unaffected either way: every dispatch below carries its own explicit pin, and a dispatch without one is a defect the tier-pin hook forbids.
@@ -33,7 +35,7 @@ The implementing seat runs the deliver playbook's phases 2–5 plus the docs-syn
 3. **Tests** — `create-tests` against the plan's Testing Contract.
 4. **Docs-sync** — `submit-ticket-pr/docs-sync-prompt.md` in child mode; commit any edit on the unit branch. This step moves here from `submit-ticket-pr` Open (which does not run under Florist) so the edits sit on the head that verification covers and the PR opens over.
 5. **Verify** — `verify`: one runner per Testing Contract group plus the local-CI runner, every digest recording the head SHA it ran against. A product-code fix here triggers the focused re-review (`review` § Epic Lane Rules) and re-runs the affected groups and the local-CI runner at the new head.
-6. **Push, record, digest** — `git push -u origin unit/$FLORIST_UNIT`, then `head=$(git rev-parse HEAD)`, post the Seat Record, emit the digest. Nothing is committed after `head` is read.
+6. **Push, record, digest** — `git push -u origin unit/$FLORIST_UNIT`, then `head=$(git rev-parse HEAD)`, post the Seat Record, emit the digest through `"${CLAUDE_PLUGIN_ROOT}/scripts/florist-digest.sh" impl-ready head=$head --evidence …` (§ Digest below) as the last output of the session. Nothing is committed after `head` is read.
 
 Inputs arrive on the worktree and the ticket: the contract at `docs/specs/<FLORIST_UNIT>-contract.md` and the plan (with its Testing Contract) at `docs/plans/<FLORIST_UNIT>-plan.md` — both on the unit branch, which forked from `FLORIST_EPIC_BRANCH` after the contract lanes pushed them; the ticket via `${CLAUDE_PLUGIN_ROOT}/scripts/linear-api.sh`; the decision-register canon in the epic ticket's description.
 

@@ -22,6 +22,8 @@ This skill has **two** modes, and the first thing it does is tell them apart:
 | Result | labels + gate comments | a stdout digest; the kernel moves the lane |
 | Human stop | ask the operator | `declined` — there is nobody to ask |
 
+**First step, both modes — run `"${CLAUDE_PLUGIN_ROOT}/scripts/florist-mode.sh"` before anything else.** It prints `mode=manual` or `mode=autonomous …` from the environment itself (`florist-worker-contract.md` § 1, DOD-1326). In autonomous mode, follow the three instructions it prints: read the contract now, run only § Florist seats below for your `FLORIST_LANE`, and close through `florist-digest.sh` — its output is the last thing you print. A session that skips this step and reaches a manual close-out has silently exited as far as the kernel is concerned.
+
 **Autonomous mode is governed by `epic-orchestrator/florist-worker-contract.md`** — read it before anything else in that mode. It is the canon for the digest grammar, the decline vocabulary, the env contract, the artifact paths, and the writes a worker must never make. This file states only what is specific to the mature lane.
 
 There is no frontmatter `model:` pin: the main loop runs at whatever tier its invoker seated it at — Florist seats the autonomous session per `worker-dispatch.json` (Standard, a router by design), and in manual mode the operator's own session pin applies. Worker dispatches are unaffected either way: every dispatch inside the playbook carries its own explicit pin and fable-policy (`execution-model.md` § 2), and a dispatch without a pin is a defect the tier-pin hook forbids.
@@ -46,7 +48,7 @@ Each dispatch runs the phases its lane seats, then emits one digest. The interna
 | `contract-drafting` | draft the contract, then the spec-review loop to a clean final round | `artifact-ready` + `FLORIST-EVIDENCE: kind=artifact ref=docs/specs/<unit>-contract.md sha=<pushed sha>` |
 | `contract-review` | write the plan, then the plan-review loop to a clean final round | `clean-final delivery-tier=<standard\|capable>` + `FLORIST-EVIDENCE: kind=thread ref=<review record> sha=<contract sha>` |
 
-This table is the lane's restatement of `florist-worker-contract.md` § 9, the per-seat canon. The evidence rows are **required**, not decoration: a drafting digest without an artifact row carrying a real SHA is not a submission, and a `clean-final` whose thread SHA is not the pinned contract SHA blocks the unit on `sha-mismatch`. The `delivery-tier` field is likewise required — it is the plan reviewer's classification, and a clean plan review without it is an incomplete result. Push before you read the SHA (`florist-worker-contract.md` § 7).
+This table is the lane's restatement of `florist-worker-contract.md` § 9, the per-seat canon. The evidence rows are **required**, not decoration: a drafting digest without an artifact row carrying a real SHA is not a submission, and a `clean-final` whose thread SHA is not the pinned contract SHA blocks the unit on `sha-mismatch`. The `delivery-tier` field is likewise required — it is the plan reviewer's classification, and a clean plan review without it is an incomplete result. Push before you read the SHA (`florist-worker-contract.md` § 7). Emit the digest through `"${CLAUDE_PLUGIN_ROOT}/scripts/florist-digest.sh"` (contract § 4) as the last output of the dispatch.
 
 ### The other edges
 
