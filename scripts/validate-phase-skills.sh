@@ -235,6 +235,25 @@ done
 # Hooks configuration parses.
 python3 -c 'import json; json.load(open("dodi-dev/hooks/hooks.json"))'
 
+# Function-hook module chain: manifest hooks path -> function-hooks.json -> module file.
+python3 - <<'PY'
+import json, os
+manifest = json.load(open("dodi-dev/.claude-plugin/plugin.json"))
+hooks_path = manifest.get("hooks")
+assert hooks_path == "hooks/function-hooks.json", f"plugin.json hooks must point at hooks/function-hooks.json, got {hooks_path!r}"
+fh = json.load(open(os.path.join("dodi-dev", hooks_path)))
+modules = fh.get("modules")
+assert modules == ["hooks.js"], f"function-hooks.json must name exactly ['hooks.js'] (the node --check below is pinned to it), got {modules!r}"
+mod = os.path.join("dodi-dev", os.path.dirname(hooks_path), modules[0])
+assert os.path.isfile(mod) and not os.path.islink(mod), f"module not a regular file: {mod}"
+print(f"function-hook chain ok: {mod}")
+PY
+if command -v node >/dev/null; then
+  node --check dodi-dev/hooks/hooks.js
+else
+  echo "notice: node not found; skipping syntax check of dodi-dev/hooks/hooks.js" >&2
+fi
+
 # Every plugin script referenced by a skill must exist.
 grep -rhoE 'scripts/[a-z-]+\.sh' dodi-dev/skills | sort -u | while read -r ref; do
   test -f "dodi-dev/${ref}" || { echo "skill references missing script: ${ref}" >&2; exit 1; }
