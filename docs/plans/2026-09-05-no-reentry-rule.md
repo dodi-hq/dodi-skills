@@ -41,7 +41,7 @@
 
 - `dodi-dev/hooks/hooks.json`, `hook-require-model-pin.sh`, `hook-gate2-guard.sh` — byte-identical (Task 9 checks).
 - `scripts/validate-phase-skills.sh` seat registry and tier/effort checks on the four edited prompt templates — still pass (the edits add lines, never touch the tier parenthetical).
-- `test-hooks-payload.sh` and the other ten `dodi-dev/scripts/tests/*.sh` — still pass.
+- `test-hooks-payload.sh` and the other ten `dodi-dev/scripts/tests/*.sh` — still pass (`test-validate-phase-skills.sh` needs the Task 6 Step 0 tmp-tree change to keep passing).
 - Grok Build and Codex envelopes — unchanged except the version field.
 
 ### Commands
@@ -90,6 +90,7 @@
 | `dodi-dev/scripts/tests/test-hooks-module.sh` | create | bash entry: syntax check + runs the driver |
 | `dodi-dev/scripts/tests/hooks-module-driver.mjs` | create | node driver with stub `on` / `$`; the seven cases |
 | `scripts/validate-phase-skills.sh` | modify | manifest-chain + `node --check` |
+| `dodi-dev/scripts/tests/test-validate-phase-skills.sh` | modify | its tmp tree gains `dodi-dev/.claude-plugin` so the new check can read the manifest |
 | `.claude-plugin/marketplace.json`, `dodi-dev/.codex-plugin/plugin.json`, `dodi-dev/.grok-plugin/plugin.json`, `.grok-plugin/marketplace.json` | modify | version 0.20.0 |
 
 ---
@@ -109,7 +110,7 @@ Run (inside the worktree):
 ```bash
 git cherry-pick $(git log --reverse --format=%H main..spec/no-reentry-rule) && git log --oneline -3
 ```
-Expected: two commits on top of `d8bd09e`: `spec: no-re-entry rule …` and `plan: DOD-1336 no-re-entry rule`.
+Expected: the spec and plan commits (two or more, the last plan-review fix rounds included) on top of `d8bd09e`, the first being `spec: no-re-entry rule …`.
 
 - [ ] **Step 3:** Confirm the working tree is clean and the three byte-identical files have no drift.
 
@@ -154,7 +155,7 @@ git commit -m "doctrine: one-shot leaf clause and function-hook split (DOD-1336)
 ### Task 2: Canon — `execution-model.md`
 
 **Files:**
-- Modify: `dodi-dev/skills/epic-orchestrator/execution-model.md` § 1 (after line 9), § 6 (line 42)
+- Modify: `dodi-dev/skills/epic-orchestrator/execution-model.md` § 1 (after line 9), § 6 (heading line 42, paragraph line 44)
 
 - [ ] **Step 1:** In § 1 Leaf rule, after the paragraph beginning `This is permanent architecture, not an interim workaround.`, add a new paragraph:
 
@@ -308,9 +309,9 @@ git commit -m "skills: fix loops dispatch fresh leaves with the prior-round bloc
 
 Run:
 ```bash
-bin="$(readlink -f "$(which claude)")"; strings -n 8 "$bin" | grep -F 'normalize("NFKC")' | grep -F 'toLowerCase' | head -3 | cut -c1-240
+bin="$(readlink -f "$(which claude)")"; strings -n 8 "$bin" | grep -oE 'normalize\("NFKC"\)\.replace\([^;]{0,200}' | head -3
 ```
-Expected: at least one line containing `.normalize("NFKC").replace(/[\p{Cc}\p{Cf}]/gu` … `.trim().toLowerCase().replace(/\s+/g,"-")`. If the fold differs (for example whitespace collapsed rather than replaced with `-`), write `normalize` in Step 2 to match what the binary shows and adjust test case 7 accordingly; the resolver wins.
+Expected: the first hit is the resolver's fold and reads `normalize("NFKC").replace(/[\p{Cc}\p{Cf}]/gu,(t)=>/\s/.test(t)?t:"").trim().toLowerCase().replace(/\s+/g,"-")` (minified variable names may differ). The binary carries two other, unrelated `normalize("NFKC")` folds; the one to match is the one ending `.trim().toLowerCase().replace(/\s+/g,"-")`. If that fold differs from Step 2's `normalize` (for example whitespace collapsed rather than replaced with `-`), write `normalize` to match what the binary shows and adjust test case 7 accordingly; the resolver wins.
 
 - [ ] **Step 2:** Create `dodi-dev/hooks/hooks.js`:
 
@@ -415,7 +416,9 @@ export const register = (on) => {
 
 ```js
 // Offline driver for dodi-dev/hooks/hooks.js: stub `on` and `$`, run the
-// seven cases from docs/specs/2026-09-05-no-reentry-rule-design.md § 4.
+// seven cases from the no-re-entry spec's § 4 test list (DOD-1336).
+// The stub AgentInfo carries `status` because the runtime emits it (the
+// generated claude-code.d.ts may omit it); the module reads only `id`.
 import { register, normalize, stripRef } from "../../hooks/hooks.js"
 
 const registrations = []
@@ -534,6 +537,21 @@ git commit -m "hooks: no-re-entry function-hook guard with offline test (DOD-133
 
 **Files:**
 - Modify: `scripts/validate-phase-skills.sh` (after the `# Hooks configuration parses.` check, line 236)
+- Modify: `dodi-dev/scripts/tests/test-validate-phase-skills.sh` (lines 6–7 comment, line 18 copy list) — its tmp tree must now include `dodi-dev/.claude-plugin`, which the new check reads
+
+- [ ] **Step 0:** In `dodi-dev/scripts/tests/test-validate-phase-skills.sh`, replace the line
+
+```bash
+cp -R "$REPO_ROOT/dodi-dev/skills" "$REPO_ROOT/dodi-dev/scripts" "$REPO_ROOT/dodi-dev/hooks" "$tmp/dodi-dev/"
+```
+
+with
+
+```bash
+cp -R "$REPO_ROOT/dodi-dev/skills" "$REPO_ROOT/dodi-dev/scripts" "$REPO_ROOT/dodi-dev/hooks" "$REPO_ROOT/dodi-dev/.claude-plugin" "$tmp/dodi-dev/"
+```
+
+and change the comment line `# Copy-tree-and-mutate: the validator reads only dodi-dev/skills, dodi-dev/scripts,` / `# dodi-dev/hooks, and its own repo-relative paths — no templates/, no git state.` to `# Copy-tree-and-mutate: the validator reads only dodi-dev/skills, dodi-dev/scripts,` / `# dodi-dev/hooks, dodi-dev/.claude-plugin (the function-hook chain), and its own repo-relative paths — no templates/, no git state.`
 
 - [ ] **Step 1:** Insert after `python3 -c 'import json; json.load(open("dodi-dev/hooks/hooks.json"))'`:
 
@@ -560,7 +578,7 @@ fi
 
 - [ ] **Step 2:** Also add `hooks-module-driver.mjs`'s companion to the per-test list if one exists — it does not; the repo runs tests individually. Instead add the new test to the regression command in this plan's Testing Contract only (no repo change).
 
-- [ ] **Step 3:** Verify, including the negative path.
+- [ ] **Step 3:** Verify, including the negative path and the validator's own self-test.
 
 Run:
 ```bash
@@ -568,13 +586,14 @@ bash scripts/validate-phase-skills.sh | grep -F "function-hook chain ok"
 cp dodi-dev/hooks/function-hooks.json /tmp/fh.bak && printf '{ "modules": ["missing.js"] }\n' > dodi-dev/hooks/function-hooks.json
 bash scripts/validate-phase-skills.sh >/dev/null 2>&1 && echo "UNEXPECTED PASS" || echo "negative path rejected"
 mv /tmp/fh.bak dodi-dev/hooks/function-hooks.json && git status --short dodi-dev/hooks/
+bash dodi-dev/scripts/tests/test-validate-phase-skills.sh
 ```
-Expected: `function-hook chain ok: dodi-dev/hooks/hooks.js`; `negative path rejected`; final `git status` line empty (file restored).
+Expected: `function-hook chain ok: dodi-dev/hooks/hooks.js`; `negative path rejected`; an empty `git status` line (file restored); `validate-phase-skills tests ok`.
 
 - [ ] **Step 4:** Commit.
 
 ```bash
-git add scripts/validate-phase-skills.sh
+git add scripts/validate-phase-skills.sh dodi-dev/scripts/tests/test-validate-phase-skills.sh
 git commit -m "validate-phase-skills: check the function-hook module chain (DOD-1336)"
 ```
 
@@ -594,7 +613,7 @@ Expected: `AssertionError: ('0.19.1', '0.19.0')`.
 
 Run:
 ```bash
-for f in .claude-plugin/marketplace.json dodi-dev/.claude-plugin/plugin.json dodi-dev/.codex-plugin/plugin.json dodi-dev/.grok-plugin/plugin.json .grok-plugin/marketplace.json; do sed -i '' -E 's/"version": "0\.19\.[01]"/"version": "0.20.0"/' "$f"; done
+for f in .claude-plugin/marketplace.json dodi-dev/.claude-plugin/plugin.json dodi-dev/.codex-plugin/plugin.json dodi-dev/.grok-plugin/plugin.json .grok-plugin/marketplace.json; do perl -pi -e 's/"version": "0\.19\.[01]"/"version": "0.20.0"/' "$f"; done
 grep -n '"version"' .claude-plugin/marketplace.json dodi-dev/.claude-plugin/plugin.json dodi-dev/.codex-plugin/plugin.json dodi-dev/.grok-plugin/plugin.json .grok-plugin/marketplace.json
 ```
 Expected: five lines, each `"version": "0.20.0"`.
