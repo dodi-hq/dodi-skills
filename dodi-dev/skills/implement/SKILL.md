@@ -37,8 +37,8 @@ In the epic lane, escalation is pre-routed by the label, never improvised mid-la
 |--------|--------|
 | **DONE** | Mark complete, next task |
 | **DONE_WITH_CONCERNS** | Read concerns. If correctness issue, address first. If observation, note and proceed |
-| **NEEDS_CONTEXT** | Provide missing context, re-dispatch |
-| **BLOCKED** | Assess: provide more context, use more capable model, break task smaller, or escalate to human |
+| **NEEDS_CONTEXT** | Provide missing context, dispatch a **fresh implementer** |
+| **BLOCKED** | Assess: provide more context, use more capable model, break task smaller, or escalate to human — any retry is a fresh implementer, never a re-entry |
 
 Never ignore an escalation or retry without changes.
 

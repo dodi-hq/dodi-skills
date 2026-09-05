@@ -9,9 +9,9 @@ The executing session (the resident driver walking this lane inline, or a manual
 | Phase | Worker prompt | Tier pin + fable-policy | Marker posted (state transition) | Exit / demotion edge |
 | --- | --- | --- | --- | --- |
 | Draft spec | `mature-ticket/spec-drafter-prompt.md` | Frontier (`fable`); **hard** | → `spec-reviewing` (draft done) | `QUESTIONS_FOR_HUMAN` ⇒ stop and ask; product/scope surprise ⇒ demote |
-| Spec review loop | `brainstorm/spec-reviewer-prompt.md` | Frontier (`fable`); non-final rounds **soft**, **final round hard** | → `needs-plan` — **this transition applies `spec-ready`** | findings ⇒ another round (loop capped, final must be clean); stale/missing scannable header is a finding |
+| Spec review loop | `brainstorm/spec-reviewer-prompt.md` | Frontier (`fable`); non-final rounds **soft**, **final round hard** | → `needs-plan` — **this transition applies `spec-ready`** | findings ⇒ **fresh revision-round** drafter, then fresh reviewer with the prior-round block (loop capped, final must be clean); stale/missing scannable header is a finding |
 | Write plan | `write-plan/plan-writer-prompt.md` | Frontier (`fable`); **deferred** | → `plan-reviewing` (plan written) | planning exposes product ambiguity ⇒ demote to spec |
-| Plan review loop | `write-plan/plan-reviewer-prompt.md` | Frontier (`fable`); non-final rounds **soft**, **final round deferred** | → `ready-to-implement` — **terminal; applies `ready-to-implement` (+ `needs-capable-delivery` on a `capable` verdict)** | findings ⇒ another round; unresolved dependency ⇒ `blocked-dependency` |
+| Plan review loop | `write-plan/plan-reviewer-prompt.md` | Frontier (`fable`); non-final rounds **soft**, **final round deferred** | → `ready-to-implement` — **terminal; applies `ready-to-implement` (+ `needs-capable-delivery` on a `capable` verdict)** | findings ⇒ **fresh revision-round** writer, then fresh reviewer with the prior-round block; unresolved dependency ⇒ `blocked-dependency` |
 
 ### Under Florist
 
@@ -38,9 +38,9 @@ fable-policy values are the per-gate policy the executing session looks up (per 
 - **Draft the spec** — dispatch a spec-drafter worker (`mature-ticket/spec-drafter-prompt.md`); the executing session coordinates and runs the review loops. Specs lead with the scannable header (`## TL;DR` + `## Key Points`).
 - The epic's **decision register canon summary** (the `## Decision Register — Canon` section of the epic description) is required drafter and reviewer input: canonical decisions from already-merged siblings bind this spec. A spec that contradicts a canon decision is a review finding.
 - **Pre-register epics** (no canon summary exists — the epic predates the register): proceed and note its absence in the artifact; absence is not a blocker and does not trigger a retroactive review from this lane. The epic's first coherence review seeds the register, bootstrapping prior canon at depth proportional to artifact quality (per the coherence-reviewer prompt).
-- Run **spec review** until the final round is clean; a missing or stale scannable header is a review finding.
+- Run **spec review** until the final round is clean; each round dispatches **fresh workers** per `execution-model.md` § 1, and the reviewer receives the writer's Findings block as prior round. A missing or stale scannable header is a review finding.
 - Run **write-plan** after the spec is clean (and signed off, where the Signoff model requires it).
-- Run **plan review** until the final round is clean.
+- Run **plan review** until the final round is clean; each round dispatches **fresh workers** per `execution-model.md` § 1, and the reviewer receives the writer's Findings block as prior round.
 - Apply `spec-ready` after clean spec review; apply `ready-to-implement` only after clean plan review and dependency check.
 - **Delivery-tier label:** the plan reviewer's output includes a required delivery-tier classification (standard | capable — see `write-plan/plan-reviewer-prompt.md`). If **any** chunk's final clean round classifies `capable`, apply `needs-capable-delivery` at the same gate transition as `ready-to-implement`, before the gate comment. The label routes every implementer and fix worker in the delivery lane to Capable tier (`opus`); its absence means Standard-tier delivery. Escalation is pre-routed here, never improvised mid-lane.
 - Do not move to implementation without both labels.
