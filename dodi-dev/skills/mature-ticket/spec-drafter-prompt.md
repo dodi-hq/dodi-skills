@@ -16,7 +16,7 @@ Inputs:
 - **Revision round (fix rounds only):**
   - artifact path — the existing draft on disk; you are revising it, not redrafting
   - review findings — verbatim from the reviewer's digest, one per line, each tagged `caught-by: <kind>/<round>/<tier>` (the dispatcher fills the round and tier before handing them over)
-  - round number — N of the loop cap
+  - round number — this loop is uncapped; it ends on a clean final round
   - the original brief above still applies; canon and conventions are unchanged
 
 Responsibilities:
