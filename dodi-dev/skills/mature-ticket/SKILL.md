@@ -89,6 +89,10 @@ Autonomous mode runs **none** of this: the kernel's lease is the claim, and a cl
 
 Before claiming, confirm the main loop is running the tier the operator intends for spec and plan judgment. If it is not — or if fable capacity fails mid-lane — stop and put the choice to the operator per AGENTS.md § Fable Availability Policy's `operator-choice` row: **wait**, or **proceed at Capable tier (`model: opus` on Claude Code) at `max` effort**, with the substitution declared in that row's `session-tier:` grammar on each gate-transition comment. Autonomous mode never reaches this row (`florist-worker-contract.md` § 5).
 
+## Session re-entry (manual mode)
+
+The same invocation self-check covers context, not just tier: a manual lane resumed in a session that has been idle past the harness cache TTL re-caches its whole accumulated context on the first turn — at this lane's Frontier seat, the most expensive re-entry in the system. Reset first (`/clear` on Claude Code) and re-invoke; the lane resumes from its recorded seam and continuation brief, which is what a successor would read anyway (`epic-orchestrator/execution-model.md` §§ 5, 8).
+
 ## Exit states (manual mode)
 
 - **Advance** — `spec-ready` applied (after clean spec review), then `ready-to-implement` (after clean plan review + dependency check, `needs-capable-delivery` where classified).

@@ -20,6 +20,8 @@ The resident driver. One long-lived session per active epic. It replaces the ear
 
 This skill is invoked by running a session on it with an instruction string. **First, inspect that instruction.** If it begins with `rule-coherence` — i.e. the operator ran the drive-epic skill with the input `rule-coherence <merge-sha> approve|reject|redirect:<scope>` — parse `<merge-sha>` and the flag, then run the **Human-Ruling Resolution Route** (Ruling Mode) below and **stop** — do **not** fall through to the guard or the drive loop. Any other invocation (an epic id, "drive EPIC-123", a bare resume) is a normal driver run: proceed to Step 0 — the guard.
 
+**A bare resume typed into a session that has been sitting idle is not a resume — it is a cold boot in the wrong place.** Reset first (`/clear` on Claude Code) and invoke this skill in the fresh session: Boot is built for the cold path, and a parked driver's context is rebuilt from durable state either way, so continuing the stale transcript buys nothing and re-caches everything it had accumulated. Cost model and the anti-clock caveat: `epic-orchestrator/execution-model.md` § 8.
+
 (There is no separate `rule-coherence` skill, command, or shell alias — the spec's intent is "no new skill; a drive-epic ruling mode reusing its claim/fence/routing." The operator delivers a ruling by invoking **this** skill with the `rule-coherence …` instruction; this parse step is the branch.)
 
 ## Ruling Mode
