@@ -54,3 +54,12 @@ One lane in flight at a time is **current policy, not architecture**. The invari
 - **(c)** Wake attribution is by worker id — never by "the worker" definite article.
 - **(d)** Merges, PM state advances, and register writes are serial in the driver by construction.
 - **(e)** Concurrent lanes require **disjoint predicted file surfaces** (shared config, schema, or generated files count as overlap; when in doubt, serialize). One-lane-in-flight makes this currently vacuous — it is carried as a dormant invariant any future parallel flip must re-enforce.
+
+## 8. Session re-entry (operator-facing)
+
+An idle session costs nothing while it sits. The entire cost of a pause is charged on **the next turn taken in that session**, and it scales with the context that session had accumulated: the harness prompt cache has a bounded TTL (1h on Claude Code), and past it the whole conversation is re-written to cache at the write rate — on a Frontier seat, ~80× the per-token cache-read rate. A resident driver holding 600k tokens costs more to wake than a full lane costs to run.
+
+- **After a pause long enough to have crossed the cache TTL, the first action in a long-lived session is a reset, never a prompt.** On Claude Code that is `/clear`: local, free, no API turn, new session. The cold path is the proven one — Boot rebuilds from durable state, which is the same path a refresh-park successor takes.
+- **Asking the session whether to reset costs exactly as much as not resetting.** The question is itself a turn, and it re-caches the whole context before it can be answered. Decide it at the keyboard, not in the transcript.
+- **If the context must survive the pause, compact _before_ stopping, while the cache is still warm.** A warm compaction reads the context at the read rate; compacting after the pause pays the full re-cache and then discards what it paid for — the worst of the three options.
+- **This is not a clock rule and never becomes one.** It governs operator re-entry only. The cache TTL is a harness property, not a workflow clock: no session takes an exit, a park, a succession, or a hand-off from it, and the three driver exits stay count- and event-based (`drive-epic` § Park, refresh-park, and bloat).
