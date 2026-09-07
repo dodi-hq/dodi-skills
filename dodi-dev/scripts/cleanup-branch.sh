@@ -12,6 +12,8 @@
 # Usage: cleanup-branch.sh <branch> <base-branch> [worktree-path] [repo-dir=.] [verified-merge-sha]
 # Exit: 0 cleaned; 1 refused (not verifiably merged); 2 error.
 set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$HERE/lib-git-refs.sh"
 
 branch="${1:?usage: cleanup-branch.sh <branch> <base-branch> [worktree-path] [repo-dir] [verified-merge-sha]}"
 base="${2:?usage: cleanup-branch.sh <branch> <base-branch> [worktree-path] [repo-dir] [verified-merge-sha]}"
@@ -20,8 +22,8 @@ repo_dir="${4:-.}"
 verified_sha="${5:-}"
 cd "$repo_dir"
 
-git fetch origin "$base" --quiet
-tip="$(git rev-parse "refs/remotes/origin/$branch" 2>/dev/null || git rev-parse "refs/heads/$branch" 2>/dev/null || true)"
+fetch_and_track_ref origin "$base"
+tip="$(resolve_branch_tip "$branch")" || tip=""
 if [[ -z "$tip" ]]; then
   echo "cleanup-branch: $branch has no local or remote ref; nothing to clean" >&2
   exit 1
