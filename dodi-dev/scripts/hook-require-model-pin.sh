@@ -37,6 +37,8 @@ except Exception:
     print("SKIP"); sys.exit(0)
 
 # Dual-payload contract: Claude Code sends tool_input, Grok Build sends toolInput.
+# Recognizing Astra-shaped payloads makes the rank check correct when one reaches
+# this hook; it does not claim that Codex installs this Claude/Grok hook.
 ti = d.get("tool_input") or d.get("toolInput") or {}
 model = (ti.get("model") or "").strip()
 if not model:
@@ -45,15 +47,16 @@ if not model:
 desc = str(ti.get("description") or "")
 prompt = str(ti.get("prompt") or "")
 
-# Declared escalation — never silent, same posture as a fable substitution.
+# Declared escalation — never silent, same posture as a Frontier substitution.
 if re.search(r"tier-justified\s*:", desc + "\n" + prompt, re.I):
     print("OK"); sys.exit(0)
 
-# Tier rank from the Claude aliases. Unknown slugs (e.g. the Grok grok-4.6 slug,
-# where every tier is one model) skip the fit check: only presence is checkable.
+# Tier rank from Claude aliases plus the Codex Astra Frontier family. Unknown
+# slugs (e.g. the Grok grok-4.6 slug, where every tier is one model) skip the fit
+# check: only presence is checkable.
 m = model.lower()
 rank = None
-for alias, r in (("haiku", 1), ("sonnet", 2), ("opus", 3), ("fable", 4)):
+for alias, r in (("haiku", 1), ("sonnet", 2), ("opus", 3), ("fable", 4), ("astra", 4)):
     if alias in m:
         rank = r
         break
@@ -92,7 +95,7 @@ PY
 
 case "$verdict" in
   UNPINNED)
-    echo "BLOCKED by dodi-dev dispatch-pin guard: this Agent dispatch has no explicit 'model' parameter. An unpinned dispatch inherits the session model — a defect, not a default. Pin by capability: fable = spec/plan drafting+review and final review rounds; opus = per-round code/PR review + implementers/fix workers on needs-capable-delivery tickets; sonnet = writing code (implementers), tests, research digests, orchestration routing; haiku = git mechanics, test runners, state digests. Add the pin and retry. (Escape hatch for non-dodi work: DODI_ALLOW_UNPINNED=1.)" >&2
+    echo "BLOCKED by dodi-dev dispatch-pin guard: this Agent dispatch has no explicit 'model' parameter. An unpinned dispatch inherits the session model — a defect, not a default. Pin by capability: Frontier (Fable on Claude Code, Astra on Codex) = spec/plan drafting+review and final review rounds; opus = per-round code/PR review + implementers/fix workers on needs-capable-delivery tickets; sonnet = writing code (implementers), tests, research digests, orchestration routing; haiku = git mechanics, test runners, state digests. Add the pin and retry. This guard deploys on Claude Code and Grok Build; Astra recognition covers compatible payloads and does not assert native Codex hook integration. (Escape hatch for non-dodi work: DODI_ALLOW_UNPINNED=1.)" >&2
     exit 2
     ;;
   MISFIT)

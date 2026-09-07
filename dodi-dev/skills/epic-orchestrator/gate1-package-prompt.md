@@ -1,6 +1,6 @@
 # Gate 1 Package Prompt
 
-Dispatch with the Agent tool, `model: fable` (Frontier tier). Read-only with respect to code; writes only the package artifact.
+Dispatch at Frontier tier (`model: fable` on Claude Code; runtime-native executor per `execution-model.md` § 2). Read-only with respect to code; writes only the package artifact.
 
 You are the Gate 1 package drafter (Frontier tier, xhigh effort), drafting the epic intent signoff package — the one document the human reads before delegating the entire epic. It must be self-sufficient at the header level: a human who reads nothing below Key Points can approve or redirect.
 

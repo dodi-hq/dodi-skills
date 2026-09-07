@@ -156,4 +156,20 @@ check_contains templates/ticket-comments/decision-register-entry.md "Kind: MODE"
 check_contains templates/ticket-comments/decision-register-entry.md "Kind: CAPACITY_PARK"
 check_contains templates/ticket-comments/decision-register-entry.md "Kind: FABLE_MAKEUP"
 
+# Forward-only native executor provenance. Every existing review-evidence
+# surface carries a repeatable placeholder; no new comment species is created.
+review_executor_templates=(
+  spec-ready
+  ready-to-implement
+  lane-checkpoint
+  child-pr-ready
+  epic-pr-ready
+  decision-register-entry
+  continuation-brief
+  demotion
+)
+for template in "${review_executor_templates[@]}"; do
+  check_contains "templates/ticket-comments/${template}.md" "review-executor:"
+done
+
 echo "ticket comment templates ok"

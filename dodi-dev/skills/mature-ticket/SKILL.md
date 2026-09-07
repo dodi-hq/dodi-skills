@@ -26,18 +26,18 @@ This skill has **two** modes, and the first thing it does is tell them apart:
 
 **Autonomous mode is governed by `epic-orchestrator/florist-worker-contract.md`** — read it before anything else in that mode. It is the canon for the digest grammar, the decline vocabulary, the env contract, the artifact paths, and the writes a worker must never make. This file states only what is specific to the mature lane.
 
-There is no frontmatter `model:` pin: the main loop runs at whatever tier its invoker seated it at — Florist seats the autonomous session per `worker-dispatch.json` (Standard, a router by design), and in manual mode the operator's own session pin applies. Worker dispatches are unaffected either way: every dispatch inside the playbook carries its own explicit pin and fable-policy (`execution-model.md` § 2), and a dispatch without a pin is a defect the tier-pin hook forbids.
+There is no frontmatter `model:` pin: the main loop runs at whatever tier its invoker seated it at — Florist seats the autonomous session per `worker-dispatch.json` (Standard, a router by design), and in manual mode the operator's own session pin applies. Worker dispatches are unaffected either way: every dispatch inside the playbook carries its own explicit runtime-native pin and Frontier policy (`execution-model.md` § 2), and a dispatch without a pin is a defect the tier-pin hook forbids.
 
 ## Gate tiers by epic tier (autonomous mode)
 
 `FLORIST_EPIC_TIER` pins the lane's gate tiers before any dispatch is written. Unset is treated as `standard`.
 
-| `FLORIST_EPIC_TIER` | Spec/plan gates | Research + read-and-digest | Fable |
+| `FLORIST_EPIC_TIER` | Spec/plan gates | Research + read-and-digest | Frontier policy |
 | --- | --- | --- | --- |
 | `standard` | Capable tier (`model: opus` on Claude Code) | Standard tier (`model: sonnet`) | nowhere — a smoke-sized epic never reaches for scarce capacity |
-| `capable` | per the AGENTS.md § Fable Availability Policy gate table, unchanged | Standard tier (`model: sonnet`) | hard / deferred / soft per that table |
+| `capable` | per the AGENTS.md § Frontier Availability Policy gate table, unchanged | Standard tier (`model: sonnet` on Claude Code) | hard / deferred / soft per that table |
 
-Under `standard` the fable-policy lookup still happens and still resolves — to a table with no fable seats in it, so no substitution is recorded and `fable-unavailable` cannot fire. Under `capable` the lookup is the existing one, and a **hard** gate that cannot dispatch declines rather than parks (`florist-worker-contract.md` § 6).
+Under `standard` the compatibility field `FLORIST_FABLE_POLICY` still resolves to `none`: the table has no Frontier seats, so no substitution is recorded and `fable-unavailable` cannot fire. Under `capable` the runtime-local Frontier lookup is the existing one, and a **hard** gate whose native Frontier executor cannot dispatch declines rather than parks (`florist-worker-contract.md` § 6).
 
 ## Phase range by lane (autonomous mode)
 
@@ -57,7 +57,7 @@ This table is the lane's restatement of `florist-worker-contract.md` § 9, the p
 | Plan-writing or plan review exposes a contract defect (product, architecture, scope, or spec/plan mismatch) | `findings` + `kind=thread` evidence — the kernel returns the unit to `contract-drafting`. This is the demotion edge; never redesign the contract from the review lane |
 | The drafter surfaces genuine product questions | `declined reason=questions-for-human`, the questions posted on the ticket |
 | `FLORIST_NEEDS_HUMAN_SPEC=1` and the draft-signoff gate is unsatisfied (below) | `declined reason=needs-human-spec` |
-| A **hard** fable gate cannot dispatch | `declined reason=fable-unavailable` |
+| A **hard** Frontier gate cannot dispatch | `declined reason=fable-unavailable` (compatibility reason token) |
 | The admitted intent itself is invalidated | `blocked reason=spec-mismatch` |
 | An operational wall — auth, tooling, an unbuildable harness | `blocked reason=worker-blocked` |
 
@@ -87,7 +87,7 @@ Autonomous mode runs **none** of this: the kernel's lease is the claim, and a cl
 
 ## Session tier (manual mode)
 
-Before claiming, confirm the main loop is running the tier the operator intends for spec and plan judgment. If it is not — or if fable capacity fails mid-lane — stop and put the choice to the operator per AGENTS.md § Fable Availability Policy's `operator-choice` row: **wait**, or **proceed at Capable tier (`model: opus` on Claude Code) at `max` effort**, with the substitution declared in that row's `session-tier:` grammar on each gate-transition comment. Autonomous mode never reaches this row (`florist-worker-contract.md` § 5).
+Before claiming, confirm the main loop is running the runtime-local Frontier configuration the operator intends for spec and plan judgment. Qualified Astra on Codex satisfies this check. If the session is not qualified Frontier — or if its native Frontier capacity fails mid-lane — stop and put the choice to the operator per AGENTS.md § Frontier Availability Policy's `operator-choice` row: **wait**, or **proceed at Capable tier (`model: opus` on Claude Code) at `max` effort**, with the substitution declared in that row's `session-tier:` grammar on each gate-transition comment. Autonomous mode never reaches this row (`florist-worker-contract.md` § 5).
 
 ## Session re-entry (manual mode)
 
@@ -101,6 +101,6 @@ The same invocation self-check covers context, not just tier: a manual lane resu
 - **blocked-dependency** — an unresolved dependency.
 - **demote-to-spec** — a product, architecture, scope, or spec/plan mismatch surprise: comment per the demotion rules in `epic-orchestrator/state-transitions.md` and exit.
 - **RESUMABLE** — a deliberate context exit (an emergency reset — capacity-park and refresh-park are driver-only exits, not reachable by a manual session, which stops and reports to the operator instead): push to the epic branch, write the continuation brief, and exit for re-dispatch.
-- **operator-wait** — fable unavailable at the session pin and the operator chose to wait: stop and report — never a park. At invocation this is a plain stop before any claim; mid-lane it is a `RESUMABLE` exit (push + continuation brief naming fable capacity as the resume condition). A **proceed** choice is not an exit — the lane continues at the declared substitution.
+- **operator-wait** — the runtime-local Frontier configuration is unqualified or unavailable and the operator chose to wait: stop and report — never a park. At invocation this is a plain stop before any claim; mid-lane it is a `RESUMABLE` exit (push + continuation brief naming the native Frontier capacity/configuration as the resume condition). A **proceed** choice is not an exit — the lane continues at the declared substitution.
 
 In autonomous mode these exit states are not reported anywhere: the digest is the only exit, and every one of them maps to a row in the tables above. `awaiting-epic-signoff` is structurally unreachable — an un-admitted unit never dispatches, and the admit attestation **is** the recorded Gate-1 delegation.

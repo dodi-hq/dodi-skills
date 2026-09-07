@@ -8,11 +8,10 @@ REPO_ROOT="$(cd "$HERE/../../.." && pwd)"
 # repo-relative paths — no templates/, no git state.
 # Enumerated subtrees, not `cp -R dodi-dev`: the main checkout hosts worktrees
 # under dodi-dev/worktrees/, which a bare recursive copy would drag along.
-# AGENTS.md is copied too: the Fable Availability Policy check (validator,
+# AGENTS.md is copied too: the Frontier Availability Policy check (validator,
 # pre-registry loop) greps AGENTS.md for any `model: fable` frontmatter pin it
-# finds under dodi-dev/skills — and mature-ticket/SKILL.md carries one (DOD-1215)
-# — so an unmutated copy without AGENTS.md fails case (a) for a reason
-# unrelated to the registry this test exercises.
+# finds under dodi-dev/skills, so an unmutated copy without AGENTS.md can fail
+# before reaching the registry behavior this test exercises.
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 mkdir -p "$tmp/dodi-dev"
@@ -83,6 +82,60 @@ case "$err" in
   *"no seat-registry row"*"fake-seat-prompt.md"*) ;;
   *) echo "FAIL case-c: expected the no-seat-registry-row message naming fake-seat-prompt.md, got: $err" >&2; fail=1 ;;
 esac
+
+# Restore a pristine fixture before each owner-contract mutation. Every new
+# anchor must reject independently so no neighboring sentence can mask drift.
+reset_fixture() {
+  rm -rf "$tmp/dodi-dev/skills" "$tmp/dodi-dev/scripts" "$tmp/dodi-dev/hooks" "$tmp/dodi-dev/.claude-plugin" "$tmp/scripts" "$tmp/AGENTS.md"
+  cp -R "$REPO_ROOT/dodi-dev/skills" "$REPO_ROOT/dodi-dev/scripts" "$REPO_ROOT/dodi-dev/hooks" "$REPO_ROOT/dodi-dev/.claude-plugin" "$tmp/dodi-dev/"
+  cp -R "$REPO_ROOT/scripts" "$tmp/"
+  cp "$REPO_ROOT/AGENTS.md" "$tmp/"
+}
+
+assert_anchor_rejected() {
+  local label="$1"
+  local rel="$2"
+  local anchor="$3"
+  reset_fixture
+  file="$tmp/$rel"
+  python3 - "$file" "$anchor" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+anchor = sys.argv[2]
+text = path.read_text()
+if anchor not in text:
+    raise SystemExit(f"mutation anchor absent before removal: {anchor}")
+path.write_text(text.replace(anchor, "REMOVED-FRONTIER-CONTRACT-ANCHOR", 1))
+PY
+  run_validator
+  if [[ "$rc" -eq 0 ]]; then
+    echo "FAIL ${label}: validator accepted removal of required anchor in ${rel}" >&2
+    fail=1
+  fi
+  case "$err" in
+    *"$rel"*) ;;
+    *) echo "FAIL ${label}: stderr does not name ${rel}: $err" >&2; fail=1 ;;
+  esac
+}
+
+assert_anchor_rejected \
+  codex-frontier-mapping \
+  dodi-dev/skills/epic-orchestrator/execution-model.md \
+  "Codex Frontier uses Astra at the highest supported reasoning configuration."
+assert_anchor_rejected \
+  astra-equivalence \
+  dodi-dev/skills/epic-orchestrator/execution-model.md \
+  "Astra and Fable are equivalent Frontier executors; choosing Astra creates no tier-degraded marker or make-up debt."
+assert_anchor_rejected \
+  legacy-makeup-eligibility \
+  dodi-dev/skills/submit-epic-pr/SKILL.md \
+  "Astra may discharge existing FABLE_MAKEUP obligations over their original required scope."
+assert_anchor_rejected \
+  review-executor-grammar \
+  dodi-dev/skills/review/SKILL.md \
+  "review-executor: <gate>/<round> runtime=<claude-code|codex|grok-build> model=<native-dispatch-pin> effort=<native-requested-effort|inherited> source=dispatch"
 
 if (( fail )); then echo "validate-phase-skills tests FAILED" >&2; exit 1; fi
 echo "validate-phase-skills tests ok"

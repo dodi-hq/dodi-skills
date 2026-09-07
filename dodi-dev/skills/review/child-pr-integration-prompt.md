@@ -1,9 +1,9 @@
 # Child-PR Integration Reviewer Prompt Template
 
-Dispatch as a fresh-context subagent at the child-PR gate. The gate is a **delta-scoped integration pair**, both rounds from this template: the **integration round** at Capable tier (`model: opus` on Claude Code) and the **integration final** at Frontier tier (`model: fable` on Claude Code). A post-fix **focused re-round** is a fresh dispatch of this template aimed at the fix delta — `model: fable` on `needs-capable-delivery` tickets (the gate's hard seat), `model: opus` on standard-tier tickets (DR-025, epic DOD-1213). The pre-PR full gate owns the generic checklist; these rounds own what is new or changed since it ran.
+Dispatch as a fresh-context subagent at the child-PR gate. The gate is a **delta-scoped integration pair**, both rounds from this template: the **integration round** at Capable tier (`model: opus` on Claude Code) and the **integration final** at Frontier tier (`model: fable` on Claude Code; runtime-native equivalent elsewhere). A post-fix **focused re-round** is a fresh dispatch of this template aimed at the fix delta — Frontier (`model: fable` on Claude Code) on `needs-capable-delivery` tickets (the gate's hard seat), Capable (`model: opus` on Claude Code) on standard-tier tickets (DR-025, epic DOD-1213). Native executor resolution follows `epic-orchestrator/execution-model.md` § 2. The pre-PR full gate owns the generic checklist; these rounds own what is new or changed since it ran.
 
 ```
-Agent tool (general-purpose, model: opus for the integration round; model: fable for the integration final; for a focused re-round: model: fable on `needs-capable-delivery` tickets, model: opus on standard-tier tickets):
+Agent tool (general-purpose; Claude Code pins: `model: opus` for the integration round, `model: fable` for the integration final, and for a focused re-round `model: fable` on `needs-capable-delivery` tickets or `model: opus` on standard-tier tickets; translate tiers to native pins elsewhere):
   description: "Child-PR integration review ([round]) for [ticket]"
   prompt: |
     You are a child-PR integration reviewer (Capable tier, high effort for

@@ -1,19 +1,19 @@
 # Docs-Sync Worker Prompt Template
 
-Dispatch with the Agent tool at Frontier tier (`model: fable` on Claude Code). One prompt, two seats, distinguished by mode — the executing session performs the gate-policy lookup immediately before writing the pin (AGENTS.md § Fable Availability Policy):
+Dispatch at Frontier tier (`model: fable` on Claude Code; runtime-native executor per `epic-orchestrator/execution-model.md` § 2). One prompt, two seats, distinguished by mode — the executing session performs the Frontier-policy lookup immediately before writing the pin (AGENTS.md § Frontier Availability Policy):
 
 - **child mode** (`submit-ticket-pr` Open): policy **soft** — `opus` substitutes, attributed, no make-up; the epic sweep is the designed backstop.
-- **epic-sweep mode** (`submit-epic-pr` attempt start): policy **hard** — fable unavailable ⇒ `pending-capacity` park; the epic PR does not open with an unswept docs surface.
+- **epic-sweep mode** (`submit-epic-pr` attempt start): policy **hard** — runtime-local Frontier unavailable after bounded retries ⇒ `pending-capacity` park; the epic PR does not open with an unswept docs surface.
 
 The worker judges whether the diff makes the module-level agent metadata files (`CLAUDE.md` / `AGENTS.md`, per module and sub-module) false, incomplete, or misleading — and makes the smallest true edit when it does. It edits doc files in the worktree; **the walking session commits** (single-writer discipline). "No update needed" is a decision with a recorded reason, never a silent skip.
 
 ```
-Agent tool (general-purpose, model: fable):
+Agent tool (general-purpose, `model: fable` on Claude Code; use the runtime-native Frontier pin elsewhere):
   description: "Docs-sync ([child|epic-sweep]) for [TICKET_OR_EPIC_ID]"
   prompt: |
     You are the docs-sync judge (Frontier tier, xhigh effort; or
-    the tier and effort this dispatch's fable-policy lookup substitutes, per
-    AGENTS.md § Fable Availability Policy). For a change about to become a PR:
+    the tier and effort this dispatch's Frontier-policy lookup substitutes, per
+    AGENTS.md § Frontier Availability Policy). For a change about to become a PR:
     module-level CLAUDE.md / AGENTS.md files are ground truth for every future session that
     works in this repo; your job is to decide whether this diff made any of
     them stale — and to fix exactly that, nothing more.

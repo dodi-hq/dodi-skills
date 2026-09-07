@@ -82,8 +82,9 @@ for prompt in "${prompt_files[@]}"; do
   fi
 done
 
-# Fable Availability Policy: every frontmatter `model: fable` pin has a policy
-# row naming its skill (AGENTS.md "a fable seat without a row is a defect").
+# Frontier Availability Policy: every canonical frontmatter `model: fable` pin
+# has a policy row naming its skill (AGENTS.md "A Frontier seat without a row is
+# a defect").
 # Scoped to the frontmatter block only (a `model: fable` in prose never
 # matches). The AGENTS.md side is deliberately loose: it matches ANY markdown
 # table row naming the skill in backticks, not policy-table rows specifically
@@ -107,9 +108,27 @@ for f in dodi-dev/skills/*/SKILL.md; do
   # often, never less.
   if grep -qE "^model:[[:space:]]*[\"']?fable[\"']?[[:space:]]*(#.*)?$" <<< "$fm"; then
     if ! grep -q "^[[:space:]]*|.*\`${skill}\`" AGENTS.md; then
-      echo "frontmatter fable pin without a Fable Availability Policy row: ${skill}" >&2
+      echo "frontmatter fable pin without a Frontier Availability Policy row: ${skill}" >&2
       exit 1
     fi
+  fi
+done
+
+# Runtime-native Frontier equivalence and review-executor evidence are shipped
+# owner contracts. Fixed-string anchors keep these precise without pretending a
+# prose validator can infer capability or provider behavior.
+frontier_contract_pins=(
+  "dodi-dev/skills/epic-orchestrator/execution-model.md|Codex Frontier uses Astra at the highest supported reasoning configuration."
+  "dodi-dev/skills/epic-orchestrator/execution-model.md|Astra and Fable are equivalent Frontier executors; choosing Astra creates no tier-degraded marker or make-up debt."
+  "dodi-dev/skills/submit-epic-pr/SKILL.md|Astra may discharge existing FABLE_MAKEUP obligations over their original required scope."
+  "dodi-dev/skills/review/SKILL.md|review-executor: <gate>/<round> runtime=<claude-code|codex|grok-build> model=<native-dispatch-pin> effort=<native-requested-effort|inherited> source=dispatch"
+)
+for entry in "${frontier_contract_pins[@]}"; do
+  path="${entry%%|*}"
+  pin="${entry#*|}"
+  if ! grep -qF -- "$pin" "$path"; then
+    echo "missing Frontier equivalence contract anchor in ${path}: ${pin}" >&2
+    exit 1
   fi
 done
 
@@ -329,7 +348,7 @@ check_count_at_least "$file" "Minimum assertions: \`<specific flows>\`" 2
 # AGENTS.md doctrine sentence's core; (d) the hard-row re-round cell;
 # (e) the :48 fix-loop closure clause — the gate-clean rule's two-path shape.
 dr025_pins_review=(
-  "on a \`needs-capable-delivery\` ticket it runs at the gate's **hard** fable seat (\`model: fable\` on Claude Code"
+  "on a \`needs-capable-delivery\` ticket it runs at the gate's **hard** Frontier seat (\`model: fable\` on Claude Code"
   "on a standard-tier ticket it runs at Capable tier (\`model: opus\` on Claude Code"
   "a fresh reviewer at Capable tier (\`model: opus\` on Claude Code) reads the fix delta"
   "it is the **focused re-round** at its tier-conditional seat"

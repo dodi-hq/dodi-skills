@@ -1,6 +1,6 @@
 # Plan Writer Prompt
 
-Dispatch with the Agent tool, `model: fable` (Frontier tier) or `model: opus` (Capable tier) per the dispatching lane's gate-tier lookup.
+Dispatch at Frontier tier (`model: fable` on Claude Code; runtime-native equivalent elsewhere) or Capable tier (`model: opus` on Claude Code) per the dispatching lane's gate-tier lookup and `epic-orchestrator/execution-model.md` § 2.
 
 Where this template is dispatched at Capable tier (`model: opus` on Claude Code) — a `standard`-tier epic's gates under Florist (`mature-ticket` § Gate tiers by epic tier) — the seat is **Capable tier, high effort**; otherwise it is **Frontier tier, xhigh effort**. Match this dispatch's pin.
 

@@ -20,6 +20,8 @@ Ticket: `<ticket-id>`
 
 `gate-ledger: <gate> rounds=<n> findings=<b/a[,b/a...]> outcome=escalated final=<tier>@<effort>[ tier-degraded(fable@<effort>→<tier>@<effort>,<policy>)]` `<only when the demotion closes a looped review gate>`
 
+`review-executor: <gate>/<round> runtime=<claude-code|codex|grok-build> model=<native-dispatch-pin> effort=<native-requested-effort|inherited> source=dispatch` `<repeat once per completed round beside the escalated gate ledger>`
+
 ## Why Automation Cannot Continue
 
 `<reason>`
