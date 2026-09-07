@@ -60,8 +60,36 @@ expect_exit 0 "$PIN" '{"tool_input":{"model":"opus","description":"Integrated-he
 # Tier fit: a declared escalation is allowed — never silent.
 expect_exit 0 "$PIN" '{"tool_input":{"model":"opus","description":"Run the flaky replica-set suite","prompt":"tier-justified: needs judgment to classify nondeterministic failures"}}' "fit-tier-justified"
 
+# Astra is a recognized Frontier family. Exercise both payload envelopes and
+# both the stable family spelling and a native Astra-shaped pin without a
+# versioned model id.
+expect_astra_cases() {
+  local envelope="$1"
+  local model="$2"
+  local label="$3"
+  expect_exit 2 "$PIN" '{"'"$envelope"'":{"model":"'"$model"'","description":"Run the contract test suite","prompt":"y"}}' "${label}-mechanical"
+  expect_exit 0 "$PIN" '{"'"$envelope"'":{"model":"'"$model"'","description":"Review the contract test changes","prompt":"y"}}' "${label}-review"
+  expect_exit 0 "$PIN" '{"'"$envelope"'":{"model":"'"$model"'","description":"Run the contract test suite","prompt":"tier-justified: classify provider-specific failures"}}' "${label}-justified"
+}
+
+for envelope in tool_input toolInput; do
+  expect_astra_cases "$envelope" "astra" "${envelope}-astra"
+  expect_astra_cases "$envelope" "gpt-6-astra" "${envelope}-native-astra"
+done
+
 # Tier fit: unknown slugs (Grok maps every tier to one model) skip the fit check.
 expect_exit 0 "$PIN" '{"toolInput":{"model":"grok-4.6","description":"Run the designer unit-test suite","prompt":"y"}}' "fit-grok-slug-skips"
+expect_exit 0 "$PIN" '{"tool_input":{"model":"provider-native-unknown","description":"Run the designer unit-test suite","prompt":"y"}}' "fit-unknown-slug-skips"
+
+# General opt-out remains a full bypass for non-dodi work.
+set +e
+printf '%s' '{"tool_input":{"description":"Run the designer unit-test suite","prompt":"y"}}' | DODI_ALLOW_UNPINNED=1 bash "$PIN"
+optout_rc=$?
+set -e
+[[ "$optout_rc" -eq 0 ]] || {
+  echo "FAIL allow-unpinned-optout: expected exit 0, got $optout_rc" >&2
+  exit 1
+}
 
 # Gate 2: non-merge commands are allowed on both payload shapes.
 expect_exit 0 "$GATE" '{"tool_input":{"command":"git status"}}' "claude-non-merge"

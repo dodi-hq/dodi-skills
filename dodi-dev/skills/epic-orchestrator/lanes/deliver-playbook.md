@@ -6,19 +6,19 @@ The executing session (the resident driver walking this lane inline, or a manual
 
 ## Phase sequence
 
-Each phase is the named phase skill's process, executed inside this lane with the same worker-dispatch discipline. Implementers pin `sonnet` per task (the default in `implement/implementer-prompt.md`, with per-task adjustments per `implement/SKILL.md`); **on a ticket carrying `needs-capable-delivery`, every implementer and fix worker pins `opus` instead, no per-task demotion.** Fresh-context reviewers: pre-PR uses `opus` rounds with a `fable` final; child-PR uses one `opus` integration round plus a `fable` integration final. Test runners pin `haiku`. The docs-sync worker pins `fable` (soft policy — its edits commit on the child branch before the push, so the child-PR gate reviews them).
+Each phase is the named phase skill's process, executed inside this lane with the same worker-dispatch discipline. Implementers pin `sonnet` per task (the default in `implement/implementer-prompt.md`, with per-task adjustments per `implement/SKILL.md`); **on a ticket carrying `needs-capable-delivery`, every implementer and fix worker pins `opus` instead, no per-task demotion.** Fresh-context reviewers: pre-PR uses Capable rounds with a Frontier final; child-PR uses one Capable integration round plus a Frontier integration final. Test runners pin `haiku`. The docs-sync worker uses a Frontier pin (soft policy — its edits commit on the child branch before the push, so the child-PR gate reviews them). Claude-native aliases shown in the table resolve to runtime-native pins per `execution-model.md` § 2.
 
-| Phase (skill) | Worker prompt(s) | Tier pin + fable-policy | Checkpoint posted | Exit / demotion edge |
+| Phase (skill) | Worker prompt(s) | Tier pin + Frontier policy | Checkpoint posted | Exit / demotion edge |
 | --- | --- | --- | --- | --- |
 | `pickup-ticket` | — (git mechanics) | Fast (`haiku`) | `implementing` (child branch/worktree created, workers dispatched — **dispatch-anchored**) | blocked if branch/worktree cannot be created cleanly |
 | `implement-ticket` | `implement/implementer-prompt.md` | Standard (`sonnet`), or Capable (`opus`) on `needs-capable-delivery` | `implementation-reviewing` (implementation commits complete) | implementation bug ⇒ back to implementing; judgment surprise ⇒ demote |
-| `review` (pre-PR) | `review/review-prompt.md` | Capable (`opus`) rounds + Frontier (`fable`) final; **final round deferred** | `testing` (pre-PR review clean, incl. fable final) | loop capped at 5 rounds + the Frontier final; findings ⇒ another round |
+| `review` (pre-PR) | `review/review-prompt.md` | Capable (`opus`) rounds + Frontier (`fable`) final; **final round deferred** | `testing` (pre-PR review clean, incl. Frontier final) | loop capped at 5 rounds + the Frontier final; findings ⇒ another round |
 | `create-tests` | — (Testing Contract) | Standard (`sonnet`) | `verifying` (Testing Contract tests exist) | test/harness work ⇒ back to testing |
 | `verify` | `verify/test-runner-prompt.md`, `submit-ticket-pr/local-ci-runner-prompt.md` | Fast (`haiku`) runners | `ready-for-child-pr` (verification green; **reset seam for a standalone lane, durable-brief anchor for the resident driver**) | a product-code fix here triggers the focused re-review before the seam |
 | `submit-ticket-pr` (Open only) | `submit-ticket-pr/docs-sync-prompt.md` | Standard (`sonnet`); docs-sync seat Frontier (`fable`, soft policy) | `child-pr-reviewing` (child PR open against epic branch) | — |
 | `review` (child-PR) | `review/child-pr-integration-prompt.md` | one Capable (`opus`) integration round + Frontier (`fable`) integration final; **final round deferred on standard-tier, hard on `needs-capable-delivery`** | (exit) `ready-to-merge-child` | child-PR review clean + local CI clean ⇒ report; **do not merge** |
 
-fable-policy values are the per-gate policy the executing session looks up (per § 2 of `execution-model.md`) immediately before writing each dispatch's tier pin; the AGENTS.md gate-policy table is authoritative.
+Frontier-policy values are the per-gate policy the executing session looks up (per § 2 of `execution-model.md`) immediately before writing each dispatch's runtime-native tier pin; the AGENTS.md gate-policy table is authoritative. Under Florist the serialized field remains `FLORIST_FABLE_POLICY`.
 
 ### Under Florist
 
@@ -42,8 +42,8 @@ What does not run: `pickup-ticket` (the kernel creates the unit worktree on `uni
 5. `verify` — one test-runner worker per group plus the local-CI runner dispatch (repo-local gates + broader checks, discovery mandate intact); claim results only from digests; every runner digest records the head SHA it ran against; a product-code fix here triggers the focused re-review (`review` § Epic Lane Rules) before the seam.
 6. **Verify→PR seam** (a context reset for a standalone lane; a durable-brief anchor for the resident driver walking inline) — see § Context hygiene.
 7. `submit-ticket-pr` (Open only) — run the docs-sync step (Frontier seat, soft policy), then push the child branch, open the PR against the epic branch, write the PR body (incl. the `docs-sync:` line).
-8. `review` (child-PR context) — the delta-scoped integration pair (one `opus` integration round + a `fable` integration final per `review/child-pr-integration-prompt.md`) ∥ conditional local CI (dispatched in parallel unless the skip predicate holds — per `review`, child-PR context).
-9. Report `ready-to-merge-child` with the evidence trail, including the child-PR gate's close-out `gate-ledger` line (`review` § Gate Ledger). Do not merge.
+8. `review` (child-PR context) — the delta-scoped integration pair (one Capable integration round + a Frontier integration final per `review/child-pr-integration-prompt.md`) ∥ conditional local CI (dispatched in parallel unless the skip predicate holds — per `review`, child-PR context).
+9. Report `ready-to-merge-child` with the evidence trail, including each review round's `review-executor:` record and the child-PR gate's close-out `gate-ledger` line (`review` §§ Native Executor Evidence, Gate Ledger). Do not merge.
 
 ## Checkpoints
 
@@ -61,7 +61,7 @@ A re-dispatched lane reconstructs its position from durable state before doing a
 
 - **Verify→PR seam:** after `verify` is green (Contract groups + the local-CI runner scope; focused re-review clean if fixes occurred), write/refresh the continuation brief keyed to the head SHA. **For a standalone/manual lane session this is a mandatory context reset** — exit `RESUMABLE`; the re-dispatched fresh lane opens the PR and runs child-PR review, so a fresh context reviews the PR without implementation bias. **For the resident driver walking inline it is a durable-brief anchor, not a reset** (per `AGENTS.md` § Context Hygiene — the driver's only resets are park, refresh-park, and bloat): keep the brief current and continue to `submit-ticket-pr` and child-PR review in the same session, unless the refresh-park seam budget trips at this seam. Either way it is the lane's biggest natural boundary.
 - **Emergency reset:** if the harness warns context is low mid-lane, finish the current step — never abandon a review round or a dispatched worker — write the continuation brief, and exit `RESUMABLE`. If a step cannot complete, post an explicit "interrupted at" comment so the resume does not double-execute.
-- **Continuation brief** (posted as a ticket comment): current state per the checkpoint contract with evidence links, the next action and one line of why, live concerns from notes, and anything in flight that must not be redone.
+- **Continuation brief** (posted as a ticket comment): current state per the checkpoint contract with evidence links, the next action and one line of why, live concerns from notes, and anything in flight that must not be redone. For an unfinished review gate, include all completed `review-executor:` records beside the running gate-ledger tally.
 - **Notes discipline:** append soft observations to the ticket's notes as they occur — flaky tests, retried workers, fragile modules. When unsure whether an observation is worth persisting: write it.
 
 ## Exit states

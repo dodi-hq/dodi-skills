@@ -98,7 +98,7 @@ Implement DOD-1369 as one cohesive change making Astra and Fable equal executors
 
 One implementer owns this task sequentially at Capable tier (high declared effort; native Codex highest-reasoning mapping), as assigned by plan review. Every fix worker uses the same delivery tier. Follow the spec's detailed semantics rather than broadly replacing every Fable occurrence.
 
-- [ ] **Step 1: Establish the runtime mapping and policy canon.**
+- [x] **Step 1: Establish the runtime mapping and policy canon.**
 
 In `AGENTS.md` rename the policy heading and references to `Frontier Availability Policy`, make Astra the Codex Frontier executor at highest supported reasoning, preserve `fable` as the canonical Claude tier alias, and document that native model/effort spelling is resolved from available runtime metadata. Add the same operative rules to shipped `execution-model.md` § 2. Retain Claude-native frontmatter and `model: fable` examples. Runtime-local capacity uses the existing two retries and mode-specific policy. Qualified Astra does not require operator-choice, cannot cause degradation by identity, and may discharge all old make-up obligations. Preserve the standard-epic/Capable and Grok exceptions, and document that canonical tier names do not prove different native executors.
 
@@ -112,13 +112,13 @@ Astra and Fable are equivalent Frontier executors; choosing Astra creates no tie
 Astra may discharge existing FABLE_MAKEUP obligations over their original required scope.
 ```
 
-- [ ] **Step 2: Update active consumers without changing gate assignments.**
+- [x] **Step 2: Update active consumers without changing gate assignments.**
 
 Audit and edit provider-independent wording in `dodi-dev/skills/{drive-epic,reconcile-tickets,epic-orchestrator,mature-ticket,review,submit-ticket-pr,submit-epic-pr}/SKILL.md`; `epic-orchestrator/{execution-model,florist-worker-contract,state-transitions,gate1-package-prompt,coherence-reviewer-prompt}.md`; `epic-orchestrator/lanes/{mature-playbook,deliver-playbook}.md`; `mature-ticket/spec-drafter-prompt.md`; `write-plan/{SKILL,plan-writer-prompt,plan-reviewer-prompt}.md`; `brainstorm/{SKILL,spec-reviewer-prompt}.md`; `review/{review-prompt,child-pr-integration-prompt}.md`; `submit-ticket-pr/docs-sync-prompt.md`; `submit-epic-pr/epic-integration-reviewer-prompt.md`. `implement-ticket/SKILL.md` changes only if its active prose needs the new mapping/reference.
 
 Do not rewrite historical examples or canonical aliases. Keep `FABLE_MAKEUP`, `FLORIST_FABLE_POLICY`, `fable-unavailable`, `fable_policy=`, existing digest envelopes, and historical markers byte-compatible. Clarify their Frontier-wide semantics beside definitions. Retain current scope/current-head/clean-review/keyed-consumption requirements in `submit-epic-pr`. Installed instructions reference shipping owner contracts rather than this plan or repository-only spec. Scan remaining active `fable` occurrences and classify them as actual Claude pins, canonical tier aliases, durable protocol, historical examples, or wording still requiring correction.
 
-- [ ] **Step 3: Add forward-only native executor evidence.**
+- [x] **Step 3: Add forward-only native executor evidence.**
 
 `review/SKILL.md` owns this exact grammar from the spec:
 
@@ -128,7 +128,7 @@ review-executor: <gate>/<round> runtime=<claude-code|codex|grok-build> model=<na
 
 Require one record per new review round, including clean rounds, emitted by the dispatcher on the existing next-boundary evidence surface. Canonical `caught-by`, ledger, rework and session-tier grammar stays unchanged; native pins and requested effort come from the actual request. `inherited` is used only when the runtime exposes no per-dispatch effort control. Known runtime fallback/mismatch is surfaced alongside the line and cannot silently satisfy Frontier. Historical evidence needs no retroactive companion. Preserve completed rounds' executor records in continuation briefs alongside the running ledger tally when an unfinished gate parks or exits RESUMABLE. Add a reference from `execution-model.md` and the Florist Seat Record guidance; do not push dispatcher accounting into reviewer/test-runner prompts. Add companion placeholders to the eight existing comment templates in the file map, with repeats permitted for multiple rounds. Demotion evidence retains executor records beside its escalated gate ledger. Decision-register evidence covers coherence/make-up review records as applicable; do not create a new Kind. Preserve template headings and existing placeholders.
 
-- [ ] **Step 4: Implement and test concrete guards.**
+- [x] **Step 4: Implement and test concrete guards.**
 
 Extend the existing hook rank tuple without altering the description-only classification, judgment exclusion, opt-outs, or unknown/Grok behavior:
 
@@ -142,7 +142,7 @@ Update phase-validator policy diagnostics/reference pins for Frontier wording wh
 
 Extend `test-validate-phase-skills.sh` temporary-copy mutations to remove each new required anchor independently and assert nonzero validation; preserve baseline and old mutations. In `validate-ticket-comment-templates.sh`, call existing `check_contains` for `review-executor:` in each of the eight templates and keep `Kind: FABLE_MAKEUP`. Create `test-ticket-comment-templates.sh` using the existing shell fixture convention: run baseline validator successfully; for each required template copy baseline to a fresh temp fixture, remove its executor line, run the validator and require nonzero; separately remove `Kind: FABLE_MAKEUP` and require failure. Fail with the fixture/case name if a mutation is incorrectly accepted. Clean fixtures using a trap.
 
-- [ ] **Step 5: Bump metadata and verify before committing.**
+- [x] **Step 5: Bump metadata and verify before committing.**
 
 Set the version to `0.22.0` in `.claude-plugin/marketplace.json`, `dodi-dev/.claude-plugin/plugin.json`, `dodi-dev/.codex-plugin/plugin.json`, `.grok-plugin/marketplace.json`, and `dodi-dev/.grok-plugin/plugin.json`. Preserve all other metadata and the versionless Codex marketplace. Recheck remote tags before a release tag; if `v0.22.0` has appeared meanwhile report the collision rather than overwrite it.
 

@@ -26,7 +26,7 @@ It prints `mode=manual` or `mode=autonomous unit=… lane=… …` and, in auton
 | `FLORIST_LANE` | the lane this dispatch is seated for — the phase range below | never |
 | `FLORIST_ATTEMPT` | this lane's attempt counter, for the transcript | never |
 | `FLORIST_TIER` | the session's own `<tier>@<effort>`, the seat's declared pairing | never |
-| `FLORIST_FABLE_POLICY` | the seat's fable-availability bucket (`none` on a non-fable seat) | never |
+| `FLORIST_FABLE_POLICY` | compatibility name for the seat's runtime-local Frontier availability bucket (`none` on a non-Frontier seat) | never |
 | `FLORIST_EPIC_TIER` | the epic's design-phase capability assessment (`standard` \| `capable`) | the epic is unassessed |
 | `FLORIST_DELIVERY_TIER` | the unit's plan-reviewer delivery classification (`standard` \| `capable`) | not yet classified |
 | `FLORIST_NEEDS_HUMAN_SPEC` | `1` iff the admit-time product snapshot carried the `needs-human-spec` label | the label was absent |
@@ -89,19 +89,19 @@ Neither charges an attempt (corrected in 0.19.0 — 0.18.0 said a block did): th
 | --- | --- | --- |
 | `questions-for-human` | decline | genuine product questions the session cannot answer from the ticket, the register, or the code |
 | `needs-human-spec` | decline | the per-child draft-signoff gate is armed and unsatisfied (§7) |
-| `fable-unavailable` | decline | a **hard**-policy fable gate cannot dispatch and policy forbids substituting |
+| `fable-unavailable` | decline | compatibility reason meaning a **hard**-policy runtime-local Frontier executor cannot dispatch and policy forbids substituting |
 | `tier-mismatch` | decline | the unit's declared tier exceeds what this session is seated to run |
 | `spec-mismatch` | blocked | an implementation or planning surprise invalidates the admitted intent itself |
 | `worker-blocked` | blocked | a concrete operational wall: auth, missing tooling, a harness that cannot be set up |
 
 **Every operator-choice stop becomes a decline.** There is no operator on the other end of an autonomous dispatch: a question asked into a closing transcript is a silent stall that costs an attempt and reaches nobody. The decline is what reaches a human — the kernel raises it, nudges it, and holds the unit until a named human resolves and unblocks.
 
-## 6. Fable policy without an operator
+## 6. Frontier policy without an operator
 
-`FLORIST_EPIC_TIER` pins the lane's gate tiers (the seat-holding skill states its own mapping). Where a gate is a fable seat, the AGENTS.md § Fable Availability Policy buckets apply as written, with one substitution for the missing human:
+`FLORIST_EPIC_TIER` pins the lane's gate tiers (the seat-holding skill states its own mapping). Where a gate is a Frontier seat, the AGENTS.md § Frontier Availability Policy buckets apply as written, with one invocation-mode route for the missing human. The retained env name `FLORIST_FABLE_POLICY` and decline reason `fable-unavailable` describe Frontier policy across runtimes; they are protocol tokens, not a requirement that Claude Fable execute the seat. Native executor selection is runtime-local per `execution-model.md` § 2.
 
 - **`soft` / `deferred`** — substitute exactly as the policy says; record the `tier-degraded(...)` attribution in the gate comment.
-- **`hard`** — the driver's `pending-capacity` park is not reachable from a worker (parking is a kernel act). Emit `declined reason=fable-unavailable` instead: the kernel's block-and-raise **is** the park, and its unblock is the wake edge.
+- **`hard`** — the driver's `pending-capacity` park is not reachable from a worker (parking is a kernel act). Emit `declined reason=fable-unavailable` instead when the selected native Frontier executor is unavailable after the existing bounded retries: the kernel's block-and-raise **is** the park, and its unblock is the wake edge.
 - **`operator-choice`** — unreachable in autonomous mode by construction (§5).
 
 An epic with no `FLORIST_EPIC_TIER` is treated as `standard` — an unassessed epic never reaches for scarce capacity.
@@ -164,4 +164,4 @@ The kernel validates evidence presence and SHA identity before it commits anythi
 
 `ref` is a locator, never prose: a URL (a ticket comment, a PR), a repo path (`docs/specs/<unit>-contract.md`), or a `<kind>:<label>` token such as `sync:<epic sha>`. `sha` carries the commit the row attests to, and `-` only where the table above leaves the SHA free.
 
-Every **delivery** seat closes with one ticket comment headed `# Seat Record`, posted before the digest, carrying: `unit`, `lane`, `attempt`, `head`; each gate's `gate-ledger:` line (`review` § Gate Ledger) with the SHA its clean closing round reviewed — the pre-PR gate's is the baseline the code-review seat aims its delta at; every runner digest's commands, exit codes, and the head SHA it ran against, the local-CI runner's named explicitly; the reviewed diff ranges; the epic head a sync merged; and the verdict where one was recorded. Its URL is the default `ref` for `thread` and `ci` rows. It is an ordinary comment — bookkeeping under the comment-species partition, never a status write — and it is what a successor dispatch reads to avoid redoing a clean gate at the same head (§ 8).
+Every **delivery** seat closes with one ticket comment headed `# Seat Record`, posted before the digest, carrying: `unit`, `lane`, `attempt`, `head`; each gate's `gate-ledger:` line (`review` § Gate Ledger) with the SHA its clean closing round reviewed — the pre-PR gate's is the baseline the code-review seat aims its delta at; every completed review round's dispatcher-authored `review-executor:` line (`review` § Native Executor Evidence), including clean rounds; every runner digest's commands, exit codes, and the head SHA it ran against, the local-CI runner's named explicitly; the reviewed diff ranges; the epic head a sync merged; and the verdict where one was recorded. Its URL is the default `ref` for `thread` and `ci` rows. It is an ordinary comment — bookkeeping under the comment-species partition, never a status write — and it is what a successor dispatch reads to avoid redoing a clean gate at the same head (§ 8).

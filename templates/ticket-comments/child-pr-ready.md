@@ -11,6 +11,7 @@ Ticket: `<ticket-id>`
 
 - Implementation commits: `<commits>`
 - Pre-PR review: `<clean evidence>`
+- Review executors (repeat once per completed round): `review-executor: <gate>/<round> runtime=<claude-code|codex|grok-build> model=<native-dispatch-pin> effort=<native-requested-effort|inherited> source=dispatch`
 - Verification: `<commands and status>`
 - Repo-local + broader checks: `<pass evidence>`
 

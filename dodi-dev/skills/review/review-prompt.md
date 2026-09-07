@@ -1,6 +1,6 @@
 # Code Reviewer Prompt Template
 
-Dispatch as a fresh-context subagent. Per-round model: `opus` (Capable tier). The final gate round uses `model: fable` (Frontier tier) per the review skill's process. Serves the post-implementation and pre-PR contexts, plus the focused re-review (changed-files input = the verify-stage fix delta and its blast surface; full checklist scoped to that delta). The child-PR gate uses child-pr-integration-prompt.md instead.
+Dispatch as a fresh-context subagent. Per-round model: Capable tier (`model: opus` on Claude Code). The final gate round uses Frontier tier (`model: fable` on Claude Code; runtime-native equivalent elsewhere) per the review skill's process and `epic-orchestrator/execution-model.md` § 2. Serves the post-implementation and pre-PR contexts, plus the focused re-review (changed-files input = the verify-stage fix delta and its blast surface; full checklist scoped to that delta). The child-PR gate uses child-pr-integration-prompt.md instead.
 
 ```
 Agent tool (general-purpose, model: opus):

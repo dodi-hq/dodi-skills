@@ -30,6 +30,7 @@ Epic: `<epic-id>`
 ## Integrated-Head Review Evidence
 
 - `<command or evidence link>`
+- Review executors, including any Frontier make-up round (repeat once per completed round): `review-executor: <gate>/<round> runtime=<claude-code|codex|grok-build> model=<native-dispatch-pin> effort=<native-requested-effort|inherited> source=dispatch`
 
 ## Known Risks
 

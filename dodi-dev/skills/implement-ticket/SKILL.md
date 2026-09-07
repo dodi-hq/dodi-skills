@@ -54,10 +54,10 @@ Gates follow `FLORIST_EPIC_TIER` (unset is treated as `standard`):
 
 | `FLORIST_EPIC_TIER` | Pre-PR rounds | Pre-PR final round | Focused re-review | Docs-sync | Runners |
 | --- | --- | --- | --- | --- | --- |
-| `standard` | Capable (`opus`) | Capable — fable nowhere; no substitution recorded, because no fable seat exists at this tier | Capable | Capable (the soft seat resolves the same way) | Fast (`haiku`) |
-| `capable` | Capable | Frontier (`fable`), policy **deferred**: `opus` substitutes with the `tier-degraded(...)` marker and a `Kind: FABLE_MAKEUP` register entry on the epic ticket | Capable | Frontier, policy **soft** | Fast |
+| `standard` | Capable (`opus`) | Capable — no Frontier seat; no substitution recorded | Capable | Capable (the soft seat resolves the same way) | Fast (`haiku`) |
+| `capable` | Capable | Frontier (`fable` on Claude Code), policy **deferred**: `opus` substitutes with the `tier-degraded(...)` marker and a `Kind: FABLE_MAKEUP` register entry on the epic ticket | Capable | Frontier, policy **soft** | Fast |
 
-Under `capable` the AGENTS.md § Fable Availability Policy table applies as written, with the contract's § 6 substitution: no gate in this seat is **hard**, so `fable-unavailable` cannot fire here.
+Under `capable` the AGENTS.md § Frontier Availability Policy table applies as written, with the contract's § 6 autonomous-mode route: no gate in this seat is **hard**, so the compatibility reason `fable-unavailable` cannot fire here.
 
 ## Digest (autonomous mode)
 
