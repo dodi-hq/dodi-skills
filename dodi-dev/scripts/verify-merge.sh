@@ -5,6 +5,8 @@
 # Usage: verify-merge.sh <pr-number> <target-branch> [repo-dir=.]
 # Exit: 0 verified (prints merge commit SHA); 1 not merged / not reachable; 2 error.
 set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$HERE/lib-git-refs.sh"
 
 pr="${1:?usage: verify-merge.sh <pr-number> <target-branch> [repo-dir]}"
 target="${2:?usage: verify-merge.sh <pr-number> <target-branch> [repo-dir]}"
@@ -20,7 +22,7 @@ if [[ "$state" != "MERGED" || -z "$sha" ]]; then
   exit 1
 fi
 
-git fetch origin "$target" --quiet
+fetch_and_track_ref origin "$target"
 if git merge-base --is-ancestor "$sha" "origin/$target"; then
   echo "$sha"
 else
