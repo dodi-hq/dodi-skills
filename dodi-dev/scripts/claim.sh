@@ -8,6 +8,7 @@
 #   claim.sh classify <cstate> <csrid> <srid> <cage_h> <lease_h> <tier1> <tier2>
 #     -> the pure liveness decision (alive|claimable), no network — for tests.
 # Exit: 0 claimed (or own-session no-op); 3 live foreign claim; 2 error.
+# Success includes claim_id=<comment-id>; retain it for exact claim close-out.
 #
 # Liveness hierarchy (in order), evaluated by the pure _liveness_tier:
 #   1. claim's session id matches a FRESH open DRIVER claim (on the epic, found
@@ -133,7 +134,7 @@ cclaim_id="$(cut -f4 <<<"$claim_info")"
 # a duplicate # Ticket Claim — no-op and echo. (A caller re-running claim.sh in
 # the same session must not stack claims.)
 if [[ "$cstate" == "open" && -n "$csrid" && "$csrid" == "$srid" ]]; then
-  echo "already claimed by this session (claim=$cclaim_id action=$action); no-op"
+  echo "already claimed by this session (claim=$cclaim_id action=$action); no-op claim_id=$cclaim_id"
   exit 0
 fi
 
@@ -217,5 +218,14 @@ Ticket: \`$ticket\`
 - Exited at: \`<pending>\`"
 
 vars="$(python3 -c 'import json,sys; print(json.dumps({"input": {"issueId": sys.argv[1], "body": sys.argv[2]}}))' "$issue_uuid" "$body")"
-linear_gql 'mutation($input: CommentCreateInput!) { commentCreate(input: $input) { success comment { id } } }' "$vars" >/dev/null
-echo "claimed session_run_id=$srid host=$host action=$action"
+created="$(linear_gql 'mutation($input: CommentCreateInput!) { commentCreate(input: $input) { success comment { id } } }' "$vars")"
+created_id="$(RESP="$created" python3 -c '
+import json, os, sys
+result = json.loads(os.environ["RESP"]).get("data", {}).get("commentCreate", {})
+cid = (result.get("comment") or {}).get("id")
+if result.get("success") is not True or not isinstance(cid, str) or not cid or any(c.isspace() for c in cid):
+    print("claim: creation was not confirmed with a comment id", file=sys.stderr)
+    sys.exit(2)
+print(cid)
+')"
+echo "claimed session_run_id=$srid host=$host action=$action claim_id=$created_id"

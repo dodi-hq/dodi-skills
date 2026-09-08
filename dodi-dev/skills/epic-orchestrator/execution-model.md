@@ -39,7 +39,7 @@ The executing session records each lane progress marker **itself, as the boundar
 
 Each playbook declares its own durable progress seams — deliver's internal checkpoints, mature's four state transitions. The **mechanics** are stated only here and are shared by both lanes:
 
-- **(a)** A `RESUMABLE` exit is legal for **either** lane — deliver and mature alike carry it.
+- **(a)** A `RESUMABLE` exit is legal for **either** lane — deliver and mature alike carry it. Every claimed-lane exit runs [Clean park](clean-park.md) before returning: arm the exit, settle workers, persist the resume anchor and brief, and release only the exiting session's claims. Cleanup never clears or compacts context.
 - **(b)** Before any `RESUMABLE`, hard capacity-park (`pending-capacity`), or `refresh-park` exit, the session pushes its in-progress work to **its lane's declared durable surface** — deliver commits on its own child branch/worktree (the lane **never** touches the epic branch, per the isolation invariant); mature pushes back to the epic branch (its existing per-boundary push target) — and posts/updates a **continuation brief** keyed to that surface's SHA plus the last seam crossed. That key is the successor's resume anchor.
 - **(c)** A successor **resumes at the recorded seam**, re-entering there rather than re-running completed phases.
 

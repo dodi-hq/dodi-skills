@@ -51,7 +51,7 @@ Post a **Lane Checkpoint** comment (pinned `# Lane Checkpoint` header, carrying 
 
 ## Durable surface and resumability
 
-The deliver lane's **declared durable surface is commits on its own child branch/worktree** — the lane never touches the epic branch. Its six internal checkpoints are its progress markers; **five are completion-anchored countable refresh seams**. The `implementing` checkpoint is **dispatch-anchored** — it is posted when workers are dispatched, before any commit exists — so it is a resume checkpoint but **never** a refresh seam. Before any `RESUMABLE`, hard capacity-park, or `refresh-park` exit, the session commits its in-progress work on the child branch and posts/updates the continuation brief keyed to that SHA plus the last checkpoint. The `RESUMABLE`/continuation-brief/push-and-record mechanics themselves are the shared, lane-neutral contract in `execution-model.md` § 5.
+The deliver lane's **declared durable surface is commits on its own child branch/worktree** — the lane never touches the epic branch. Its six internal checkpoints are its progress markers; **five are completion-anchored countable refresh seams**. The `implementing` checkpoint is **dispatch-anchored** — it is posted when workers are dispatched, before any commit exists — so it is a resume checkpoint but **never** a refresh seam. Before any claimed-lane `RESUMABLE`, hard capacity-park, or `refresh-park` exit, run [Clean park](../clean-park.md). It owns persistence and claim close-out for the exit, keyed to the child SHA and last checkpoint; do not separately post an exit brief or release a claim. This includes the emergency and manual exit edges below and does not clear context. The `RESUMABLE`/continuation-brief/push-and-record mechanics themselves are the shared, lane-neutral contract in `execution-model.md` § 5.
 
 ## Resume
 
@@ -59,17 +59,15 @@ A re-dispatched lane reconstructs its position from durable state before doing a
 
 ## Context hygiene
 
-- **Verify→PR seam:** after `verify` is green (Contract groups + the local-CI runner scope; focused re-review clean if fixes occurred), write/refresh the continuation brief keyed to the head SHA. **For a standalone/manual lane session this is a mandatory context reset** — exit `RESUMABLE`; the re-dispatched fresh lane opens the PR and runs child-PR review, so a fresh context reviews the PR without implementation bias. **For the resident driver walking inline it is a durable-brief anchor, not a reset** (per `AGENTS.md` § Context Hygiene — the driver's only resets are park, refresh-park, and bloat): keep the brief current and continue to `submit-ticket-pr` and child-PR review in the same session, unless the refresh-park seam budget trips at this seam. Either way it is the lane's biggest natural boundary.
-- **Emergency reset:** if the harness warns context is low mid-lane, finish the current step — never abandon a review round or a dispatched worker — write the continuation brief, and exit `RESUMABLE`. If a step cannot complete, post an explicit "interrupted at" comment so the resume does not double-execute.
-- **Continuation brief** (posted as a ticket comment): current state per the checkpoint contract with evidence links, the next action and one line of why, live concerns from notes, and anything in flight that must not be redone. For an unfinished review gate, include all completed `review-executor:` records beside the running gate-ledger tally.
-- **Notes discipline:** append soft observations to the ticket's notes as they occur — flaky tests, retried workers, fragile modules. When unsure whether an observation is worth persisting: write it.
+- **Verify→PR seam:** after `verify` is green (Contract groups + the local-CI runner scope; focused re-review clean if fixes occurred), **a standalone/manual lane takes its mandatory context exit through [Clean park](../clean-park.md)** and returns `RESUMABLE`; the re-dispatched fresh lane opens the PR and runs child-PR review. The clean-park procedure owns the exit brief and preserves the head SHA. **For the resident driver walking inline this seam is a durable-brief anchor, not a reset**: if the refresh-park budget trips, go directly through clean park; otherwise write/refresh the continuation brief keyed to the head SHA and continue to `submit-ticket-pr` in this session. Either way it is the lane's biggest natural boundary.
+- **Emergency reset:** if the harness warns context is low mid-lane, finish the current step — never abandon a review round or a dispatched worker — then exit `RESUMABLE` through [Clean park](../clean-park.md). If a step cannot complete, include explicit "interrupted at" evidence in the continuation narrative so the resume does not double-execute.
 
 ## Exit states
 
 - **ready-to-merge-child** — success; the orchestrator owns the merge.
 - **demote-to-spec** — any product, architecture, scope, or spec/plan mismatch surprise at any step: comment per the demotion rules in `state-transitions.md` and exit. Never redesign mid-flight.
 - **blocked** — concrete blocker (auth, tooling, a harness that cannot be set up): comment the blocker and exit.
-- **RESUMABLE** — a deliberate context exit (the verify→PR seam for a standalone/manual lane only, an emergency reset for either executor, or — driver-only — a capacity-park or refresh-park; see § Context hygiene for the executor split): commit on the child branch, write the continuation brief, and exit for re-dispatch.
+- **RESUMABLE** — a deliberate context exit (the verify→PR seam for a standalone/manual lane only, an emergency reset for either executor, or — driver-only — a capacity-park or refresh-park; see § Context hygiene for the executor split): exit through [Clean park](../clean-park.md), which preserves the child-branch resume anchor and releases owned claims before re-dispatch.
 
 ## Rules
 
