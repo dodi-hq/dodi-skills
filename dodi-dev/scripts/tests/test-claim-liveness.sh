@@ -36,7 +36,10 @@ cl() { bash "$CLAIM" classify "$@"; }
 # claim.sh's exit code and prints its combined stdout+stderr for discrimination checks.
 run_guard() {  # $1 = claim body (with literal \n for line breaks); the session is sridMe
   local body="$1"
+  local create_reply="${2:-}"
+  [[ -n "$create_reply" ]] || create_reply='{"data":{"commentCreate":{"success":true,"comment":{"id":"new"}}}}'
   local shim; shim="$(mktemp -d)"
+  printf '%s\n' "$create_reply" >"$shim/create.json"
   printf '%s\n' '#!/usr/bin/env bash' 'echo "no fresh open driver claim"; exit 1' >"$shim/driver-claim.sh"
   chmod +x "$shim/driver-claim.sh"
   cp "$CLAIM" "$shim/claim.sh"
@@ -46,7 +49,7 @@ linear_gql() {
   case "\$1" in
     *comments*) cat "$shim/ticket.json" ;;   # the main read (has \`comments\`) — before *parent*
     *parent*)   echo '{"data":{"issue":{"parent":null}}}' ;;
-    *commentCreate*) echo '{"data":{"commentCreate":{"comment":{"id":"new"}}}}' ;;
+    *commentCreate*) cat "$shim/create.json" ;;
     *) echo '{"data":{}}' ;;
   esac
 }
@@ -95,6 +98,24 @@ out="$(run_guard '# Ticket Claim\n\nTicket: `T-1`\n\n## Claim\n- Session run id:
 rc=$?; set -e
 [[ "$rc" -eq 0 ]] || { echo "FAIL own-session-no-op: expected exit 0, got $rc :: $out" >&2; exit 1; }
 grep -q 'already claimed by this session' <<<"$out" || { echo "FAIL own-session-no-op msg: got: $out" >&2; exit 1; }
+grep -q 'claim_id=cc1' <<<"$out" || { echo "FAIL own-session claim id missing: $out" >&2; exit 1; }
+
+# Clean park consumes the exact ID from acquisition, including the new-claim
+# path. A false mutation result or absent ID must never report acquisition.
+closed_body='# Ticket Claim\n\n- Session run id: `previous`\n- Exit state: `completed`'
+out="$(run_guard "$closed_body")"
+grep -q 'claim_id=new' <<<"$out" || { echo "FAIL created claim id missing: $out" >&2; exit 1; }
+for reply in \
+  '{"data":{"commentCreate":{"success":false,"comment":{"id":"new"}}}}' \
+  '{"data":{"commentCreate":{"success":true,"comment":{}}}}'; do
+  set +e
+  out="$(run_guard "$closed_body" "$reply")"; rc=$?
+  set -e
+  [[ "$rc" -eq 2 ]] || { echo "FAIL unconfirmed claim creation exit: $rc :: $out" >&2; exit 1; }
+  if grep -q '^claimed session_run_id=' <<<"$out"; then
+    echo "FAIL unconfirmed creation reported success: $out" >&2; exit 1
+  fi
+done
 
 # --- RB1: release-claim.sh foreign release reaches the mutation (never exit 2) and
 #         targets EXACTLY the given claim id. The concrete caller is

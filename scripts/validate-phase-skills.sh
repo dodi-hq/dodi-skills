@@ -239,6 +239,8 @@ plugin_scripts=(
   heartbeat.sh
   driver-claim.sh
   reap-workers.sh
+  clean-park.sh
+  hook-clean-park.sh
   comment-species.sh
   hook-gate2-guard.sh
   hook-require-model-pin.sh
@@ -259,7 +261,11 @@ python3 - <<'PY'
 import json, os
 manifest = json.load(open("dodi-dev/.claude-plugin/plugin.json"))
 hooks_path = manifest.get("hooks")
-assert hooks_path == "./hooks/function-hooks.json", f"plugin.json hooks must be ./hooks/function-hooks.json (the loader requires the ./ prefix), got {hooks_path!r}"
+assert hooks_path == "./hooks/function-hooks.json", f"plugin.json must register the additional function config only; hooks/hooks.json is automatic, got {hooks_path!r}"
+commands = json.load(open("dodi-dev/hooks/hooks.json"))
+stop = commands["hooks"]["Stop"]
+assert len(stop) == 1 and "matcher" not in stop[0], "Stop hook must have no matcher"
+assert stop[0]["hooks"] == [{"type": "command", "command": '\"${CLAUDE_PLUGIN_ROOT}/scripts/hook-clean-park.sh\"'}], "Stop must invoke clean-park verifier"
 fh = json.load(open(os.path.join("dodi-dev", hooks_path)))
 modules = fh.get("modules")
 assert modules == ["hooks.js"], f"function-hooks.json must name exactly ['hooks.js'] (the node --check below is pinned to it), got {modules!r}"

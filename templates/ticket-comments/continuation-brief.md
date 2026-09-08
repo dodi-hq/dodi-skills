@@ -1,6 +1,12 @@
 # Continuation Brief
 
-Epic: `<epic-ticket-id>` · Session run id: `<session-run-id>` · Exit: `<parked | bloat-handoff | refresh-park>`
+Epic: `<epic-ticket-id>` · Session run id: `<session-run-id>` · Exit: `<RESUMABLE | parked | bloat-handoff | refresh-park>`
+
+Ticket / lane: `<ticket-id> / <deliver | mature | between-lanes>`
+
+Durable surface: `<remote>/<branch>` · SHA: `<commit-sha>` · Last completed seam: `<checkpoint-or-state-boundary>`
+
+Cleanup: `<pending | complete | incomplete>` · Evidence: `<clean-park-receipt-or-close-out-links>`
 
 ## State Map Reference
 
