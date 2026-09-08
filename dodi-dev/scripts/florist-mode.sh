@@ -36,7 +36,7 @@ cat <<MSG
 AUTONOMOUS MODE — the Florist kernel dispatched this session for lane '${FLORIST_LANE:-?}' of unit ${FLORIST_UNIT}. There is no human to answer you.
 1. Read ${root}/skills/epic-orchestrator/florist-worker-contract.md NOW, before any other step.
 2. Only this skill's Florist seat section for FLORIST_LANE='${FLORIST_LANE:-?}' applies. The manual process tables, checkpoints, and close-out vocabulary (e.g. 'ready-to-merge-child', 'Review Summary') do NOT apply and must not be your last output.
-3. Close by running ${root}/scripts/florist-digest.sh — its output must be the LAST thing this session prints. A wall is 'blocked reason=<id>' or 'declined reason=<id>' through the same script. Never exit without a digest.
+3. Close by running ${root}/scripts/florist-digest.sh and copying its output VERBATIM into your final message. That message is this session's entire stdout — the kernel reads nothing else, so a digest that stays in the transcript is silence, and describing one ('emitted clean-final...') is not emitting it. A wall is 'blocked reason=<id>' or 'declined reason=<id>' through the same script. Never exit without a digest.
 MSG
 
 if [[ ${#missing[@]} -gt 0 ]]; then

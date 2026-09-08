@@ -28,6 +28,14 @@
             "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/hook-clean-park.sh\""
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/hook-florist-digest.sh\""
+          }
+        ]
       }
     ]
   }
