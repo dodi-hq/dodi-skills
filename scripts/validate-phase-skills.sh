@@ -244,6 +244,7 @@ plugin_scripts=(
   comment-species.sh
   hook-gate2-guard.sh
   hook-require-model-pin.sh
+  hook-florist-digest.sh
 )
 
 for script in "${plugin_scripts[@]}"; do
@@ -251,6 +252,14 @@ for script in "${plugin_scripts[@]}"; do
   test -f "$path"
   test -x "$path"
   bash -n "$path"
+done
+
+# Python helpers behind the command hooks: present and parseable. They are run
+# through `python3 <path>` by their shims, so no executable bit is required.
+for helper in clean-park.py florist-digest-gate.py; do
+  path="dodi-dev/scripts/${helper}"
+  test -f "$path"
+  python3 -c 'import ast,sys; ast.parse(open(sys.argv[1]).read())' "$path"
 done
 
 # Hooks configuration parses.
@@ -264,8 +273,9 @@ hooks_path = manifest.get("hooks")
 assert hooks_path == "./hooks/function-hooks.json", f"plugin.json must register the additional function config only; hooks/hooks.json is automatic, got {hooks_path!r}"
 commands = json.load(open("dodi-dev/hooks/hooks.json"))
 stop = commands["hooks"]["Stop"]
-assert len(stop) == 1 and "matcher" not in stop[0], "Stop hook must have no matcher"
+assert len(stop) == 2 and all("matcher" not in entry for entry in stop), "Stop hooks must have no matcher"
 assert stop[0]["hooks"] == [{"type": "command", "command": '\"${CLAUDE_PLUGIN_ROOT}/scripts/hook-clean-park.sh\"'}], "Stop must invoke clean-park verifier"
+assert stop[1]["hooks"] == [{"type": "command", "command": '\"${CLAUDE_PLUGIN_ROOT}/scripts/hook-florist-digest.sh\"'}], "Stop must invoke the Florist digest gate"
 fh = json.load(open(os.path.join("dodi-dev", hooks_path)))
 modules = fh.get("modules")
 assert modules == ["hooks.js"], f"function-hooks.json must name exactly ['hooks.js'] (the node --check below is pinned to it), got {modules!r}"
