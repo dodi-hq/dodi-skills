@@ -137,5 +137,41 @@ assert_anchor_rejected \
   dodi-dev/skills/review/SKILL.md \
   "review-executor: <gate>/<round> runtime=<claude-code|codex|grok-build> model=<native-dispatch-pin> effort=<native-requested-effort|inherited> source=dispatch"
 
+assert_anchor_rejected \
+  child-frontier-all-tiers \
+  dodi-dev/skills/review/child-pr-integration-prompt.md \
+  "**hard** policy on every epic and delivery tier"
+assert_anchor_rejected \
+  child-canon-after-merge \
+  dodi-dev/skills/review/child-review-contract.md \
+  "No proposal from an unmerged child becomes canonical before a verified merge."
+
+assert_anchor_rejected \
+  planner-classifier \
+  dodi-dev/skills/brainstorm/spec-reviewer-prompt.md \
+  "**Planner routing (required only on Approved):**"
+assert_anchor_rejected \
+  planner-revision-pin \
+  dodi-dev/skills/write-plan/plan-writer-prompt.md \
+  "Before every initial or revision dispatch, validate the approved spec"
+assert_anchor_rejected \
+  planner-no-new-call \
+  dodi-dev/skills/write-plan/planner-routing.md \
+  "No extra assessment call or gate."
+assert_anchor_rejected \
+  planner-fail-closed \
+  dodi-dev/skills/write-plan/planner-routing.md \
+  "A malformed, missing-file, stale, or conflicting record is not legacy absence."
+
+# The new Standard writer seat is enforced independently of other seats.
+reset_fixture
+writer="$tmp/dodi-dev/skills/write-plan/plan-writer-prompt.md"
+sed 's/Standard tier/Capable tier/g' "$writer" > "$writer.new" && mv "$writer.new" "$writer"
+run_validator
+if [[ "$rc" -eq 0 || "$err" != *"Standard"*"write-plan/plan-writer-prompt.md"* ]]; then
+  echo "FAIL planner-standard-seat: expected missing Standard declaration, got: $err" >&2
+  fail=1
+fi
+
 if (( fail )); then echo "validate-phase-skills tests FAILED" >&2; exit 1; fi
 echo "validate-phase-skills tests ok"

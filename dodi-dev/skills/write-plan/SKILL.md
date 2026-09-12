@@ -9,6 +9,8 @@ Decompose an approved specification into ordered, bounded, verifiable implementa
 
 **Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
 
+**Before drafting or revising:** read [Planner routing](planner-routing.md), validate the successful spec review's typed planner-tier/identity/rationale, and preserve it with the planning evidence. It selects delegated plan writers and revisions only, not plan reviewers or delivery-tier. Missing legacy classification explicitly retains the prior writer policy; stale/invalid records never choose a tier by guess. Interactive model selection remains the operator's choice, not something loading this skill changes.
+
 ## Scope Check
 
 If the spec covers multiple independent subsystems, break into separate plans — one per subsystem. Each plan should produce working, testable software on its own.
@@ -145,15 +147,15 @@ For example, a task for an approved idempotent request contract can require repe
 
 ## Drafting Delegation
 
-- **Interactive sessions:** draft the plan in the main loop — the dialogue context is the input.
-- **Autonomous epic lane** (entered via `mature-ticket`): delegate drafting to a plan-writer subagent (see plan-writer-prompt.md); the main loop only runs the review loop on the returned draft.
-- **Research dispatches** (either mode): codebase exploration, test-harness orientation, and external/integration API research go to workers pinned at Standard tier (`model: sonnet` on Claude Code), returning ~20-line digests with source links. Never let a research dispatch inherit the session model — plan sessions run Frontier, and read-and-digest work gains nothing from it.
+- **Interactive sessions:** draft the plan in the main loop — the dialogue context is the input. State the planner recommendation and actual operator-selected session separately; do not claim prose set the model or effort.
+- **Mature lane** (manual, resident driver, or Florist): delegate drafting to a plan-writer subagent (see plan-writer-prompt.md), explicitly pinned from the validated planner-routing record; the main loop only runs the review loop on the returned draft. Validate and use the same choice for each fresh revision writer while the spec remains approved.
+- **Research dispatches** (either mode): codebase exploration, test-harness orientation, and external/integration API research go to workers pinned at Standard tier (`model: sonnet` on Claude Code), returning ~20-line digests with source links. Never let a research dispatch inherit the session model.
 
 ## Plan Review Loop
 
 After completing each chunk (≤1000 lines):
 
-1. Dispatch plan-reviewer subagent (see plan-reviewer-prompt.md)
+1. Dispatch plan-reviewer subagent (see plan-reviewer-prompt.md). Its tier/availability policy is unchanged; planner-tier never lowers a review seat. Its delivery-tier verdict remains an independent post-decomposition judgment.
 2. Dispatch a **fresh plan-writer** in revision mode (plan path + findings + round — the Revision round block in plan-writer-prompt.md), then a **fresh reviewer** carrying the writer's Findings block as prior round; repeat until approved (max 5 iterations). Never re-enter the previous writer or reviewer (`execution-model.md` § 1, one-shot). Interactive sessions, which draft in the main loop, apply the fixes in the main loop and pass their own applied/declined list as the prior round.
 
 ## Execution Handoff

@@ -15,6 +15,15 @@ Ticket: `<ticket-id>`
 - Gate ledger: `gate-ledger: spec-review rounds=<n> findings=<b/a[,b/a...]> outcome=clean final=<tier>@<effort>`
 - Session tier: `session-tier: tier-degraded(fable@<effort>→<tier>@<effort>,operator-choice)` `<only when this session ran under an operator-choice Frontier-policy substitution — AGENTS.md § Frontier Availability Policy>`
 
+## Planner Routing
+
+- Typed record: `<durable JSON locator; schema 1 per write-plan/planner-routing.md>`
+- Planner tier: `<standard|capable|frontier>`
+- Reason: `<remaining decomposition difficulty; explicit justification for Frontier>`
+- Spec identity: `spec_path=<repo-relative path> spec_sha256=<raw-content SHA256>`
+- Source: `<spec-review|legacy-policy>`; review reference: `<successful spec-review/legacy approval locator>`
+- Preserve the full record in this transition's evidence and continuation brief; stale/invalid records never select a planner.
+
 ## Human Signoff
 
 - Signoff: `<approved|delegated>`

@@ -63,6 +63,21 @@ case "$outcome" in
       contract-drafting)
         [[ "$outcome" == artifact-ready ]] || die "lane contract-drafting accepts only artifact-ready (or blocked/declined), not '$outcome'"
         has_kind_real_sha artifact || die "artifact-ready needs an artifact row with a real sha (the pushed contract commit)"
+        spec_sha=""; planner_rows=0
+        for i in "${!ev_kinds[@]}"; do
+          [[ "${ev_kinds[$i]}" == artifact ]] || continue
+          if [[ -z "$spec_sha" ]]; then
+            [[ "${ev_refs[$i]}" != planner-routing:* ]] || die "spec artifact must precede planner-routing artifact"
+            spec_sha="${ev_shas[$i]}"
+            [[ "$spec_sha" != - ]] || die "spec artifact needs the pushed contract sha"
+          fi
+          if [[ "${ev_refs[$i]}" == planner-routing:* ]]; then
+            [[ "${ev_refs[$i]}" != planner-routing: ]] || die "planner-routing artifact needs a locator"
+            [[ "${ev_shas[$i]}" == "$spec_sha" ]] || die "planner-routing artifact sha must match the spec artifact"
+            planner_rows=$((planner_rows + 1))
+          fi
+        done
+        [[ "$planner_rows" -eq 1 ]] || die "artifact-ready needs exactly one planner-routing artifact; validate its record before emitting"
         ;;
       contract-review)
         case "$outcome" in

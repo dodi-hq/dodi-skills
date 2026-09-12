@@ -35,6 +35,8 @@ Agent tool (general-purpose, `model: fable` on Claude Code; use the runtime-nati
 
     **Recommendations (advisory):**
     - [suggestions that don't block approval]
+
+    **Planner routing (required only on Approved):** Read `write-plan/planner-routing.md`. At the END of this same successful review, return `planner_tier: standard|capable|frontier`, a concise `reason`, `spec_path`, and `spec_sha256` (SHA256 of the reviewed file's raw bytes). Judge remaining decomposition into a work sequence: Standard for familiar sequencing with settled boundaries, Capable for tricky dependencies/migration/recovery/cross-component invariants, Frontier only for an explicit unusually difficult decomposition exception. Do not use spec length, file count, terminology, or epic tier as proxies. Unresolved product intent, architecture, scope, or shared-contract decisions are blocking spec defects, not reasons for a stronger planner. No extra assessment call. This routes the next plan writer and revisions only; plan review and the later independent delivery-tier classification are unchanged. The dispatcher attaches this successful review's durable locator and preserves the typed record at spec-ready.
 ```
 
 - **Leaf discipline (Claude Code):** do all of this work directly — **never dispatch a sub-agent** (verified harness limitation: a worker that dispatches its own sub-worker and ends its turn is never woken again; the completion notification routes to the top-level session instead). Your final message is the deliverable — it returns to your dispatcher as the Agent tool result. End by writing the digest itself; never SendMessage it.

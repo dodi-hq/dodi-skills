@@ -33,8 +33,11 @@ prompt_files=(
   implement/implementer-prompt.md
   review/review-prompt.md
   review/child-pr-integration-prompt.md
+  review/child-review-contract.md
+  review/florist-companion.md
   write-plan/plan-reviewer-prompt.md
   write-plan/plan-writer-prompt.md
+  write-plan/planner-routing.md
   epic-orchestrator/state-reader-prompt.md
   epic-orchestrator/evidence-checker-prompt.md
   epic-orchestrator/state-transitions.md
@@ -142,9 +145,9 @@ required_tiers_for() {
     brainstorm/spec-reviewer-prompt.md)                  echo "Frontier Capable" ;;
     implement/implementer-prompt.md)                     echo "Standard Capable" ;;
     review/review-prompt.md)                             echo "Capable Frontier" ;;
-    review/child-pr-integration-prompt.md)               echo "Capable Frontier" ;;
+    review/child-pr-integration-prompt.md)               echo "Frontier" ;;
     write-plan/plan-reviewer-prompt.md)                  echo "Frontier Capable" ;;
-    write-plan/plan-writer-prompt.md)                    echo "Frontier Capable" ;;
+    write-plan/plan-writer-prompt.md)                    echo "Standard Capable Frontier" ;;
     epic-orchestrator/state-reader-prompt.md)            echo "Fast" ;;
     epic-orchestrator/evidence-checker-prompt.md)        echo "Fast" ;;
     epic-orchestrator/gate1-package-prompt.md)           echo "Frontier" ;;
@@ -256,7 +259,7 @@ done
 
 # Python helpers behind the command hooks: present and parseable. They are run
 # through `python3 <path>` by their shims, so no executable bit is required.
-for helper in clean-park.py florist-digest-gate.py; do
+for helper in clean-park.py florist-digest-gate.py planner-routing.py; do
   path="dodi-dev/scripts/${helper}"
   test -f "$path"
   python3 -c 'import ast,sys; ast.parse(open(sys.argv[1]).read())' "$path"
@@ -357,46 +360,52 @@ check_count_at_least "$file" "Reason: \`<why>\`" 3
 check_count_at_least "$file" "Harness: \`<existing|setup-required|not-applicable>\`" 2
 check_count_at_least "$file" "Minimum assertions: \`<specific flows>\`" 2
 
-# DR-025 (DOD-1218): tier-conditional focused re-round wording pins. The
-# ruled doctrine is prose; these literals keep it from drifting silently.
-# (a) review/SKILL.md :47 hard + standard clauses; (b) the unchanged :55
-# verify-stage clause — the resolved asymmetry's stationary half; (c) the
-# AGENTS.md doctrine sentence's core; (d) the hard-row re-round cell;
-# (e) the :48 fix-loop closure clause — the gate-clean rule's two-path shape.
-dr025_pins_review=(
-  "on a \`needs-capable-delivery\` ticket it runs at the gate's **hard** Frontier seat (\`model: fable\` on Claude Code"
-  "on a standard-tier ticket it runs at Capable tier (\`model: opus\` on Claude Code"
-  "a fresh reviewer at Capable tier (\`model: opus\` on Claude Code) reads the fix delta"
-  "it is the **focused re-round** at its tier-conditional seat"
+# Spec-to-planner transport: registry enforces all writer seats; these owner
+# anchors preserve the handoff and separation from review/delivery decisions.
+planner_routing_pins=(
+  'dodi-dev/skills/brainstorm/spec-reviewer-prompt.md|**Planner routing (required only on Approved):**'
+  'dodi-dev/skills/write-plan/plan-writer-prompt.md|Before every initial or revision dispatch, validate the approved spec'
+  'dodi-dev/skills/write-plan/planner-routing.md|No extra assessment call or gate.'
+  'dodi-dev/skills/write-plan/planner-routing.md|A malformed, missing-file, stale, or conflicting record is not legacy absence.'
+  'dodi-dev/skills/write-plan/plan-reviewer-prompt.md|Independently classify this chunk'
+  'dodi-dev/skills/mature-ticket/SKILL.md|FLORIST_PLANNER_ROUTING_PATH'
+  'dodi-dev/skills/epic-orchestrator/florist-worker-contract.md|FLORIST_PLANNER_ROUTING_CONTRACT'
 )
-for pin in "${dr025_pins_review[@]}"; do
-  if ! grep -qF -- "$pin" dodi-dev/skills/review/SKILL.md; then
-    echo "review/SKILL.md missing DR-025 wording pin: ${pin}" >&2
+for entry in "${planner_routing_pins[@]}"; do
+  path="${entry%%|*}"
+  pin="${entry#*|}"
+  if ! grep -qF -- "$pin" "$path"; then
+    echo "missing planner-routing contract anchor in ${path}: ${pin}" >&2
     exit 1
   fi
 done
-dr025_pins_agents=(
-  "Post-fix focused re-rounds run at Capable tier (\`opus@high\`) by default"
-  "and its post-fix focused re-round"
+
+# Child-review experiment: hard Frontier coherence before opening, explicit
+# coverage reuse and unchanged protocol grammar. These pins replace the retired
+# DR-025 tier-dependent child re-round policy, not implementation-tier routing.
+child_review_pins=(
+  "AGENTS.md|coherence checks on every epic tier"
+  "dodi-dev/skills/review/child-pr-integration-prompt.md|**hard** policy on every epic and delivery tier"
+  "dodi-dev/skills/review/child-review-contract.md|No proposal from an unmerged child becomes canonical before a verified merge."
+  "dodi-dev/skills/review/child-review-contract.md|context-only renewal"
+  "dodi-dev/skills/epic-orchestrator/state-transitions.md|only the portion of a \`RESUMABLE\` deliver resume consuming no new canon is exempt."
+  "dodi-dev/skills/implement-ticket/SKILL.md|child-review-gate.py"
+  "dodi-dev/skills/review/SKILL.md|child-review-gate.py"
+  "dodi-dev/skills/epic-orchestrator/florist-worker-contract.md|FLORIST_CHILD_REVIEW_CONTRACT"
 )
-for pin in "${dr025_pins_agents[@]}"; do
-  if ! grep -qF -- "$pin" AGENTS.md; then
-    echo "AGENTS.md missing DR-025 wording pin: ${pin}" >&2
+for entry in "${child_review_pins[@]}"; do
+  path="${entry%%|*}"
+  pin="${entry#*|}"
+  if ! grep -qF -- "$pin" "$path"; then
+    echo "missing child-review contract anchor in ${path}: ${pin}" >&2
     exit 1
   fi
 done
-# Negative assertions: the retired pre-DR-025 shapes must not reappear.
-# Combined with the positive pins, the asymmetry cannot silently return:
-# re-adding either retired phrase fails here, and deleting the new doctrine
-# text fails the positive pins instead.
-if grep -qF -- "focused re-round at the gate's fable seat" dodi-dev/skills/review/SKILL.md; then
-  echo "retired pre-DR-025 wording (unconditional re-round fable seat) reappeared: dodi-dev/skills/review/SKILL.md" >&2
-  exit 1
-fi
-if grep -qF -- "inherit their gate's policy" AGENTS.md; then
-  echo "retired pre-DR-025 inherit rule reappeared: AGENTS.md" >&2
-  exit 1
-fi
+python3 - <<'PY'
+import ast
+from pathlib import Path
+ast.parse(Path("dodi-dev/scripts/child-review-gate.py").read_text())
+PY
 
 find dodi-dev/skills -type l -print | while read -r link; do
   echo "unexpected symlink: ${link}" >&2

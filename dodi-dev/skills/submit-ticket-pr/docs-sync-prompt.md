@@ -2,7 +2,7 @@
 
 Dispatch at Frontier tier (`model: fable` on Claude Code; runtime-native executor per `epic-orchestrator/execution-model.md` § 2). One prompt, two seats, distinguished by mode — the executing session performs the Frontier-policy lookup immediately before writing the pin (AGENTS.md § Frontier Availability Policy):
 
-- **child mode** (`submit-ticket-pr` Open): policy **soft** — `opus` substitutes, attributed, no make-up; the epic sweep is the designed backstop.
+- **child mode** (delivery, before verification and the combined final): policy **soft** — `opus` substitutes, attributed, no make-up; the epic sweep is the designed backstop.
 - **epic-sweep mode** (`submit-epic-pr` attempt start): policy **hard** — runtime-local Frontier unavailable after bounded retries ⇒ `pending-capacity` park; the epic PR does not open with an unswept docs surface.
 
 The worker judges whether the diff makes the module-level agent metadata files (`CLAUDE.md` / `AGENTS.md`, per module and sub-module) false, incomplete, or misleading — and makes the smallest true edit when it does. It edits doc files in the worktree; **the walking session commits** (single-writer discipline). "No update needed" is a decision with a recorded reason, never a silent skip.

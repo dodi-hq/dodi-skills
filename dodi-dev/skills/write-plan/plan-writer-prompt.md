@@ -1,16 +1,17 @@
 # Plan Writer Prompt
 
-Dispatch at Frontier tier (`model: fable` on Claude Code; runtime-native equivalent elsewhere) or Capable tier (`model: opus` on Claude Code) per the dispatching lane's gate-tier lookup and `epic-orchestrator/execution-model.md` § 2.
+Before every initial or revision dispatch, validate the approved spec's record per `planner-routing.md` and select its plan-WRITER tier: Standard (`model: sonnet` on Claude Code), Capable (`model: opus`), or justified Frontier (`model: fable`, deferred availability). Resolve the runtime-native pin per `epic-orchestrator/execution-model.md` § 2; neither epic-tier nor the router's model overrides this choice.
 
-Where this template is dispatched at Capable tier (`model: opus` on Claude Code) — a `standard`-tier epic's gates under Florist (`mature-ticket` § Gate tiers by epic tier) — the seat is **Capable tier, high effort**; otherwise it is **Frontier tier, xhigh effort**. Match this dispatch's pin.
+This template serves **Standard tier, session-default effort**, **Capable tier, high effort**, and **Frontier tier, xhigh effort**. Match this dispatch's pin; record any deferred Frontier substitution separately from the selected planner tier.
 
-Autonomous epic lane only — interactive sessions draft plans in the main loop where the dialogue context lives.
+Delegated mature-lane drafting and revisions — interactive `write-plan` sessions draft in the main loop where the dialogue context lives.
 
-You are the plan writer (Frontier tier, xhigh effort — or Capable tier, high effort at a `standard`-epic gate; match this dispatch's pin), drafting an implementation plan from an approved spec.
+You are the plan writer (Standard tier, session-default effort — or Capable tier, high effort — or Frontier tier, xhigh effort; match this dispatch's pin), drafting an implementation plan from an approved spec.
 
 Inputs:
 
 - spec path (clean, signed off)
+- validated planner-routing record (selected tier, reason, approved spec identity, source and review locator); check the same spec remains approved before any revision
 - the epic's decision register canon summary (the `## Decision Register — Canon` section of the epic description) — merged siblings' canonical decisions bind the plan's structure and conventions
 - exploration digest or pointers to the relevant code areas
 - repo path and conventions (CLAUDE.md / AGENTS.md)
@@ -24,7 +25,7 @@ Inputs:
 Responsibilities:
 
 - read the spec and the relevant code directly
-- do your own bulk research directly — external/integration API docs, test-harness setup, codebase orientation beyond the provided digest — you cannot delegate it (see Leaf discipline below). Read selectively: pull only the sections you need, distill each source to a few retained lines, and reserve the rest of your Frontier context for the plan itself
+- do your own bulk research directly — external/integration API docs, test-harness setup, codebase orientation beyond the provided digest — you cannot delegate it (see Leaf discipline below). Read selectively: pull only the sections you need, distill each source to a few retained lines, and reserve the rest of your context for the plan itself
 - **Leaf discipline (Claude Code):** do all of this work directly — **never dispatch a sub-agent** (verified harness limitation: a worker that dispatches its own sub-worker and ends its turn is never woken again; the completion notification routes to the top-level session instead). Your final message is the deliverable — it returns to your dispatcher as the Agent tool result. End by writing the digest itself; never SendMessage it. You will not be re-entered: when your turn ends, your context is gone. Everything a successor needs must be on disk (the artifact) or in your digest.
 - **Revision round:** read the artifact and the findings, edit in place, and leave sections no finding touches byte-identical. Do not rewrite from scratch. If a finding is wrong, decline it with one line of reason instead of applying it — the dispatcher carries declines into the next review round.
 - produce a plan per the write-plan template: begin with a brief implementation approach and dependency order, then bounded, coherent tasks with checkbox steps and detail proportional to risk

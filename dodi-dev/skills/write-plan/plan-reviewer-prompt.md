@@ -58,7 +58,7 @@ Agent tool (general-purpose, `model: fable` on Claude Code; use the runtime-nati
 
     ## Delivery Tier Classification (required)
 
-    Classify this chunk's delivery tier:
+    Independently classify this chunk's delivery tier after decomposition. The spec reviewer's planner-tier selected the plan WRITER only; it neither sets this verdict nor lowers your review tier/policy.
 
     - **capable** — the chunk is invariant-dense: concurrency/locking
       protocols, distributed-state reconciliation, ordering/idempotence

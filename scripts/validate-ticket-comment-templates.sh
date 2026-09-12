@@ -36,6 +36,9 @@ check_heading templates/ticket-comments/epic-assessment.md "Blockers"
 
 check_heading templates/ticket-comments/spec-ready.md "Spec Artifact"
 check_heading templates/ticket-comments/spec-ready.md "Review Evidence"
+check_heading templates/ticket-comments/spec-ready.md "Planner Routing"
+check_contains templates/ticket-comments/spec-ready.md 'spec_sha256='
+check_contains templates/ticket-comments/spec-ready.md '<standard|capable|frontier>'
 check_heading templates/ticket-comments/spec-ready.md "Human Signoff"
 check_heading templates/ticket-comments/spec-ready.md "Assumptions"
 check_heading templates/ticket-comments/spec-ready.md "Next Action"

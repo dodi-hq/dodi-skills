@@ -28,18 +28,19 @@ There is no frontmatter `model:` pin (retired in 0.19.0): the kernel seats this 
 
 ## Phase sequence (autonomous mode)
 
-The implementing seat runs the deliver playbook's phases 2–5 plus the docs-sync step, in this order, inside one dispatch, then pushes and emits one digest. Internal review loops run **inside** the dispatch — a round is not a lane transition.
+Before delivery work run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/child-review-gate.py" require-kernel`. Failure records the missing companion capability and exits through `blocked reason=worker-blocked`; see `review/florist-companion.md`. The implementing seat then runs the sequence below inside one dispatch. Internal reviews are not lane transitions.
 
 1. **Implement** — `implement/implementer-prompt.md` per task, serially, adherence to approved outcomes and constraints (§ Process below).
-2. **Pre-PR review** — `review` (pre-PR context), the full gate: rounds plus the final round, capped at 5 rounds plus the final. Its clean closing round is the `thread` evidence the kernel requires.
+2. **Early feedback** — `review` (pre-PR context): Capable implementation feedback and necessary fixes, five-round cap; no Frontier final yet.
 3. **Tests** — `create-tests` against the plan's Testing Contract.
 4. **Docs-sync** — `submit-ticket-pr/docs-sync-prompt.md` in child mode; commit any edit on the unit branch. This step moves here from `submit-ticket-pr` Open (which does not run under Florist) so the edits sit on the head that verification covers and the PR opens over.
 5. **Verify** — `verify`: one runner per Testing Contract group plus the local-CI runner, every digest recording the head SHA it ran against. A product-code fix here triggers the focused re-review (`review` § Epic Lane Rules) and re-runs the affected groups and the local-CI runner at the new head.
-6. **Push, record, digest** — `git push -u origin unit/$FLORIST_UNIT`, then `head=$(git rev-parse HEAD)`, post the Seat Record, emit the digest through `"${CLAUDE_PLUGIN_ROOT}/scripts/florist-digest.sh" impl-ready head=$head --evidence …` (§ Digest below) as the last output of the session. Nothing is committed after `head` is read.
+6. **Combined final** — `review` (child-final context) per `review/child-review-contract.md`: complete code/test correctness plus epic coherence in one hard Frontier leaf on the final verified HEAD. Fixes invalidate coverage, rerun required checks and renew at Frontier. Persist the full proposal and coverage record; no epic canon writes.
+7. **Push, record, digest** — `git push -u origin unit/$FLORIST_UNIT`, then `head=$(git rev-parse HEAD)`, post the Seat Record, emit the digest through `"${CLAUDE_PLUGIN_ROOT}/scripts/florist-digest.sh" impl-ready head=$head --evidence …` (§ Digest below) as the last output of the session. Nothing is committed after `head` is read. Re-read base and decision context and check coverage before emitting success; any change needs renewal.
 
 Inputs arrive on the worktree and the ticket: the contract at `docs/specs/<FLORIST_UNIT>-contract.md` and the plan (with its Testing Contract) at `docs/plans/<FLORIST_UNIT>-plan.md` — both on the unit branch, which forked from `FLORIST_EPIC_BRANCH` after the contract lanes pushed them; the ticket via `${CLAUDE_PLUGIN_ROOT}/scripts/linear-api.sh`; the decision-register canon in the epic ticket's description.
 
-**Resume** (`FLORIST_ATTEMPT` > 0, or a worktree with commits already on it): the worktree persists across dispatches. Read the Seat Record(s) and the branch log first. Implementation commits are never redone; a gate is re-run at the current head unless a Seat Record for exactly that head already records it clean.
+**Resume** (`FLORIST_ATTEMPT` > 0, or a worktree with commits already on it): the worktree persists across dispatches. Read the Seat Record(s) and the branch log first. Implementation commits are never redone; a gate is re-run at the current head unless the full HEAD/base/decision-context identity and verification remain current under `review/child-review-contract.md`.
 
 ## Tiers (autonomous mode)
 
@@ -50,14 +51,9 @@ Writers follow `FLORIST_DELIVERY_TIER` — the kernel's truth behind the `needs-
 | `capable` | every one at Capable tier (`model: opus` on Claude Code), no per-task demotion |
 | `standard` / unset | `implement/SKILL.md` § Model Selection's per-task defaults |
 
-Gates follow `FLORIST_EPIC_TIER` (unset is treated as `standard`):
+Early feedback and verification-fix reviews are Capable. The combined final and every coherence renewal are **hard Frontier on all epic tiers**, including standard/unset. No substitution or make-up can replace them. Native mapping/effort remain per `execution-model.md`; unavailability after bounded retries emits `declined reason=fable-unavailable`.
 
-| `FLORIST_EPIC_TIER` | Pre-PR rounds | Pre-PR final round | Focused re-review | Docs-sync | Runners |
-| --- | --- | --- | --- | --- | --- |
-| `standard` | Capable (`opus`) | Capable — no Frontier seat; no substitution recorded | Capable | Capable (the soft seat resolves the same way) | Fast (`haiku`) |
-| `capable` | Capable | Frontier (`fable` on Claude Code), policy **deferred**: `opus` substitutes with the `tier-degraded(...)` marker and a `Kind: FABLE_MAKEUP` register entry on the epic ticket | Capable | Frontier, policy **soft** | Fast |
-
-Under `capable` the AGENTS.md § Frontier Availability Policy table applies as written, with the contract's § 6 autonomous-mode route: no gate in this seat is **hard**, so the compatibility reason `fable-unavailable` cannot fire here.
+Child docs-sync preserves its existing routing: standard epics use Capable; capable epics use Frontier with soft policy. Runners stay Fast. This does not change implementation/fix-worker classification.
 
 ## Digest (autonomous mode)
 
@@ -66,13 +62,14 @@ On success:
 ```
 FLORIST-STATUS: impl-ready head=<sha>
 FLORIST-EVIDENCE: kind=artifact ref=unit/<FLORIST_UNIT> sha=<head>
-FLORIST-EVIDENCE: kind=thread ref=<Seat Record URL> sha=<sha the clean closing pre-PR round reviewed>
+FLORIST-EVIDENCE: kind=thread ref=<Seat Record URL> sha=<head>
 FLORIST-EVIDENCE: kind=ci ref=<Seat Record URL> sha=<head>
+FLORIST-EVIDENCE: kind=artifact ref=child-review:<record-locator> sha=<head>
 ```
 
 - `head` is the pushed head. The kernel blocks the unit on `sha-mismatch` if the branch head differs, and `pr-create` refuses if origin differs — push, then read (`florist-worker-contract.md` § 2).
 - The `artifact` and `ci` rows are **SHA-matched to `head`** or the digest is not a submission. Any commit after the last local-CI run — a fix, a docs-sync edit — means the runners run again at the new head before the push.
-- The `thread` row's SHA is the one the closing pre-PR round reviewed. It may precede `head`: tests and docs-sync commits follow the pre-PR gate by design, and the child-PR gate reviews them as the delta.
+- The `thread` row's SHA must equal `head`: it records the combined final after tests, docs and verification. The discoverable `child-review:` artifact carries the full approval; the companion validates its HEAD/base/context identity before PR creation. Older pre-test review evidence is not sufficient.
 
 ### The other edges
 
@@ -80,6 +77,8 @@ FLORIST-EVIDENCE: kind=ci ref=<Seat Record URL> sha=<head>
 | --- | --- |
 | A product, architecture, scope, or plan mismatch surprise — from an implementer, the pre-PR gate, tests, or verification | `demote` + `FLORIST-EVIDENCE: kind=thread ref=<demotion comment URL> sha=-`. Post the comment per `epic-orchestrator/state-transitions.md` § Demotion Rules (with its `rework-origin:` line) — never redesign in-lane; the kernel returns the unit to `contract-drafting` |
 | The pre-PR loop cap is exhausted with findings still open | `blocked reason=spec-mismatch`, the unresolved findings and their `gate-ledger:` line in the Seat Record. A gate that cannot converge is the strongest evidence the admitted intent is unsound, and this reason's unpark is exactly the ruling that fits (unblock if the spec holds, or preempt and refile) |
+| Hard Frontier unavailable after bounded retries | `declined reason=fable-unavailable` |
+| Coherence flags require a human ruling before opening | `declined reason=questions-for-human` with full staged proposal/held route in the Seat Record; never emit `impl-ready` |
 | The admitted intent itself is invalidated | `blocked reason=spec-mismatch` |
 | An operational wall — auth, tooling, a required harness that cannot be set up, no `LINEAR_API_KEY` | `blocked reason=worker-blocked` |
 | `FLORIST_DELIVERY_TIER=capable` but `FLORIST_TIER` seats a Standard session | `declined reason=tier-mismatch` — before any dispatch |
