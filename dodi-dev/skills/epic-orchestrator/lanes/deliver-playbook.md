@@ -36,7 +36,7 @@ What does not run: `pickup-ticket` (the kernel creates the unit worktree on `uni
 ## Internal sequence
 
 1. `pickup-ticket` — create the child branch and worktree from the current epic branch.
-2. `implement-ticket` — implementation workers, exact plan adherence.
+2. `implement-ticket` — implementation workers satisfy the approved plan outcomes and constraints, owning routine coding choices within them.
 3. `review` (pre-PR context) — loop capped at 5 rounds plus the Frontier final round.
 4. `create-tests` — satisfy the Testing Contract.
 5. `verify` — one test-runner worker per group plus the local-CI runner dispatch (repo-local gates + broader checks, discovery mandate intact); claim results only from digests; every runner digest records the head SHA it ran against; a product-code fix here triggers the focused re-review (`review` § Epic Lane Rules) before the seam.
@@ -63,6 +63,8 @@ A re-dispatched lane reconstructs its position from durable state before doing a
 - **Emergency reset:** if the harness warns context is low mid-lane, finish the current step — never abandon a review round or a dispatched worker — then exit `RESUMABLE` through [Clean park](../clean-park.md). If a step cannot complete, include explicit "interrupted at" evidence in the continuation narrative so the resume does not double-execute.
 
 ## Exit states
+
+"Judgment surprise" and "spec/plan mismatch" below and in the phase table mean a defect in the approved contract or a required change to product behavior, architecture, shared contracts, or scope. Routine implementation choices within the approved task boundaries do not demote the ticket; implementation bugs are fixed in-lane (see `state-transitions.md` § Demotion Rules).
 
 - **ready-to-merge-child** — success; the orchestrator owns the merge.
 - **demote-to-spec** — any product, architecture, scope, or spec/plan mismatch surprise at any step: comment per the demotion rules in `state-transitions.md` and exit. Never redesign mid-flight.

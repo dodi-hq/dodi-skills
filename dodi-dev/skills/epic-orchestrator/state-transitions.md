@@ -86,6 +86,8 @@ When the coherence review rules that a merged child was right and the epic desig
 
 When a ticket must return to an earlier lane:
 
+"Judgment surprise" and "spec/plan mismatch" refer to an approved contract that needs revision: missing or changed product behavior, architecture, shared contracts, scope, or task outcomes/constraints. They do not include routine function bodies, local helpers, internal naming, or other engineering choices within the approved plan. Implementation code or pseudocode is not required in a plan; its absence is not a demotion reason. An implementation that fails a valid contract is an implementation bug to fix in-lane, not a reason to rewrite the contract.
+
 - Demote from any state between `ready-to-implement` and `ready-to-merge-child` (including any lane checkpoint) to the spec lane when a product, architecture, scope, or spec/plan mismatch is discovered.
 - Remove or withhold `ready-to-implement`. Keep `spec-ready` only if the spec itself remains valid and the issue is limited to the plan.
 - Add a ticket comment with: current state, demotion target, triggering evidence, why automation cannot continue safely, the concrete question or decision needed from the human, and the artifacts that must be revised.

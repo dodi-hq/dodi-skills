@@ -1,11 +1,11 @@
 ---
 name: implement-ticket
-description: Use when a ready child ticket has a child worktree and implementation must follow the reviewed plan exactly
+description: Use when a ready child ticket has a child worktree and implementation must satisfy the reviewed plan's outcomes and constraints
 ---
 
 # Implement Ticket
 
-Dispatch implementation workers against the clean plan. The implementation must follow the plan exactly; surprises that require judgment return the ticket to the spec lane.
+Dispatch implementation workers against the clean plan. Implementation must satisfy its approved outcomes, dependencies, scope, interfaces, compatibility requirements, correctness invariants, and acceptance criteria. Implementers own routine function bodies, local helpers, internal naming, and other local engineering choices within those boundaries; these do not trigger demotion. Missing or changed product behavior, architecture, shared-contract, or scope decisions return to specification.
 
 ## Invocation modes
 
@@ -30,7 +30,7 @@ There is no frontmatter `model:` pin (retired in 0.19.0): the kernel seats this 
 
 The implementing seat runs the deliver playbook's phases 2–5 plus the docs-sync step, in this order, inside one dispatch, then pushes and emits one digest. Internal review loops run **inside** the dispatch — a round is not a lane transition.
 
-1. **Implement** — `implement/implementer-prompt.md` per task, serially, exact plan adherence (§ Process below).
+1. **Implement** — `implement/implementer-prompt.md` per task, serially, adherence to approved outcomes and constraints (§ Process below).
 2. **Pre-PR review** — `review` (pre-PR context), the full gate: rounds plus the final round, capped at 5 rounds plus the final. Its clean closing round is the `thread` evidence the kernel requires.
 3. **Tests** — `create-tests` against the plan's Testing Contract.
 4. **Docs-sync** — `submit-ticket-pr/docs-sync-prompt.md` in child mode; commit any edit on the unit branch. This step moves here from `submit-ticket-pr` Open (which does not run under Florist) so the edits sit on the head that verification covers and the PR opens over.
@@ -106,8 +106,9 @@ In autonomous mode the durable writes are the commits on `unit/<FLORIST_UNIT>`, 
 ## Process
 
 - Read the clean plan and dispatch bounded implementation workers.
-- Require exact plan adherence.
+- Require adherence to the plan's outcomes, dependencies, scope, interfaces, compatibility requirements, correctness invariants, and acceptance criteria; routine coding choices belong to the implementer.
 - Demote to the spec lane on product, architecture, scope, or plan mismatch surprises.
+- A plan mismatch means the approved contract needs revision, not that implementation code was omitted or a local choice was left open. Fix implementation bugs in-lane; follow `epic-orchestrator/state-transitions.md` § Demotion Rules for contract defects.
 - Keep implementation workers scoped to the plan and child worktree.
 - Record commits and commands as implementation evidence.
 - Do not create PRs or merge branches from this step; the deliver-ticket lane owns the PR stage and the orchestrator owns merges — and under Florist the kernel owns both.
@@ -120,7 +121,7 @@ In autonomous mode the durable writes are the commits on `unit/<FLORIST_UNIT>`, 
 ## Stop Conditions (manual mode)
 
 - Stop on product decision, architecture decision, scope surprise, plan mismatch, or worker blocker.
-- Stop if implementation cannot follow the plan without new judgment.
+- Stop if implementation requires new or changed product behavior, architecture, shared-contract, scope, or approved plan-contract decisions; ordinary coding judgment within those constraints proceeds.
 - Stop if required dependencies are unavailable.
 - Stop at `ready-for-child-pr` only after review, tests, and verification (incl. repo-local checks) are clean.
 

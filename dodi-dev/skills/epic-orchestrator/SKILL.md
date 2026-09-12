@@ -35,7 +35,7 @@ Routine human involvement is exactly two gates: **Gate 1** (epic intent approval
 - **Gate 1 — epic intent:** no child enters the spec/plan pipeline before the epic carries `epic-signed-off` (or the child carries an explicit prior human signoff). Gate 1 approval is the recorded delegation for every child; a child labeled `needs-human-spec` still requires its own per-child spec signoff.
 - **Gate 2 — production entry:** the epic PR into main/master is opened by `submit-epic-pr` and merged only by a human. Never merge, auto-merge, or enable auto-merge on an epic PR.
 - No ticket enters implementation without `spec-ready` and `ready-to-implement`.
-- Any implementation surprise requiring product, architecture, scope, or plan judgment returns the ticket to the spec lane.
+- Any implementation surprise requiring a new or changed product, architecture, shared-contract, scope, or approved plan-contract decision returns the ticket to the spec lane. Routine coding judgment within the approved task outcomes and constraints belongs to the implementer (see `state-transitions.md` § Demotion Rules).
 
 ## Gate 1 — Epic Intent Signoff
 
