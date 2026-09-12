@@ -30,14 +30,14 @@ There is no frontmatter `model:` pin: the main loop runs at whatever tier its in
 
 ## Gate tiers by epic tier (autonomous mode)
 
-`FLORIST_EPIC_TIER` pins the lane's gate tiers before any dispatch is written. Unset is treated as `standard`.
+`FLORIST_EPIC_TIER` pins spec drafting/review and plan-REVIEW tiers before dispatch. Unset is treated as `standard`. Plan-WRITER dispatches and revisions instead consume the spec-bound classification in `write-plan/planner-routing.md`; it is not a whole-lane/session override.
 
-| `FLORIST_EPIC_TIER` | Spec/plan gates | Research + read-and-digest | Frontier policy |
+| `FLORIST_EPIC_TIER` | Spec drafting/review + plan review | Research + read-and-digest | Frontier policy |
 | --- | --- | --- | --- |
-| `standard` | Capable tier (`model: opus` on Claude Code) | Standard tier (`model: sonnet`) | nowhere — a smoke-sized epic never reaches for scarce capacity |
+| `standard` | Capable tier (`model: opus` on Claude Code) | Standard tier (`model: sonnet`) | none for these unchanged seats |
 | `capable` | per the AGENTS.md § Frontier Availability Policy gate table, unchanged | Standard tier (`model: sonnet` on Claude Code) | hard / deferred / soft per that table |
 
-Under `standard` the compatibility field `FLORIST_FABLE_POLICY` still resolves to `none`: the table has no Frontier seats, so no substitution is recorded and `fable-unavailable` cannot fire. Under `capable` the runtime-local Frontier lookup is the existing one, and a **hard** gate whose native Frontier executor cannot dispatch declines rather than parks (`florist-worker-contract.md` § 6).
+Under `standard` the session compatibility field `FLORIST_FABLE_POLICY` remains `none` for these table seats. A classified Frontier plan writer is a distinct exception: use plan-writing's **deferred** policy even on a standard epic, not that session default. Under `capable` the existing review policies remain, and a **hard** gate whose native Frontier executor cannot dispatch declines rather than parks (`florist-worker-contract.md` § 6). Planner routing does not change spec-review policy, plan-review policy, or delivery-tier classification.
 
 ## Phase range by lane (autonomous mode)
 
@@ -45,10 +45,12 @@ Each dispatch runs the phases its lane seats, then emits one digest. The interna
 
 | `FLORIST_LANE` | Phases this dispatch runs | Digest on success |
 | --- | --- | --- |
-| `contract-drafting` | draft the contract, then the spec-review loop to a clean final round | `artifact-ready` + `FLORIST-EVIDENCE: kind=artifact ref=docs/specs/<unit>-contract.md sha=<pushed sha>` |
+| `contract-drafting` | draft the contract, then the spec-review loop to a clean final round with its required planner-tier result | `artifact-ready` + spec `artifact` evidence first, then `artifact ref=planner-routing:<locator> sha=<pushed contract sha>` |
 | `contract-review` | write the plan, then the plan-review loop to a clean final round | `clean-final delivery-tier=<standard\|capable>` + `FLORIST-EVIDENCE: kind=thread ref=<review record> sha=<contract sha>` |
 
 This table is the lane's restatement of `florist-worker-contract.md` § 9, the per-seat canon. The evidence rows are **required**, not decoration: a drafting digest without an artifact row carrying a real SHA is not a submission, and a `clean-final` whose thread SHA is not the pinned contract SHA blocks the unit on `sha-mismatch`. The `delivery-tier` field is likewise required — it is the plan reviewer's classification, and a clean plan review without it is an incomplete result. Push before you read the SHA (`florist-worker-contract.md` § 7). Emit the digest through `"${CLAUDE_PLUGIN_ROOT}/scripts/florist-digest.sh"` (contract § 4) as the last output of the dispatch.
+
+Before either contract lane runs, read `write-plan/planner-routing.md` and run its `planner-routing.py require-kernel` guard. In `contract-drafting`, preserve the final successful spec review's typed record and rationale in the existing review evidence, then emit its additional artifact. In `contract-review`, require/read `FLORIST_PLANNER_ROUTING_PATH`, validate against the still-approved spec before every initial/revision writer pin, and use that choice even if it differs from epic tier. Missing transport blocks; genuine legacy fallback is explicit and kernel-materialized, never inferred from an absent env. Stale/conflicting records return `findings` with thread evidence through the existing spec lane; malformed/unreadable transport is `blocked reason=worker-blocked`. Human signoff below still precedes plan writing.
 
 ### The other edges
 

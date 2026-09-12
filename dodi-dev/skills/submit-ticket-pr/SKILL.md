@@ -8,7 +8,7 @@ model: sonnet
 
 Two separately invoked halves. **Open** runs inside a `deliver-ticket` lane after verify; **Merge** runs in the orchestrator's serial merge slot after the lane reports `ready-to-merge-child`. Child PRs target the epic branch, never main/master.
 
-**Under Florist neither half runs** — this skill holds no seat. The kernel opens the child PR (`pr-create`) once the implementing seat's `impl-ready` digest verifies, and merges it (`child-merge`) once the integrating seat's verdict lands; both are irreversible actions performed over an exact head SHA. The docs-sync step moves into the implementing seat (`implement-ticket` § Phase sequence) so its edits sit on the head the PR opens over. The Merge section's eligibility rules hold there as kernel mechanics: currency is the integrating seat's sync edge, review-clean is the pinned clean final round, the verified merge is the kernel's checkpoint read. See `epic-orchestrator/florist-worker-contract.md` § 9.
+**Under Florist neither half runs** — this skill holds no seat. The kernel opens the child PR (`pr-create`) once the implementing seat's `impl-ready` digest verifies, and merges it (`child-merge`) once the integrating seat's verdict lands; both are irreversible actions performed over an exact head SHA. The docs-sync and combined hard Frontier final steps run in the implementing seat (`implement-ticket` § Phase sequence) so its edits sit on the head the PR opens over. The Merge section's eligibility rules hold there as kernel mechanics: currency is the integrating seat's sync edge, review-clean is the pinned clean final round, the verified merge is the kernel's checkpoint read. See `epic-orchestrator/florist-worker-contract.md` § 9 and `review/florist-companion.md`; this experiment requires companion enforcement before Florist delivery can succeed.
 
 ## Inputs
 
@@ -21,11 +21,11 @@ Two separately invoked halves. **Open** runs inside a `deliver-ticket` lane afte
 ## Open (lane-invoked)
 
 1. Verify the child branch is not main/master and targets the epic branch.
-2. **Docs-sync.** Dispatch the docs-sync worker (see `docs-sync-prompt.md`, child mode) at Frontier tier — policy **soft** per AGENTS.md § Frontier Availability Policy (`opus` substitutes attributed on Claude Code, no make-up; the epic docs-sync sweep in `submit-epic-pr` is the backstop). Resolve the runtime-native Frontier executor per `epic-orchestrator/execution-model.md` § 2. Scope: the child diff vs the epic branch. If the worker edited module docs, commit them on the child branch (`docs-sync: <summary>`) — the doc edits ride the pushed diff so the child-PR review gate reviews them. Carry the worker's `docs-sync:` evidence line forward; "no update" is a recorded decision with its reason, never a silent skip.
-3. Push the child branch.
-4. Open a PR from child branch to epic branch.
-5. Write a PR body with spec, plan, test evidence, verification evidence (incl. repo-local + broader checks), the `docs-sync:` line, and ticket link. Reference the ticket with the **non-closing** form `Part of <ticket-id>` — never `Closes`/`Fixes` on a child PR: children reach their terminal state when the epic merges to main/master, not when the child merges to the epic branch.
-6. Return to the lane — the lane runs `review` (child-PR context) next. Do not merge from this half.
+2. Require the completed docs-sync, verification and combined hard Frontier final record from the lane, per `review/child-review-contract.md`. Docs-sync runs before verification/final now, not while opening the PR. If absent, return to those stages.
+3. Independently refresh HEAD, target epic/base and decision context, check the full durable coverage record, and verify remote HEAD equals reviewed HEAD after the push. Stale/unknown identity returns for checks and Frontier renewal; never open on early feedback alone.
+4. Open the PR from the reviewed child HEAD to the reviewed epic branch. Preserve serialized ownership and read back the created PR's head/base; detected drift invalidates approval and blocks downstream progress.
+5. Write the PR body with spec/plan, test and local-CI evidence, docs-sync, combined correctness/coherence approval and identity, plus `Part of <ticket-id>` (never a closing keyword).
+6. Return to the lane's child-PR coverage/freshness check. Identical covered work needs no new reviewer; do not merge from this half.
 
 ```bash
 git push -u origin <child-branch>
@@ -37,10 +37,10 @@ gh pr create --base <epic-branch> --head <child-branch> --title "<ticket-id>: <t
 This section is the **single source of merge eligibility** — consumers reference it, never restate it.
 
 1. Require the lane's `ready-to-merge-child` report with clean child-PR review and local CI-equivalent evidence — evidence-checker citations when adopting (per the epic-orchestrator Evidence Rule); own-session evidence trail otherwise.
-2. Verify the child branch is current with the epic head. If the epic moved, return to the lane for a sync and rerun of relevant checks — do not merge a stale branch. **De-minimis exception:** if everything the epic gained since the child branched is demonstrably disjoint from the child's file surface *and* touches no code (docs-only housekeeping), the merge slot may proceed — record the divergence assessment and the deviation in the done comment. Any code, config, schema, or generated-file movement means sync, no exceptions.
+2. Under the serial merge slot, revalidate the full combined approval, current remote child/target identity and decision context per `review/child-review-contract.md`. Verify the child branch is current with the epic head. If the epic moved, return to the lane for a sync and rerun of relevant checks — do not merge a stale branch. The child-review experiment requires exact base identity; the former docs-only de-minimis exception cannot bypass renewal.
 3. Squash merge, then **verify the merge actually happened** — `gh pr merge` can succeed silently without merging (field-confirmed: zero output, no merge). Never claim the merge from the merge command's exit; claim it from the verification script.
-4. Clean up the child branch and worktree via the cleanup script, threading the verified merge SHA through — squash merges rewrite the SHA, so the script's content-match proof requires it.
-5. Update the child ticket with PR link, merge evidence (including the verified merge commit), and final status.
+4. Before cleanup, transfer the staged coherence approval only after verifying the merged parent/tree match the approved base/child, per `review/child-review-contract.md`. Publish the register/canon and affected-child routing serially under the real merge SHA through the orchestrator; keep `coherence-pending` until complete. Failed/uncertain transfer requires hard Frontier audit, not another automatic pass for a proven match.
+5. Clean up the child branch/worktree with the verified merge SHA via the cleanup script, then update the child ticket with merge and publication evidence. Preserve the durable proposal/report for crash recovery.
 
 ```bash
 gh pr merge <child-pr-number> --squash
@@ -48,6 +48,7 @@ gh pr merge <child-pr-number> --squash
 # Verification is mandatory; the script owns the postcondition mechanics.
 merge_sha="$("${CLAUDE_PLUGIN_ROOT}/scripts/verify-merge.sh" <child-pr-number> <epic-branch>)"
 
+# Complete the proposal transfer/publication in step 4 before cleanup.
 # Cleanup (handles worktree-checked-out branches; refuses without proof):
 "${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-branch.sh" <child-branch> <epic-branch> <child-worktree> . "$merge_sha"
 ```
@@ -57,8 +58,8 @@ Expected evidence:
 - push output or remote branch URL
 - the `docs-sync:` evidence line (updated paths, or an attributed no-op with its reason)
 - PR URL
-- clean child-PR review evidence (`review`, child-PR context)
-- local CI-equivalent command evidence — a child-PR-stage local CI digest, or the **checkpoint-recorded** verify-stage local-CI digest when the conditional-CI predicate held (`review`, child-PR context; the durable record, not session memory)
+- combined Frontier correctness/coherence approval, full identity and explicit child-PR freshness/reuse evidence (`review/child-review-contract.md`)
+- local CI-equivalent command evidence — a child-PR-stage local CI digest, or the **checkpoint-recorded** verify-stage local-CI digest when current HEAD/base and Testing Contract coverage permit reuse (`review/child-review-contract.md`; the durable record, not session memory)
 - merge verification: `gh pr view` showing state MERGED plus the merge commit id (merge command output alone is not evidence)
 - child ticket comment with final status
 

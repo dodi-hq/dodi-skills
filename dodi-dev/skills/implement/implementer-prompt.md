@@ -22,12 +22,15 @@ Agent tool (general-purpose or implementation-engineer, model: sonnet):
 
     ## Before You Begin
 
-    If ANYTHING is unclear — requirements, approach, dependencies — ask now.
-    It's always OK to pause and clarify. Don't guess.
+    Resolve routine coding choices using the approved task and established
+    patterns. If context needed to meet its constraints is missing, request
+    that context. Missing decisions that change product behavior, architecture,
+    shared contracts, or scope return to specification; do not invent them.
 
     ## Your Job
 
-    1. Implement exactly what the task specifies
+    1. Satisfy the task's approved outcome, scope, dependencies, interfaces,
+       compatibility requirements, correctness invariants, and acceptance criteria
     2. Write tests where they add value (skip trivial getters/setters/CRUD)
     3. Verify your implementation works — run the tests, check the output
     4. Commit your work with a clear message
@@ -40,6 +43,9 @@ Agent tool (general-purpose or implementation-engineer, model: sonnet):
 
     - Follow file structure from the plan
     - Follow existing codebase patterns
+    - Own function bodies, local helpers, internal naming, and other routine
+      engineering choices within the approved task boundaries. A plan need not
+      provide implementation code or pseudocode; their absence is not a blocker
     - Each file: one clear responsibility
     - Don't restructure beyond your task scope
     - If something is too hard or unclear, STOP and escalate

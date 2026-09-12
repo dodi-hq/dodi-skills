@@ -42,9 +42,15 @@ expect_fail "delivery-tier bogus" contract-review clean-final delivery-tier=fron
 
 # contract-drafting: artifact needs a real sha
 expect_fail "artifact-ready sha=-" contract-drafting artifact-ready --evidence kind=artifact ref=docs/specs/dod-1-contract.md sha=-
-out="$(run contract-drafting artifact-ready --evidence kind=artifact ref=docs/specs/dod-1-contract.md sha=abc)"
+out="$(run contract-drafting artifact-ready --evidence kind=artifact ref=docs/specs/dod-1-contract.md sha=abc --evidence kind=artifact ref=planner-routing:.dodi/florist-planner-routing.json sha=abc)"
 [[ "$out" == "FLORIST-STATUS: artifact-ready
-FLORIST-EVIDENCE: kind=artifact ref=docs/specs/dod-1-contract.md sha=abc" ]] || { echo "FAIL artifact-ready: $out" >&2; exit 1; }
+FLORIST-EVIDENCE: kind=artifact ref=docs/specs/dod-1-contract.md sha=abc
+FLORIST-EVIDENCE: kind=artifact ref=planner-routing:.dodi/florist-planner-routing.json sha=abc" ]] || { echo "FAIL artifact-ready: $out" >&2; exit 1; }
+expect_fail "missing planner routing" contract-drafting artifact-ready --evidence kind=artifact ref=docs/specs/dod-1-contract.md sha=abc
+expect_fail "mismatched planner sha" contract-drafting artifact-ready --evidence kind=artifact ref=docs/specs/dod-1-contract.md sha=abc --evidence kind=artifact ref=planner-routing:r sha=other
+expect_fail "planner artifact first" contract-drafting artifact-ready --evidence kind=artifact ref=planner-routing:r sha=abc --evidence kind=artifact ref=docs/specs/dod-1-contract.md sha=abc
+expect_fail "duplicate planner artifact" contract-drafting artifact-ready --evidence kind=artifact ref=docs/specs/dod-1-contract.md sha=abc --evidence kind=artifact ref=planner-routing:r sha=abc --evidence kind=artifact ref=planner-routing:other sha=abc
+expect_fail "empty planner locator" contract-drafting artifact-ready --evidence kind=artifact ref=docs/specs/dod-1-contract.md sha=abc --evidence kind=artifact ref=planner-routing: sha=abc
 
 # code-review: reserved ref refused; clean-final needs a real sha
 expect_fail "reserved clean-final ref" code-review clean-final --evidence kind=thread ref=clean-final:forged sha=abc

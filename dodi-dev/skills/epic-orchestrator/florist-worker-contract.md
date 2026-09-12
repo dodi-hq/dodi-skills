@@ -29,8 +29,12 @@ It prints `mode=manual` or `mode=autonomous unit=… lane=… …` and, in auton
 | `FLORIST_FABLE_POLICY` | compatibility name for the seat's runtime-local Frontier availability bucket (`none` on a non-Frontier seat) | never |
 | `FLORIST_EPIC_TIER` | the epic's design-phase capability assessment (`standard` \| `capable`) | the epic is unassessed |
 | `FLORIST_DELIVERY_TIER` | the unit's plan-reviewer delivery classification (`standard` \| `capable`) | not yet classified |
+| `FLORIST_PLANNER_ROUTING_CONTRACT` | `spec-review-planner-v1` when typed spec-to-planner transport is enforced | old kernel: contract seats block via `planner-routing.py require-kernel` |
+| `FLORIST_PLANNER_ROUTING_PATH` | kernel-materialized JSON record for the approved spec, per `write-plan/planner-routing.md`; read before plan-writer dispatch | outside `contract-review`; absence there is missing transport, not legacy permission |
 | `FLORIST_NEEDS_HUMAN_SPEC` | `1` iff the admit-time product snapshot carried the `needs-human-spec` label | the label was absent |
 | `FLORIST_EPIC_BRANCH` | the epic branch unit branches fork from — the contract lanes' durable surface | never |
+| `FLORIST_CHILD_REVIEW_CONTRACT` | `frontier-pre-pr-v1` only when the companion enforcement in `review/florist-companion.md` is deployed | older kernel: delivery seats block, never accept legacy success |
+| `FLORIST_CHILD_REVIEW_INPUT_COMMAND` / `FLORIST_CHILD_REVIEW_INPUT_PATH` | JSON argv refresh command (invoke without shell), then path to `{identity, context}`; command-before-read at final/renewal/freshness checks per `review/child-review-contract.md` | outside enabled child-review seats; missing/failed refresh blocks those seats |
 | `LINEAR_API_KEY` | the **worker-lane** tracker credential, read by `${CLAUDE_PLUGIN_ROOT}/scripts/linear-api.sh` — distinct from the kernel's own key, which the allowlist strips (DOD-1300) | the deployment issued no worker tracker credential: a concrete blocker (`blocked reason=worker-blocked`), never an improvised read path |
 
 The worker's worktree is on `unit/<FLORIST_UNIT>`, forked from `FLORIST_EPIC_BRANCH`, and **persists across dispatches** for that unit: a later lane sees the earlier lane's files without fetching anything.
@@ -100,13 +104,13 @@ Neither charges an attempt (corrected in 0.19.0 — 0.18.0 said a block did): th
 
 ## 6. Frontier policy without an operator
 
-`FLORIST_EPIC_TIER` pins the lane's gate tiers (the seat-holding skill states its own mapping). Where a gate is a Frontier seat, the AGENTS.md § Frontier Availability Policy buckets apply as written, with one invocation-mode route for the missing human. The retained env name `FLORIST_FABLE_POLICY` and decline reason `fable-unavailable` describe Frontier policy across runtimes; they are protocol tokens, not a requirement that Claude Fable execute the seat. Native executor selection is runtime-local per `execution-model.md` § 2.
+`FLORIST_EPIC_TIER` pins spec drafting/review, plan-review and docs-sync tiers as before. Plan writers and revisions use the validated spec-review planner-tier instead (`write-plan/planner-routing.md`); a Frontier writer retains deferred policy even if the epic/session field says `none`. Combined child final/renewal correctness and coherence are hard Frontier on every epic tier; no standard-epic downgrade applies. Where a gate is a Frontier seat, the AGENTS.md § Frontier Availability Policy buckets apply as written, with one invocation-mode route for the missing human. The retained env name `FLORIST_FABLE_POLICY` and decline reason `fable-unavailable` describe Frontier policy across runtimes; they are protocol tokens, not a requirement that Claude Fable execute the seat. Native executor selection is runtime-local per `execution-model.md` § 2.
 
 - **`soft` / `deferred`** — substitute exactly as the policy says; record the `tier-degraded(...)` attribution in the gate comment.
 - **`hard`** — the driver's `pending-capacity` park is not reachable from a worker (parking is a kernel act). Emit `declined reason=fable-unavailable` instead when the selected native Frontier executor is unavailable after the existing bounded retries: the kernel's block-and-raise **is** the park, and its unblock is the wake edge.
 - **`operator-choice`** — unreachable in autonomous mode by construction (§5).
 
-An epic with no `FLORIST_EPIC_TIER` is treated as `standard` — an unassessed epic never reaches for scarce capacity.
+An epic with no `FLORIST_EPIC_TIER` is treated as `standard` — this default does not lower the hard Frontier child coherence requirement.
 
 ## 7. Durable surface and artifact paths
 
@@ -127,7 +131,7 @@ The mechanics in `execution-model.md` apply verbatim — the leaf rule (§1), ex
 
 A `RESUMABLE` exit has no counterpart here: the kernel's lease reap and attempt accounting are the resumption machinery, and a mid-lane context exit is simply a run that produced no digest. Push what is durable before it happens — the successor re-enters from the epic branch.
 
-The deliver lane's `# Lane Checkpoint` comments are a driver-mode surface with no counterpart here: under Florist the checkpoints collapse into digest evidence, and a seat posts none. A delivery seat's durable progress is its commits on `unit/<FLORIST_UNIT>` plus its **Seat Record** (§ 9); a successor dispatch re-enters from those — implementation commits are never redone, and a gate is re-run at the current head unless a Seat Record for exactly that head already records it clean.
+The deliver lane's `# Lane Checkpoint` comments are a driver-mode surface with no counterpart here: under Florist the checkpoints collapse into digest evidence, and a seat posts none. A delivery seat's durable progress is its commits on `unit/<FLORIST_UNIT>` plus its **Seat Record** (§ 9); a successor dispatch re-enters from those — implementation commits are never redone, and review reuse requires the complete child/base/decision-context identity plus verification evidence per `review/child-review-contract.md`, not HEAD alone.
 
 ## 9. Seats and digests
 
@@ -137,10 +141,10 @@ Every kernel lane with a seat, the skill that holds it, what one dispatch runs, 
 | --- | --- | --- | --- |
 | `contract-drafting` | `mature-ticket` | draft the contract, spec-review loop to a clean final round, push to `FLORIST_EPIC_BRANCH` | `artifact-ready` |
 | `contract-review` | `mature-ticket` | write the plan, plan-review loop to a clean final round, push | `clean-final delivery-tier=…` |
-| `implementing` | `implement-ticket` | implement → pre-PR review loop → tests → docs-sync → verify → push | `impl-ready head=…` |
+| `implementing` | `implement-ticket` | implement → Capable feedback → tests → docs-sync → verify → combined hard Frontier correctness/coherence final → push | `impl-ready head=…` |
 | `pr-open` | — (kernel) | `pr-create` over the digest's head | scheduler dispatch |
-| `code-review` | `review` | the child-PR integration pair + fix loop + conditional local CI, on the kernel-opened PR; push fixes | `clean-final` (in-lane: the scheduler upgrades to `integrating` when the epic's integration slot is free) |
-| `integrating` | `review` | currency check → sync, **or** the coherence verdict | `synced head=…` (→ `code-review`) / `merge-ready head=…` (→ kernel `child-merge` → `soak-ready`) |
+| `code-review` | `review` | validate full coverage; reuse unchanged approval or verify/fix and renew at hard Frontier; push fixes | `clean-final` (in-lane: the scheduler upgrades to `integrating` when the epic's integration slot is free) |
+| `integrating` | `review` | serialized currency/coverage check → sync, **or** renewed/reused staged coherence verdict | `synced head=…` (→ `code-review`) / `merge-ready head=…` (→ kernel `child-merge` → `soak-ready`) |
 
 ### Outcomes the kernel accepts, per lane
 
@@ -148,10 +152,10 @@ The kernel validates evidence presence and SHA identity before it commits anythi
 
 | Outcome | Lane | Required fields | Required evidence | What the kernel does |
 | --- | --- | --- | --- | --- |
-| `artifact-ready` | contract-drafting | — | `artifact` with a real `sha` (the pushed contract commit) | → `contract-review`; pins `contractSha` |
+| `artifact-ready` | contract-drafting | — | spec `artifact` first with a real `sha` (the pushed contract commit), plus `artifact ref=planner-routing:<locator>` at the same SHA | → `contract-review`; pins `contractSha` and preserves `plannerRouting` |
 | `findings` | contract-review | — | `thread` | → `contract-drafting` (a new lane, a new attempt budget) |
 | `clean-final` | contract-review | `delivery-tier=standard\|capable` | `thread` with `sha` = the pinned contract SHA | → `ready-to-implement`; stamps `deliveryTier` |
-| `impl-ready` | implementing | `head=<sha>` | `artifact` `sha`=head; `thread` (the clean closing pre-PR round, its own reviewed SHA); `ci` `sha`=head | branch head must equal `head`; then `pr-create` → `pr-open` |
+| `impl-ready` | implementing | `head=<sha>` | `artifact` `sha`=head; `thread` `sha`=head (the combined final); `ci` `sha`=head | branch head must equal `head`; then `pr-create` → `pr-open` |
 | `demote` | implementing, code-review | — | `thread` (the demotion record) | → `contract-drafting` |
 | `findings` | code-review | — | `thread` | **in-lane**: lease released, `attempt`+1, a fresh seat re-dispatches; the attempt ceiling is the escalation |
 | `clean-final` | code-review | — | `thread` with `sha` = the branch head now | **in-lane**: pins `headSha`; the scheduler moves the unit to `integrating` when the slot is free |
@@ -166,4 +170,16 @@ The kernel validates evidence presence and SHA identity before it commits anythi
 
 `ref` is a locator, never prose: a URL (a ticket comment, a PR), a repo path (`docs/specs/<unit>-contract.md`), or a `<kind>:<label>` token such as `sync:<epic sha>`. `sha` carries the commit the row attests to, and `-` only where the table above leaves the SHA free.
 
-Every **delivery** seat closes with one ticket comment headed `# Seat Record`, posted before the digest, carrying: `unit`, `lane`, `attempt`, `head`; each gate's `gate-ledger:` line (`review` § Gate Ledger) with the SHA its clean closing round reviewed — the pre-PR gate's is the baseline the code-review seat aims its delta at; every completed review round's dispatcher-authored `review-executor:` line (`review` § Native Executor Evidence), including clean rounds; every runner digest's commands, exit codes, and the head SHA it ran against, the local-CI runner's named explicitly; the reviewed diff ranges; the epic head a sync merged; and the verdict where one was recorded. Its URL is the default `ref` for `thread` and `ci` rows. It is an ordinary comment — bookkeeping under the comment-species partition, never a status write — and it is what a successor dispatch reads to avoid redoing a clean gate at the same head (§ 8).
+The existing successful spec review carries a separate typed planner-routing artifact, not a new digest field or child-review record. Read `write-plan/planner-routing.md` for the exact schema, content identity, capability guard, legacy handling and `UnitDoc.plannerRouting` preservation. The kernel must ingest it at drafting success and materialize it before planning; parser acceptance alone does not prove preservation. No extra reviewer/classifier stage is added, and `delivery-tier` remains the later plan reviewer's independent classification.
+
+Every **delivery** seat closes with one ticket comment headed `# Seat Record`, posted before the digest, carrying: `unit`, `lane`, `attempt`, `head`; each gate's `gate-ledger:` line (`review` § Gate Ledger) with the SHA its clean closing round reviewed — the combined final's identity is the baseline the code-review seat checks for freshness; every completed review round's dispatcher-authored `review-executor:` line (`review` § Native Executor Evidence), including clean rounds; every runner digest's commands, exit codes, and the head SHA it ran against, the local-CI runner's named explicitly; the reviewed diff ranges; the epic head a sync merged; and the verdict where one was recorded. Its URL is the default `ref` for `thread` and `ci` rows. It is an ordinary comment — bookkeeping under the comment-species partition, never a status write — and it is what a successor dispatch reads to avoid redoing a clean gate at the same head (§ 8).
+
+## 10. Child-review companion and proposal boundary
+
+The companion may perform unchanged code-review/integrating coverage transitions without provider dispatch, using the same evidence/identity checks and existing lease/slot/pin rules with an explicit kernel reuse receipt. Such a transition does not emit a worker digest or count as a model review. The seat table describes provider work when needed for changed/unknown coverage; a dispatched seat still owes its existing digest. No success by silence.
+
+Before implementing/code-review/integrating work, run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/child-review-gate.py" require-kernel`; failure closes with `blocked reason=worker-blocked`. The helper is a compatibility signal check, not kernel attestation. Read `review/florist-companion.md` for deployment requirements and `review/child-review-contract.md` for the evidence schema/freshness rule.
+
+Success in each delivery seat additionally carries `artifact ref=child-review:<record-locator> sha=<head>`. Existing outcome names, required thread/CI/verdict rows, reserved clean-final prefix, and final-message digest helper remain. The new companion validates the record and action pins; the current legacy parser's acceptance alone does not satisfy this contract. On reuse, the seat still posts its Seat Record and emits the normal success digest, preserving original Frontier provenance and recording live coverage checks.
+
+Coherence proposals are staged on the child before PR opening and remain non-canonical through pre-merge review. The integrating worker never writes proposed canon or strips sibling readiness. The companion publishes staged decisions only after verified merge, under the real merge SHA, before releasing the integration barrier; existing drift/human routing and audit recovery remain. External tracker edits are not atomically frozen by this barrier: live revalidation detects changes, and any detected drift invalidates approval; document the residual check/action race rather than claiming an external lock.

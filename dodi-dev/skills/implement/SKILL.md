@@ -29,7 +29,11 @@ Default is `model: sonnet` (pinned in implementer-prompt.md). Adjust per task:
 
 **Ticket-level override — `needs-capable-delivery`:** if the ticket carries the label (applied at plan review — see `mature-ticket`), pin **every implementer and fix worker at `model: opus`**, with no per-task demotion. The label means the plan reviewer judged the work invariant-dense; on that class of work the bugs live in tasks that look structural, so the per-task adjustments above do not apply.
 
-In the epic lane, escalation is pre-routed by the label, never improvised mid-lane: a judgment surprise on an unlabeled ticket demotes to the spec lane instead of escalating the model.
+In the epic lane, escalation is pre-routed by the label, never improvised mid-lane: a surprise requiring a change to product behavior, architecture, shared contracts, scope, or the approved plan contract demotes to the spec lane instead of escalating the model. Routine coding judgment within that contract belongs to the implementer at the assigned tier.
+
+## Plan Adherence
+
+Implement the approved task outcomes in dependency order, preserving scope, interfaces, compatibility, correctness invariants, and acceptance criteria. Implementers own function bodies, local helpers, internal naming, and other local engineering choices within those boundaries. Plans define work and verification; they do not supply implementation code or pseudocode. Missing code is not missing planning context. Correct implementation bugs in-lane; return to specification when the approved contract itself requires a new or changed decision.
 
 ## Handling Implementer Status
 
